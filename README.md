@@ -2,7 +2,7 @@
 
 Personal field guides for all 63 US national parks. Built one park at a time.
 
-**Live:** [xenoxanadu.com](https://xenoxanadu.com)
+**Live:** [xenoxanadu.com](http://xenoxanadu.com)
 
 ## Status
 
