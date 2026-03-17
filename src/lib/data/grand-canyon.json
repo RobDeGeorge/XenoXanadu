@@ -1291,6 +1291,21 @@
   "seasons": {
     "best": "Fall (Oct-Nov)",
     "avoid": "Mid-summer weekends",
+    "monthlyTemps": [
+      {"month": "Jan", "high": 45, "low": 18},
+      {"month": "Feb", "high": 47, "low": 21},
+      {"month": "Mar", "high": 53, "low": 25},
+      {"month": "Apr", "high": 61, "low": 29},
+      {"month": "May", "high": 72, "low": 36},
+      {"month": "Jun", "high": 82, "low": 43},
+      {"month": "Jul", "high": 86, "low": 51},
+      {"month": "Aug", "high": 82, "low": 50},
+      {"month": "Sep", "high": 76, "low": 43},
+      {"month": "Oct", "high": 65, "low": 33},
+      {"month": "Nov", "high": 53, "low": 24},
+      {"month": "Dec", "high": 45, "low": 18}
+    ],
+    "tempSource": "US Climate Data / Current Results (South Rim)",
     "details": [
       {
         "season": "Spring (Mar-May)",

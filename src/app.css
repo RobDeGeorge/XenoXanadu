@@ -401,6 +401,19 @@ nav {
   color: var(--text-secondary);
   line-height: 1.7;
 }
+.card-links {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+.card-links a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.card-links a:hover {
+  text-decoration: underline;
+}
 
 .card-stats {
   display: flex;

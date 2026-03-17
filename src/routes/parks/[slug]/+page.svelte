@@ -8,6 +8,7 @@
 	import TrailModal from '$lib/components/TrailModal.svelte';
 	import LeafletMap from '$lib/components/LeafletMap.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
+	import TempChart from '$lib/components/TempChart.svelte';
 	import { addShuttleRoute } from '$lib/helpers/map-helpers.js';
 
 	let { data } = $props();
@@ -466,22 +467,16 @@
 				<!-- === SHUTTLE SYSTEM === -->
 				{#if section.schedule2026}
 					<div class="two-col">
-						<div class="detail-block border-accent">
-							<h3>2026 Schedule</h3>
-							<div class="table-wrap">
-								<table>
-									<thead><tr><th>Period</th><th>First</th><th>Last</th></tr></thead>
-									<tbody>
-									{#each section.schedule2026 as row}
-										<tr><td>{row.period}</td><td>{row.canyonFirstBus || row.first}</td><td>{row.lastOut || row.last}</td></tr>
+						{#if section.springdaleStops}
+							<div class="detail-block border-accent">
+								<h3>Springdale Stops</h3>
+								<ol>
+									{#each section.springdaleStops as stop}
+										<li><strong>{stop.name}</strong>{stop.info ? ' — ' + stop.info : ''}</li>
 									{/each}
-									</tbody>
-								</table>
+								</ol>
 							</div>
-							{#if section.frequency}
-								<p style="margin-top:8px;font-size:13px;color:var(--text-muted)">{section.frequency}</p>
-							{/if}
-						</div>
+						{/if}
 						{#if section.canyonStops}
 							<div class="detail-block border-cyan">
 								<h3>Canyon Stops</h3>
@@ -492,15 +487,21 @@
 								</ol>
 							</div>
 						{/if}
-						{#if section.springdaleStops}
-							<div class="detail-block border-accent">
-								<h3>Springdale Stops</h3>
-								<ol>
-									{#each section.springdaleStops as stop}
-										<li><strong>{stop.name}</strong>{stop.info ? ' — ' + stop.info : ''}</li>
-									{/each}
-								</ol>
-							</div>
+					</div>
+					<div class="detail-block border-accent" style="margin-top:16px">
+						<h3>2026 Schedule</h3>
+						<div class="table-wrap">
+							<table>
+								<thead><tr><th>Period</th><th>First</th><th>Last</th></tr></thead>
+								<tbody>
+								{#each section.schedule2026 as row}
+									<tr><td>{row.period}</td><td>{row.canyonFirstBus || row.first}</td><td>{row.lastOut || row.last}</td></tr>
+								{/each}
+								</tbody>
+							</table>
+						</div>
+						{#if section.frequency}
+							<p style="margin-top:8px;font-size:13px;color:var(--text-muted)">{section.frequency}</p>
 						{/if}
 					</div>
 					{#if section.eBikeTip}
@@ -624,6 +625,12 @@
 							<div class="card-title">{r.name}</div>
 							<div class="card-meta"><span class="badge badge-moderate">{r.priceRange}</span></div>
 							<div class="card-desc">{r.description}</div>
+							{#if r.mapLink || r.url}
+								<div class="card-links">
+									{#if r.mapLink}<a href={r.mapLink} target="_blank">Map</a>{/if}
+									{#if r.url}<a href={r.url} target="_blank">Website</a>{/if}
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -634,22 +641,22 @@
 					<ul>
 						{#if park.food?.inPark}
 							{#each park.food.inPark as item}
-								<li><strong>{item.name}</strong> — {item.description}</li>
+								<li><strong>{item.name}</strong> — {item.description}{#if item.mapLink} <a href={item.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}{#if item.url} <a href={item.url} target="_blank" style="color:var(--cyan)">Website</a>{/if}</li>
 							{/each}
 						{/if}
 						{#if park.lodging?.inPark}
 							{#each park.lodging.inPark as item}
-								<li><strong>{item.name}</strong> ({item.price}) — {item.description}</li>
+								<li><strong>{item.name}</strong> ({item.price}) — {item.description}{#if item.mapLink} <a href={item.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}{#if item.url} <a href={item.url} target="_blank" style="color:var(--cyan)">Website</a>{/if}</li>
 							{/each}
 						{/if}
 						{#if Array.isArray(park.lodging)}
 							{#each park.lodging as item}
-								<li><strong>{item.name}</strong>{item.bookingNote ? ' (' + item.bookingNote + ')' : ''} — {item.description}</li>
+								<li><strong>{item.name}</strong>{item.bookingNote ? ' (' + item.bookingNote + ')' : ''} — {item.description}{#if item.mapLink} <a href={item.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}{#if item.url} <a href={item.url} target="_blank" style="color:var(--cyan)">Website</a>{/if}</li>
 							{/each}
 						{/if}
 						{#if park.lodging?.nearPark}
 							{#each park.lodging.nearPark as item}
-								<li><strong>{item.name}</strong>{item.price ? ' (' + item.price + ')' : ''} — {item.description}</li>
+								<li><strong>{item.name}</strong>{item.price ? ' (' + item.price + ')' : ''} — {item.description}{#if item.mapLink} <a href={item.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}{#if item.url} <a href={item.url} target="_blank" style="color:var(--cyan)">Website</a>{/if}</li>
 							{/each}
 						{/if}
 					</ul>
@@ -660,7 +667,7 @@
 					<h3>Groceries & Supplies</h3>
 					<ul>
 						{#each park.food.groceries as g}
-							<li><strong>{g.name}</strong> — {g.description || [g.location, g.note].filter(Boolean).join(' — ')}</li>
+							<li><strong>{g.name}</strong> — {g.description || [g.location, g.note].filter(Boolean).join(' — ')}{#if g.mapLink} <a href={g.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}{#if g.url} <a href={g.url} target="_blank" style="color:var(--cyan)">Website</a>{/if}</li>
 						{/each}
 					</ul>
 				</div>
@@ -710,6 +717,12 @@
 										<div class="lbl">Sites</div>
 									</div>
 								{/if}
+							</div>
+						{/if}
+						{#if camp.mapLink || camp.bookingUrl}
+							<div class="card-links">
+								{#if camp.mapLink}<a href={camp.mapLink} target="_blank">Map</a>{/if}
+								{#if camp.bookingUrl}<a href={camp.bookingUrl} target="_blank">Book</a>{/if}
 							</div>
 						{/if}
 					</div>
@@ -769,6 +782,9 @@
 					<div><strong>Best time:</strong> {park.seasons.best}{park.seasons.avoid ? '. Avoid: ' + park.seasons.avoid : ''}</div>
 				</div>
 			{/if}
+			{#if park.seasons.monthlyTemps}
+				<TempChart data={park.seasons.monthlyTemps} source={park.seasons.tempSource || ''} />
+			{/if}
 			{#if park.seasons.details}
 				<div class="card-grid">
 					{#each park.seasons.details as s}
@@ -811,13 +827,14 @@
 
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>Location</th><th>Best Time</th><th>Notes</th></tr></thead>
+					<thead><tr><th>Location</th><th>Best Time</th><th>Notes</th><th></th></tr></thead>
 					<tbody>
 					{#each park.photography as spot}
 						<tr>
 							<td><strong>{spot.location}</strong></td>
 							<td>{spot.bestTime}</td>
 							<td>{spot.notes}</td>
+							<td>{#if spot.mapLink}<a href={spot.mapLink} target="_blank" style="color:var(--accent)">Map</a>{/if}</td>
 						</tr>
 					{/each}
 					</tbody>
@@ -848,6 +865,7 @@
 						<div class="tip-num">{i + 1}</div>
 						<div class="tip-content">
 							<strong>{gem.name}</strong> — {gem.description}
+							{#if gem.mapLink} <a href={gem.mapLink} target="_blank" style="color:var(--accent);font-size:13px">Map</a>{/if}
 						</div>
 					</div>
 				{/each}
@@ -880,6 +898,11 @@
 							{#if drive.time}<span class="badge badge-moderate">{drive.time}</span>{/if}
 						</div>
 						<div class="card-desc">{drive.description}</div>
+						{#if drive.mapLink}
+							<div class="card-links">
+								<a href={drive.mapLink} target="_blank">Map</a>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -946,37 +969,33 @@
 			<SectionHeader iconName="warning" title="Safety" />
 			{#if park.safety.hazards}
 				<!-- Zion-style nested object -->
-				<div class="two-col">
-					<div class="detail-block border-accent">
-						<h3>Hazards</h3>
+				<div class="detail-block border-accent">
+					<h3>Hazards</h3>
+					<ul>
+						{#each park.safety.hazards as h}
+							<li>{@html typeof h === 'string' ? h : '<strong>' + (h.hazard || h.name || h.title) + ':</strong> ' + (h.details || h.description || h.detail)}</li>
+						{/each}
+					</ul>
+				</div>
+				{#if park.safety.wildlife}
+					<div class="detail-block border-cyan" style="margin-top:16px">
+						<h3>Wildlife</h3>
 						<ul>
-							{#each park.safety.hazards as h}
-								<li>{@html typeof h === 'string' ? h : '<strong>' + (h.hazard || h.name || h.title) + ':</strong> ' + (h.details || h.description || h.detail)}</li>
+							{#each park.safety.wildlife as w}
+								<li>{@html typeof w === 'string' ? w : '<strong>' + w.animal + ':</strong> ' + w.note}</li>
 							{/each}
 						</ul>
 					</div>
-					{#if park.safety.wildlife}
-						<div class="detail-block border-cyan">
-							<h3>Wildlife</h3>
-							<ul>
-								{#each park.safety.wildlife as w}
-									<li>{@html typeof w === 'string' ? w : '<strong>' + w.animal + ':</strong> ' + w.note}</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
+				{/if}
 			{:else if Array.isArray(park.safety)}
 				<!-- Grand Canyon-style array -->
-				<div class="two-col">
-					<div class="detail-block border-accent">
-						<h3>Hazards</h3>
-						<ul>
-							{#each park.safety as h}
-								<li><strong>{h.hazard}:</strong> {h.details}</li>
-							{/each}
-						</ul>
-					</div>
+				<div class="detail-block border-accent">
+					<h3>Hazards</h3>
+					<ul>
+						{#each park.safety as h}
+							<li><strong>{h.hazard}:</strong> {h.details}</li>
+						{/each}
+					</ul>
 				</div>
 			{/if}
 		</div>

@@ -1432,37 +1432,43 @@
         "name": "Bit & Spur Restaurant",
         "priceRange": "$$–$$$",
         "description": "The longtime local favorite. Creative Southwestern fare: sweet potato tamales, roasted poblano mac & cheese, chicken mole. Famous prickly pear margaritas (by the pitcher). Outdoor lawn seating under fairy lights.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=Bit+%26+Spur+Restaurant+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Bit+%26+Spur+Restaurant+Springdale+UT",
+        "url": "https://www.bitandspur.com/"
       },
       {
         "name": "Oscar's Cafe",
         "priceRange": "$–$$",
         "description": "Crowd-pleaser for breakfast & lunch. Gigantic breakfast burritos smothered in verde sauce, huevos rancheros, garlic burger. Also known for carrot cake and full rack of ribs. Fun Tex-Mex vibe.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=Oscar%27s+Cafe+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Oscar%27s+Cafe+Springdale+UT",
+        "url": "https://www.oscarscafe.com/"
       },
       {
         "name": "Whiptail Grill",
         "priceRange": "$–$$",
         "description": "Converted gas station. Goat cheese chile rellenos, spaghetti squash enchiladas, fish tacos, avocado salad. Good beer and wine selection. Casual and delicious.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=Whiptail+Grill+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Whiptail+Grill+Springdale+UT",
+        "url": "https://www.whiptailgrillzion.com/"
       },
       {
         "name": "Spotted Dog Cafe",
         "priceRange": "$$–$$$",
         "description": "Best-reviewed restaurant in Springdale. Casual American bistro with art-filled dining rooms and Euro-style sidewalk seating. Great for a sit-down dinner.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=Spotted+Dog+Cafe+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Spotted+Dog+Cafe+Springdale+UT",
+        "url": "https://www.flanigans.com/spotted-dog-cafe"
       },
       {
         "name": "MeMe's Cafe",
         "priceRange": "$–$$",
         "description": "\"We stop at MeMe's every time we pass through Zion.\" Delicious savory and sweet crepes. Wonderful service. A local gem.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=MeMe%27s+Cafe+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=MeMe%27s+Cafe+Springdale+UT",
+        "url": "https://www.memescafezion.com/"
       },
       {
         "name": "Zion Canyon Brew Pub",
         "priceRange": "$–$$",
         "description": "Southern Utah's first microbrewery. Sits at the Virgin River's edge with sweeping red rock views. Perfect for post-hike beers.",
-        "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Canyon+Brew+Pub+Springdale+UT"
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Canyon+Brew+Pub+Springdale+UT",
+        "url": "https://www.zionbrewery.com/"
       }
     ],
     "inPark": [
@@ -1518,12 +1524,14 @@
     {
       "name": "Cliffrose Springdale (Curio Collection by Hilton)",
       "description": "Near south entrance. Heated pool, waterfall hot tub, gardens with red rock views. Good for families (playground).",
-      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cliffrose+Springdale+Hilton+UT"
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cliffrose+Springdale+Hilton+UT",
+      "url": "https://www.hilton.com/en/hotels/sgloqqa-cliffrose-springdale/"
     },
     {
       "name": "Cable Mountain Lodge",
       "description": "Closest hotel to south entrance. Pool, restaurant, spa, market. Premium convenience.",
-      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cable+Mountain+Lodge+Springdale+UT"
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cable+Mountain+Lodge+Springdale+UT",
+      "url": "https://www.cablemountainlodge.com/"
     },
     {
       "name": "Budget Options",
@@ -1680,6 +1688,21 @@
   "seasons": {
     "best": "Fall (Sep–Nov) — especially October",
     "avoid": "Mid-summer weekends, Memorial Day, Labor Day",
+    "monthlyTemps": [
+      {"month": "Jan", "high": 55, "low": 30},
+      {"month": "Feb", "high": 58, "low": 33},
+      {"month": "Mar", "high": 68, "low": 39},
+      {"month": "Apr", "high": 74, "low": 44},
+      {"month": "May", "high": 82, "low": 51},
+      {"month": "Jun", "high": 98, "low": 64},
+      {"month": "Jul", "high": 101, "low": 71},
+      {"month": "Aug", "high": 98, "low": 69},
+      {"month": "Sep", "high": 92, "low": 62},
+      {"month": "Oct", "high": 78, "low": 48},
+      {"month": "Nov", "high": 65, "low": 37},
+      {"month": "Dec", "high": 53, "low": 30}
+    ],
+    "tempSource": "US Climate Data / Current Results",
     "details": [
       {
         "season": "Spring (Mar–May)",
@@ -1834,23 +1857,28 @@
     },
     {
       "name": "Kolob Terrace Road",
-      "description": "Higher elevation = 10–15°F cooler. The Subway trailhead. Northgate Peaks Trail for unique views. Excellent Milky Way photography at night. Starts in Virgin, UT."
+      "description": "Higher elevation = 10–15°F cooler. The Subway trailhead. Northgate Peaks Trail for unique views. Excellent Milky Way photography at night. Starts in Virgin, UT.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Kolob+Terrace+Road+Virgin+UT"
     },
     {
       "name": "East Side / Mt. Carmel Hwy",
-      "description": "Underrated zone. Scenic switchbacks, the mile-long tunnel, Checkerboard Mesa. Canyon Overlook trailhead here (no shuttle needed). Many Pools Trail has sculpted sandstone."
+      "description": "Underrated zone. Scenic switchbacks, the mile-long tunnel, Checkerboard Mesa. Canyon Overlook trailhead here (no shuttle needed). Many Pools Trail has sculpted sandstone.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Checkerboard+Mesa+Zion+National+Park"
     },
     {
       "name": "Divergent Dam",
-      "description": "A \"true Zion secret.\" Crystal-clear water, secluded location ideal for swimming, sunbathing, or picnicking. Ask locally for directions."
+      "description": "A \"true Zion secret.\" Crystal-clear water, secluded location ideal for swimming, sunbathing, or picnicking. Ask locally for directions.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Divergent+Dam+Zion+National+Park"
     },
     {
       "name": "Cable Mountain",
-      "description": "8 mi RT (from Stave Spring). Remains of a historic cable system used to transport lumber (operated 1901–1926, cables removed 1930). Historical curiosity with great views."
+      "description": "8 mi RT (from Stave Spring). Remains of a historic cable system used to transport lumber (operated 1901–1926, cables removed 1930). Historical curiosity with great views.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cable+Mountain+Zion+National+Park"
     },
     {
       "name": "Pine Creek Waterfall",
-      "description": "~1 mile off-trail from a dirt pullout on Mt. Carmel Hwy, 1.5 mi north of south entrance. Crystal-clear falls with swimming in summer."
+      "description": "~1 mile off-trail from a dirt pullout on Mt. Carmel Hwy, 1.5 mi north of south entrance. Crystal-clear falls with swimming in summer.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Pine+Creek+Waterfall+Zion+National+Park"
     }
   ],
   "scenicDrives": [
@@ -1860,20 +1888,23 @@
       "route": "South to East Entrance",
       "description": "Features the 1.1-mile historic tunnel, dramatic switchbacks, and Checkerboard Mesa. Standard-size vehicles proceed through the tunnel normally.",
       "oversizedVehicleBan": "Starting June 7, 2026, oversized vehicles will be banned entirely from the Zion-Mt. Carmel Tunnel.",
-      "restrictionsUrl": "https://zionarea.udot.utah.gov/road-restrictions-2/"
+      "restrictionsUrl": "https://zionarea.udot.utah.gov/road-restrictions-2/",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion-Mt+Carmel+Highway+Zion+National+Park"
     },
     {
       "name": "Kolob Canyons Road",
       "distance": "5.2 miles",
       "route": "Kolob Visitor Center to viewpoint",
-      "description": "NW section via I-15 Exit 40. Least visited area. Timber Creek Overlook Trail at the end. No seasonal closure (may close in bad weather)."
+      "description": "NW section via I-15 Exit 40. Least visited area. Timber Creek Overlook Trail at the end. No seasonal closure (may close in bad weather).",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Kolob+Canyons+Visitor+Center+Zion+National+Park"
     },
     {
       "name": "Kolob Terrace Road",
       "distance": "25 miles",
       "route": "Virgin, UT to Kolob Reservoir",
       "description": "Climbs 3,600ft to 8,100ft. Subway trailhead, Lava Point Overlook. Closed in winter.",
-      "trailInfoUrl": "https://www.nps.gov/zion/planyourvisit/kolob-terrace-wilderness-trail-descriptions.htm"
+      "trailInfoUrl": "https://www.nps.gov/zion/planyourvisit/kolob-terrace-wilderness-trail-descriptions.htm",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Kolob+Terrace+Road+Virgin+UT"
     }
   ],
   "offlineMaps": {
