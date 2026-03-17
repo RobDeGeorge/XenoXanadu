@@ -1,0 +1,2696 @@
+{
+  "name": "Zion National Park",
+  "slug": "zion",
+  "state": "Utah",
+  "region": "Southwest",
+  "coords": [
+    37.2982,
+    -113.0263
+  ],
+  "npsCode": "zion",
+  "area": "229 mi²",
+  "elevationRange": "3,666–8,726′",
+  "annualVisitors": "~5M",
+  "entryFee": "$35",
+  "lastUpdated": "March 2026",
+  "heroImage": "https://www.nps.gov/zion/planyourvisit/images/Zion-Canyon-Trail-Hero-Image.jpg?maxwidth=1600",
+  "heroCaption": "Zion Canyon — Photo: National Park Service",
+  "quickLinks": {
+    "conditions": "https://www.nps.gov/zion/planyourvisit/conditions.htm",
+    "riverFlow": "https://waterdata.usgs.gov/monitoring-location/USGS-09405500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true",
+    "weather": "https://forecast.weather.gov/MapClick.php?lon=-112.915249&lat=37.191502",
+    "permits": "https://www.recreation.gov/permits/4675310",
+    "shuttle": "https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm",
+    "maps": "https://www.nps.gov/zion/planyourvisit/maps.htm",
+    "campgrounds": "https://www.recreation.gov/camping/campgrounds/232445",
+    "flashFlood": "https://www.nps.gov/zion/planyourvisit/flash-flood.htm"
+  },
+  "alerts": [
+    {
+      "type": "danger",
+      "icon": "⚠️",
+      "title": "Flash Floods",
+      "message": "Flash Floods are the #1 killer in Zion slot canyons. Check daily flash flood potential at the Visitor Center. The Narrows closes during warnings + 2 hours after. If water rises or turns muddy: get to high ground immediately."
+    },
+    {
+      "type": "warn",
+      "icon": "🔔",
+      "title": "Angels Landing Closure",
+      "message": "Maintenance closure April 20–23, 2026. No permits issued for these dates."
+    },
+    {
+      "type": "info",
+      "icon": "📱",
+      "title": "Limited Cell Service",
+      "message": "Cell service is very limited in the canyon. Download offline maps, screenshot your permits, and tell someone your hiking plan before you go."
+    }
+  ],
+  "trails": [
+    {
+      "name": "Angels Landing",
+      "dataName": "Angels Landing",
+      "difficulty": "strenuous",
+      "distance": "4.2 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "1,738′",
+      "time": "~4 hr",
+      "shuttleStop": "Stop 6",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": true,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Angels+Landing+Trailhead+Zion+National+Park",
+      "description": "One of America's most famous hikes. Final 0.5mi along narrow spine with 1,000ft drops and chain handrails. Walter's Wiggles = 21 switchbacks. Scout Lookout (no permit needed) still has great views.",
+      "badges": [
+        "Strenuous",
+        "Permit Required"
+      ],
+      "tips": [
+        "Best time: Early morning (first shuttle). Avoid midday congestion on the chains.",
+        "Pro tip: Bring gloves for the chain section. No trekking poles past Scout Lookout.",
+        "Don't go if: Wet, icy, or thunderstorms — sandstone becomes dangerously slick.",
+        "Permit: $6 application + $3/person. Apply via seasonal or day-before lottery."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/angels-landing-trail"
+        },
+        {
+          "label": "Get Permit",
+          "url": "https://www.recreation.gov/permits/4675310"
+        }
+      ]
+    },
+    {
+      "name": "The Narrows (Bottom-Up)",
+      "dataName": "The Narrows Bottom-Up",
+      "difficulty": "moderate",
+      "distance": "2.1 mi",
+      "distanceType": "Your Choice",
+      "elevationGain": "0′",
+      "time": "2–8 hr",
+      "shuttleStop": "Stop 9",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Temple+of+Sinawava+Zion+National+Park",
+      "description": "Iconic slot canyon — 1,000ft walls only 20–30ft apart. Hike IN the Virgin River. Go as far as you want. Wall Street section (~1.5mi in) is the narrowest and most dramatic. Rent canyon boots.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: Late May–June or late Sep–Oct. Check river flow before going.",
+        "Pro tip: Rent canyoneering boots — rocks are like \"greased bowling balls.\" $25–32/day.",
+        "Wall Street (~1.5 mi in) is the narrowest, most dramatic section — great turnaround point.",
+        "Safety: Never go if flow >150 CFS or flash flood warnings are active."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/the-zion-narrows-riverside-walk"
+        },
+        {
+          "label": "Check River Flow",
+          "url": "https://waterdata.usgs.gov/monitoring-location/USGS-09405500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+        }
+      ]
+    },
+    {
+      "name": "Observation Point (East Mesa)",
+      "dataName": "Observation Point East Mesa",
+      "difficulty": "moderate",
+      "distance": "7.0 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "702′",
+      "time": "3–4 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Drive-In",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=East+Mesa+Trailhead+Zion",
+      "description": "Arguably the best viewpoint in Zion — 2,148ft above the canyon floor. Look DOWN on Angels Landing. Original Weeping Rock trail closed since 2019. Access via East Mesa Trail (unpaved road, high-clearance recommended). Arrive by 7 AM.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: Sunrise for photographers. Arrive by 7 AM for parking.",
+        "Pro tip: Better views than Angels Landing, no permit, no chains, no exposure.",
+        "Access: Unpaved road to trailhead — high-clearance vehicle recommended.",
+        "Note: Original Weeping Rock access closed since 2019. Use East Mesa Trail only."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/observation-point-via-east-rim-and-east-mesa-trail"
+        }
+      ]
+    },
+    {
+      "name": "Canyon Overlook Trail",
+      "dataName": "Canyon Overlook",
+      "difficulty": "easy",
+      "distance": "1 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "157′",
+      "time": "~1 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Drive-In",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Canyon+Overlook+Trail+Zion+National+Park",
+      "description": "Best bang-for-buck short hike. Stunning panoramic canyon views. Just east of the Zion–Mt. Carmel Tunnel. Parking is very limited — arrive at sunrise. Accessible by private vehicle only.",
+      "badges": [
+        "Easy",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: Sunrise or sunset for stunning panoramic light on the canyon.",
+        "Pro tip: Best bang-for-buck short hike in Zion. Parking is very limited — arrive at dawn.",
+        "Access: Private vehicle only — just east of the Zion–Mt. Carmel Tunnel. No shuttle.",
+        "Great for: Families, photographers, anyone short on time."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/canyon-overlook-trail"
+        }
+      ]
+    },
+    {
+      "name": "Watchman Trail",
+      "dataName": "Watchman Trail",
+      "difficulty": "moderate",
+      "distance": "3.3 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "646′",
+      "time": "~2 hr",
+      "shuttleStop": "Stop 1",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Watchman+Trailhead+Zion+National+Park",
+      "description": "Underrated gem. Great sunset views of the Watchman, Towers of the Virgin, and Springdale. Starts near the Visitor Center. Sandy, rocky terrain with some moderate drop-offs.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: Late afternoon/sunset. Golden light on the Watchman is stunning.",
+        "Pro tip: Underrated and rarely crowded. Great views of Towers of the Virgin and Springdale.",
+        "Terrain: Sandy and rocky with some moderate drop-offs. Wear sturdy shoes.",
+        "Bonus: Starts near the Visitor Center — easy to fit in before/after other activities."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/the-watchman-trail"
+        }
+      ]
+    },
+    {
+      "name": "Pa'rus Trail",
+      "dataName": "Pa'rus Trail",
+      "difficulty": "easy",
+      "distance": "3.3 mi",
+      "distanceType": "Out & Back",
+      "elevationGain": "141′",
+      "time": "1–2 hr",
+      "shuttleStop": "Stop 1",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Pa%27rus+Trail+Zion+National+Park",
+      "description": "Paved, flat trail along the Virgin River. The ONLY trail in Zion that allows dogs. Great for stargazing at night. Bikes allowed. Connects Visitor Center to Canyon Junction.",
+      "badges": [
+        "Easy",
+        "Dog-Friendly",
+        "Wheelchair OK"
+      ],
+      "tips": [
+        "Best for: Families, dogs (only dog-friendly trail in Zion), wheelchairs, bikes.",
+        "Pro tip: Exceptional stargazing at night — Zion is Dark Sky Certified.",
+        "Connects: Visitor Center to Canyon Junction. Flat and paved the entire way.",
+        "Bonus: Great for an early morning or evening stroll along the Virgin River."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/parus-trail"
+        }
+      ]
+    },
+    {
+      "name": "Riverside Walk",
+      "dataName": "Riverside Walk",
+      "difficulty": "easy",
+      "distance": "2.2 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "57′",
+      "time": "~1 hr",
+      "shuttleStop": "Stop 9",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Riverside+Walk+Zion+National+Park",
+      "description": "Paved trail along the Virgin River leading to the mouth of The Narrows. Hanging gardens and narrowing canyon walls. This is where The Narrows hike begins.",
+      "badges": [
+        "Easy",
+        "Wheelchair OK"
+      ],
+      "tips": [
+        "Best for: Families, wheelchair users (paved), anyone headed to The Narrows.",
+        "Pro tip: This trail leads directly to the mouth of The Narrows — combine them.",
+        "Highlights: Hanging gardens, narrowing canyon walls, Virgin River views.",
+        "Note: Very popular. Start early to avoid crowds."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/the-zion-narrows-riverside-walk"
+        }
+      ]
+    },
+    {
+      "name": "Emerald Pools (Lower/Middle/Upper)",
+      "dataName": "Emerald Pools Lower Middle Upper",
+      "difficulty": "easy",
+      "distance": "3 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "580′",
+      "time": "1–2 hr",
+      "shuttleStop": "Stop 5",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Emerald+Pools+Trail+Zion+National+Park",
+      "description": "Walk behind a waterfall at Lower Pool. Upper Pool has a dramatic high waterfall. Can combine all three as a loop. Best during spring runoff for impressive water flow.",
+      "badges": [
+        "Easy–Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: Spring for impressive waterfall flow. Lower Pool has a walk-behind waterfall.",
+        "Pro tip: Combine all three pools as a loop for the full experience (~3 mi total).",
+        "Upper Pool has the most dramatic waterfall but steepest access.",
+        "Note: Trail can be slippery when wet. Watch footing near the pools."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/emerald-pools-trail"
+        }
+      ]
+    },
+    {
+      "name": "The Subway",
+      "dataName": "The Subway",
+      "difficulty": "strenuous",
+      "distance": "7.2 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "1,348′",
+      "time": "6–10 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Drive-In",
+      "permitRequired": true,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=The+Subway+Zion+National+Park",
+      "description": "Technical canyoneering route through a tube-shaped canyon. 80 permits/day. Top-down (9.5 mi one way) requires rappelling gear; bottom-up (9 mi RT) is scrambling. Kolob Terrace Road access. Bring a dry suit for pool crossings.",
+      "badges": [
+        "Strenuous",
+        "Permit Required"
+      ],
+      "tips": [
+        "Permit: Required — 80 permits/day. Apply on recreation.gov.",
+        "Top-down: 9.5 mi one way, requires rappelling gear and canyoneering experience.",
+        "Bottom-up: 9 mi RT, strenuous scrambling but no technical gear needed.",
+        "Pro tip: Bring a dry suit for pool crossings. Water is cold year-round."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/the-subway-trail"
+        },
+        {
+          "label": "Get Permit",
+          "url": "https://www.recreation.gov/permits/4251917"
+        }
+      ]
+    },
+    {
+      "name": "The Narrows (Top-Down)",
+      "dataName": "Narrows Top Down Through Hike",
+      "difficulty": "strenuous",
+      "distance": "16 mi",
+      "distanceType": "One Way",
+      "elevationGain": "Downhill",
+      "time": "10–14 hr",
+      "shuttleStop": "Stop 9",
+      "shuttleStopLabel": "End Point",
+      "permitRequired": true,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Chamberlain%27s+Ranch+Zion+Narrows",
+      "description": "16-mile through-hike from Chamberlain's Ranch. Mostly downhill in the river. Can be day-hiked (10–14 hrs) or overnighted (12 campsites). Requires shuttle to trailhead.",
+      "badges": [
+        "Strenuous",
+        "Permit Required"
+      ],
+      "tips": [
+        "Permit: Required. Apply via recreation.gov lottery 2 days before (midnight–3 PM MT).",
+        "Pro tip: Mostly downhill in the river. Can day-hike (10–14 hrs) or overnight (12 campsites).",
+        "Logistics: Requires shuttle to Chamberlain's Ranch — outfitters provide this.",
+        "Gear: Full canyoneering rental + dry bag for overnight gear."
+      ],
+      "links": [
+        {
+          "label": "Get Permit",
+          "url": "https://www.recreation.gov/permits/4675338"
+        }
+      ]
+    },
+    {
+      "name": "West Rim Trail",
+      "dataName": "West Rim Trail",
+      "difficulty": "strenuous",
+      "distance": "14.9 mi",
+      "distanceType": "One Way",
+      "elevationGain": "3,133′",
+      "time": "8–12 hr",
+      "shuttleStop": "Stop 6",
+      "shuttleStopLabel": "End Point",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=West+Rim+Trail+Zion+National+Park",
+      "description": "Some of the best backcountry viewpoints with far fewer people than Angels Landing. Three reliable water sources along the route. Top-to-bottom route.",
+      "badges": [
+        "Strenuous",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Best for: Experienced hikers wanting backcountry solitude with incredible views.",
+        "Pro tip: Top-to-bottom route. Three reliable water sources along the way.",
+        "Permit: Free for day hikes. Overnight requires wilderness permit.",
+        "Access: Start from Kolob Terrace Road (Lava Point) for the downhill direction."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/west-rim-trail"
+        }
+      ]
+    },
+    {
+      "name": "Kolob Arch (La Verkin Creek)",
+      "dataName": "Kolob Arch La Verkin Creek",
+      "difficulty": "strenuous",
+      "distance": "14.2 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "1,719′",
+      "time": "6–9 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Kolob+Arch+Trail+Zion+National+Park",
+      "description": "Views of one of the world's largest natural arches (287ft span). Trail follows Timber and La Verkin Creeks through riparian areas. Located in the Kolob Canyons section (separate I-15 entrance).",
+      "badges": [
+        "Strenuous",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Highlight: One of the world's largest natural arches (287ft span).",
+        "Pro tip: Combine with Hop Valley Trail for a backpacking loop.",
+        "Location: Kolob Canyons section — separate I-15 entrance, far fewer crowds.",
+        "Water: La Verkin Creek is reliable but treat/filter before drinking."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/la-verkin-creek-trail-to-kolob-arch"
+        }
+      ]
+    },
+    {
+      "name": "Taylor Creek Trail (Kolob)",
+      "dataName": "Taylor Creek Trail Kolob",
+      "difficulty": "moderate",
+      "distance": "5.0 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "620′",
+      "time": "3–4 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Taylor+Creek+Trail+Kolob+Canyons+Zion",
+      "description": "Most popular Kolob trail. Follows a small creek to Double Arch Alcove. Two historic 1930s homestead cabins along the way. Far fewer crowds than main canyon.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: A taste of Kolob without a huge commitment. Most popular Kolob trail.",
+        "Highlights: Two 1930s homestead cabins and Double Arch Alcove at the end.",
+        "Pro tip: Far fewer crowds than main canyon. Great fall colors in October.",
+        "Note: Several creek crossings — waterproof boots helpful in spring."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/taylor-creek-trail"
+        }
+      ]
+    },
+    {
+      "name": "Timber Creek Overlook (Kolob)",
+      "dataName": "Timber Creek Overlook Kolob",
+      "difficulty": "easy",
+      "distance": "1.2 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "255′",
+      "time": "~30 min",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Timber+Creek+Overlook+Trail+Kolob+Canyons+Zion",
+      "description": "\"Most overlooked trail in Zion.\" Ridge walk with panoramic Kolob Canyon and Pine Valley Mountain views. At the end of Kolob Canyons Road.",
+      "badges": [
+        "Easy",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Quick panoramic views with minimal effort. Families and casual visitors.",
+        "Pro tip: At the very end of Kolob Canyons Road. Combine with the scenic drive.",
+        "Views: Panoramic Kolob Canyon and Pine Valley Mountain vistas.",
+        "Time: Only 30 minutes round trip — no excuse to skip it."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/timber-creek-overlook-trail"
+        }
+      ]
+    },
+    {
+      "name": "Weeping Rock",
+      "dataName": "Weeping Rock",
+      "difficulty": "easy",
+      "distance": "0.4 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "98′",
+      "time": "~30 min",
+      "shuttleStop": "Stop 7",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Weeping+Rock+Trail+Zion+National+Park",
+      "description": "Short, steep paved trail to an alcove with dripping springs and hanging gardens. Water seeps through 4,000 years of sandstone. Reopened Sep 2025 after rockfall closure.",
+      "badges": [
+        "Easy",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: A quick stop — great for families and anyone between shuttle rides.",
+        "Highlight: Water seeps through 4,000 years of sandstone into a lush hanging garden.",
+        "Pro tip: Reopened Sep 2025 after years of rockfall closure. Short but steep.",
+        "Combine with: A stop at Big Bend (stop 8) for canyon views on the same shuttle ride."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Kayenta Trail",
+      "dataName": "Kayenta Trail",
+      "difficulty": "moderate",
+      "distance": "3.3 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "204′",
+      "time": "1–2 hr",
+      "shuttleStop": "Stop 6",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Kayenta+Trail+Zion+National+Park",
+      "description": "Connector trail between the Grotto and Upper Emerald Pool. Unpaved with moderate grades and some drop-offs. Creates a great loop with Emerald Pools trails. Canyon views along the way.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Creating a loop with Emerald Pools trails for a richer experience.",
+        "Pro tip: Unpaved with moderate grades and some drop-offs — more scenic than the Grotto Trail.",
+        "Connects: The Grotto (stop 6) to Upper Emerald Pool area.",
+        "Views: Beautiful canyon vistas along the traverse."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Sand Bench Trail",
+      "dataName": "Sand Bench Trail Loop",
+      "difficulty": "moderate",
+      "distance": "3.9 mi",
+      "distanceType": "Loop",
+      "elevationGain": "725′",
+      "time": "2–3 hr",
+      "shuttleStop": "Stop 4",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Sand+Bench+Trail+Zion+National+Park",
+      "description": "Sandy loop above the canyon floor with views of the Streaked Wall and the Sentinel. Shared with horseback riders. Can be accessed from Court of the Patriarchs or Zion Lodge.",
+      "badges": [
+        "Moderate",
+        "Horse-Friendly"
+      ],
+      "tips": [
+        "Best for: A quieter moderate hike. Shared with horseback riders.",
+        "Pro tip: Sandy terrain — wear gaiters or shoes that handle sand well.",
+        "Views: Streaked Wall, the Sentinel, and broad canyon panoramas.",
+        "Access: Court of the Patriarchs (stop 4) or Zion Lodge (stop 5)."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/sand-bench-trail"
+        }
+      ]
+    },
+    {
+      "name": "Archaeology Trail",
+      "dataName": "Archaeology Trail",
+      "difficulty": "easy",
+      "distance": "0.4 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "80′",
+      "time": "~20 min",
+      "shuttleStop": "Stop 1",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Archaeology+Trail+Zion+National+Park",
+      "description": "Very short interpretive trail near the Visitor Center. Views of an ancient Ancestral Puebloan storage site and the Towers of the Virgin. Great for kids or a quick stop.",
+      "badges": [
+        "Easy",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Kids, history buffs, or a quick 20-min stop near the Visitor Center.",
+        "Highlight: Views of an ancient Ancestral Puebloan grain storage site.",
+        "Pro tip: Great warm-up trail while waiting for shuttle lines to shorten.",
+        "Combine with: Walk to Pa'rus Trail or Watchman Trail from here."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Grotto Trail",
+      "dataName": "Grotto Trail",
+      "difficulty": "easy",
+      "distance": "1 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "49′",
+      "time": "~30 min",
+      "shuttleStop": "Stop 5–6",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=The+Grotto+Trail+Zion+National+Park",
+      "description": "Short paved connector between Zion Lodge and the Grotto picnic area. Follows the Virgin River. Good for stretching legs between shuttle stops.",
+      "badges": [
+        "Easy",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Connecting Zion Lodge to The Grotto without riding the shuttle.",
+        "Pro tip: Flat, paved, and along the Virgin River. Pleasant but not a destination hike.",
+        "Combine with: Use as a connector between Emerald Pools and Angels Landing trailheads.",
+        "Time: About 30 minutes — good for stretching legs."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Hidden Canyon",
+      "dataName": "Hidden Canyon",
+      "difficulty": "strenuous",
+      "distance": "3 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "850′",
+      "time": "2–3 hr",
+      "shuttleStop": "Stop 7",
+      "shuttleStopLabel": "Shuttle",
+      "permitRequired": false,
+      "closed": true,
+      "coordinates": null,
+      "description": "Narrow slot canyon with chains, hanging gardens, and a natural arch. Closed since 2019 rockfall. No confirmed reopening date. Formerly accessed from Weeping Rock trailhead.",
+      "badges": [
+        "Strenuous",
+        "Closed"
+      ],
+      "tips": [
+        "Status: Closed since 2019 due to rockfall. No confirmed reopening date.",
+        "When open: A narrow slot canyon with chains, hanging gardens, and a natural arch.",
+        "Access: Formerly from Weeping Rock trailhead (stop 7).",
+        "Note: Do not attempt to access — trail is physically blocked."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/trail-access-information.htm"
+        }
+      ]
+    },
+    {
+      "name": "East Rim Trail (Full)",
+      "dataName": "East Rim Trail Full",
+      "difficulty": "strenuous",
+      "distance": "10.7 mi",
+      "distanceType": "One Way",
+      "elevationGain": "2,300′",
+      "time": "6–9 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "East Side",
+      "permitRequired": false,
+      "closed": true,
+      "closureNote": "Weeping Rock End closed",
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=East+Rim+Trailhead+Zion+National+Park",
+      "description": "Point-to-point trail from the east entrance to Weeping Rock. Passes through Echo Canyon, slickrock, and forested plateaus. Top section still accessible. Lower section closed since 2019 rockfall.",
+      "badges": [
+        "Strenuous",
+        "Closed (Weeping Rock End)"
+      ],
+      "tips": [
+        "Status: Lower section (Weeping Rock end) closed since 2019 rockfall.",
+        "Upper section: Still accessible from east entrance. Scenic slickrock and forest.",
+        "Pro tip: Can be combined with East Mesa Trail to reach Observation Point.",
+        "Permit: Free for day hikes. Overnight requires wilderness permit."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/east-rim-wilderness-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Northgate Peaks Trail",
+      "dataName": "Northgate Peaks Trail Kolob Terrace",
+      "difficulty": "moderate",
+      "distance": "5.9 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "1,128′",
+      "time": "2–3 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob Terrace",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Northgate+Peaks+Trail+Zion+National+Park",
+      "description": "Hidden gem on Kolob Terrace Road. Views of the two Northgate Peaks framing a deep valley. Flat mesa walk to a dramatic viewpoint. Very few people.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Dramatic views with very few people. Hidden gem on Kolob Terrace Road.",
+        "Pro tip: Mesa walk to a jaw-dropping viewpoint between two towering peaks. ~5.9 mi RT with ~400ft gain.",
+        "Access: Kolob Terrace Road (starts in Virgin, UT). Closed in winter.",
+        "Combine with: Wildcat Canyon or Connector Trail for a longer day."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/northgate-peaks-trail"
+        }
+      ]
+    },
+    {
+      "name": "Hop Valley Trail",
+      "dataName": "Hop Valley Trail",
+      "difficulty": "moderate",
+      "distance": "15.0 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "1,843′",
+      "time": "5–7 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob Terrace",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Hop+Valley+Trailhead+Zion+National+Park",
+      "description": "Wide valley trail through meadows and ponderosa pines. Connects Kolob Terrace Road to La Verkin Creek/Kolob Arch. Sandy terrain. Used as connector for loop routes.",
+      "badges": [
+        "Moderate",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Best for: Backpackers connecting to La Verkin Creek / Kolob Arch.",
+        "Pro tip: Wide meadow valley with ponderosa pines. Sandy — feels longer than it is.",
+        "Access: Kolob Terrace Road trailhead.",
+        "Permit: Free for day hikes. Overnight requires wilderness permit."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/hop-valley-trail"
+        }
+      ]
+    },
+    {
+      "name": "Wildcat Canyon Trail",
+      "dataName": "Wildcat Canyon Trail",
+      "difficulty": "strenuous",
+      "distance": "5.9 mi",
+      "distanceType": "One Way",
+      "elevationGain": "892′",
+      "time": "3–5 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "Kolob Terrace",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Wildcat+Canyon+Trail+Zion+National+Park",
+      "description": "Connects Kolob Terrace Road to the West Rim Trail via Wildcat Canyon. Forested plateau with meadows. Can be combined with Northgate Peaks and Connector trails for a long day hike or backpacking loop.",
+      "badges": [
+        "Strenuous",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Best for: Backpackers and strong hikers wanting solitude on Zion's plateau.",
+        "Pro tip: Connects to West Rim Trail for multi-day loop options.",
+        "Terrain: Forested plateau with meadows. Less dramatic but very peaceful.",
+        "Access: Kolob Terrace Road. Closed in winter."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/traildescriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Cable Mountain Trail",
+      "dataName": "Cable Mountain Trail",
+      "difficulty": "moderate",
+      "distance": "7 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "200′",
+      "time": "3–4 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "East Side",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Cable+Mountain+Trail+Zion+National+Park",
+      "description": "Historic trail to remains of an aerial tramway used to transport lumber 1901–1926. Views straight down into Zion Canyon. Access via Stave Spring trailhead (unpaved road).",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Highlight: Remains of a historic aerial tramway (1901–1926) at the rim.",
+        "Pro tip: Views straight down into Zion Canyon. Very few visitors.",
+        "Access: Via Stave Spring trailhead (unpaved road, high-clearance recommended).",
+        "Combine with: Deertrap Mountain Trail from the same trailhead."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/east-rim-wilderness-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Deertrap Mountain Trail",
+      "dataName": "Deertrap Mountain Trail",
+      "difficulty": "moderate",
+      "distance": "9.8 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "700′",
+      "time": "4–6 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "East Side",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Deertrap+Mountain+Trail+Zion+National+Park",
+      "description": "Lightly traveled trail through ponderosa forest ending at a canyon rim viewpoint. Shares trailhead with Cable Mountain via Stave Spring. Solitude guaranteed.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best for: Absolute solitude. One of Zion's least-traveled trails.",
+        "Pro tip: Ponderosa forest ending at a canyon rim viewpoint. Peaceful and quiet.",
+        "Access: Shares Stave Spring trailhead with Cable Mountain Trail.",
+        "Note: Unpaved road to trailhead — high-clearance vehicle recommended."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/east-rim-wilderness-trail-descriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Chinle Trail",
+      "dataName": "Chinle Trail Southwest Desert",
+      "difficulty": "moderate",
+      "distance": "5.4 mi",
+      "distanceType": "One Way",
+      "elevationGain": "800′",
+      "time": "3–5 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "SW Desert",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Chinle+Trailhead+Zion+National+Park",
+      "description": "Desert trail through petrified wood deposits and Chinle Formation geology. Connects to Coalpits Wash. Trailhead off Anasazi Plateau near Rockville. Hot in summer, best Nov–Mar.",
+      "badges": [
+        "Moderate",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Best time: Nov–Mar. Extremely hot in summer — no shade.",
+        "Highlight: Petrified wood deposits and unique Chinle Formation geology.",
+        "Pro tip: Connects to Coalpits Wash for a longer desert loop.",
+        "Access: Trailhead off Anasazi Plateau near Rockville."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/traildescriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Coalpits Wash",
+      "dataName": "Coalpits Wash Trail Southwest Desert",
+      "difficulty": "moderate",
+      "distance": "7 mi",
+      "distanceType": "One Way",
+      "elevationGain": "600′",
+      "time": "3–5 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "SW Desert",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Coalpits+Wash+Trailhead+Zion+National+Park",
+      "description": "Remote desert wash hike in Zion's least-visited SW corner. Follows a dry wash through desert scrub. Can loop with Chinle Trail. Petrified wood and fossils. Very hot May–Sep.",
+      "badges": [
+        "Moderate",
+        "No Permit (Day)"
+      ],
+      "tips": [
+        "Best time: Nov–Mar. Desert wash — no shade, very hot May–Sep.",
+        "Highlight: Petrified wood, fossils, and Zion's least-visited corner.",
+        "Pro tip: Can loop with Chinle Trail for a full desert experience.",
+        "Note: Bring all water — no reliable sources on trail."
+      ],
+      "links": [
+        {
+          "label": "NPS Info",
+          "url": "https://www.nps.gov/zion/planyourvisit/traildescriptions.htm"
+        }
+      ]
+    },
+    {
+      "name": "Many Pools",
+      "dataName": "Many Pools Trail East Side",
+      "difficulty": "moderate",
+      "distance": "1.9 mi",
+      "distanceType": "Round Trip",
+      "elevationGain": "625′",
+      "time": "1–2 hr",
+      "shuttleStop": "N/A",
+      "shuttleStopLabel": "East Side",
+      "permitRequired": false,
+      "closed": false,
+      "coordinates": "https://www.google.com/maps/search/?api=1&query=Many+Pools+Zion+National+Park",
+      "description": "Unofficial but well-known trail on the east side. Sculpted sandstone with seasonal tiered pools. Best after rain. No maintained trail — route-finding on slickrock. Near Mt. Carmel Hwy.",
+      "badges": [
+        "Moderate",
+        "No Permit"
+      ],
+      "tips": [
+        "Best time: After rain — the tiered pools fill up with water for a magical scene.",
+        "Pro tip: Unofficial trail on slickrock. Route-finding skills needed. No maintained path.",
+        "Access: Pullout on Mt. Carmel Highway (east side of park).",
+        "Note: Can be dry and unimpressive without recent rain. Check conditions."
+      ],
+      "links": [
+        {
+          "label": "AllTrails",
+          "url": "https://www.alltrails.com/trail/us/utah/many-pools"
+        }
+      ]
+    }
+  ],
+  "uniqueSections": [
+    {
+      "id": "narrows",
+      "title": "The Narrows",
+      "heroImage": "https://www.nps.gov/common/uploads/structured_data/68ED8C2C-A9D3-90B2-BBC96E7A21BC3744.jpg?maxwidth=1600",
+      "heroCaption": "The Narrows — Hiking through the Virgin River — Photo: NPS",
+      "flowWarning": {
+        "message": "Always check river flow before going. Below 50 CFS = easy. 50–70 CFS = moderate. 70–150 CFS = challenging. Above 150 CFS = CLOSED.",
+        "flowCheckUrl": "https://waterdata.usgs.gov/monitoring-location/USGS-09405500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+      },
+      "bottomUp": {
+        "title": "Bottom-Up (No Permit)",
+        "start": "Temple of Sinawava (shuttle stop 9)",
+        "description": "Walk the 1-mile Riverside Walk, then enter the river. Go as far as you want.",
+        "milestones": [
+          {
+            "name": "Wall Street",
+            "distance": "~1.5 mi in",
+            "note": "narrowest, most dramatic section"
+          },
+          {
+            "name": "Orderville Canyon",
+            "distance": "~2 mi in",
+            "note": "popular turnaround, 5 mi RT total"
+          },
+          {
+            "name": "Big Spring",
+            "distance": "~5 mi in",
+            "note": "farthest point without permit, 10 mi RT"
+          }
+        ],
+        "time": "2–8 hours depending on distance"
+      },
+      "topDown": {
+        "title": "Top-Down Through-Hike (Permit Required)",
+        "distance": "16 miles",
+        "route": "Chamberlain's Ranch to Temple of Sinawava",
+        "direction": "Mostly downhill in the river",
+        "permitUrl": "https://www.recreation.gov/permits/4675338",
+        "permitTiming": "Apply 2 days before, midnight–3 PM MT",
+        "dayHikeTime": "10–14 hours",
+        "overnightCampsites": 12,
+        "shuttleRequired": true
+      },
+      "gearRental": {
+        "priceRange": "$25–32/day",
+        "essentials": [
+          "Canyoneering boots — rocks are like \"greased bowling balls\"",
+          "Neoprene socks — water ranges 38–65°F depending on season",
+          "Sturdy walking stick (NOT collapsible — they fail in fast water)"
+        ],
+        "coldSeasonAddOns": [
+          "Dry bibs — waterproof with latex ankle gaskets (spring/fall)",
+          "Full dry suit — Kokotat with wrist/ankle gaskets (winter)"
+        ],
+        "outfitters": [
+          {
+            "name": "Zion Outfitter",
+            "url": "https://zionoutfitter.com/the-narrows-rentals/",
+            "location": "near south entrance",
+            "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Outfitter+95+Zion+Park+Blvd+Springdale+UT"
+          },
+          {
+            "name": "Zion Adventures",
+            "url": "https://www.zionadventures.com/",
+            "location": "36 Lion Blvd, Springdale",
+            "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Adventures+36+Lion+Blvd+Springdale+UT"
+          },
+          {
+            "name": "Zion Guru",
+            "url": "https://www.zionguru.com/rentals/narrows/equipment",
+            "location": "1013 Zion Park Blvd",
+            "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Guru+1013+Zion+Park+Blvd+Springdale+UT"
+          }
+        ]
+      },
+      "cyanobacteriaWarning": "Toxic cyanobacteria detected in the Virgin River. NEVER drink river water — no filter can remove the toxins. Get drinking water from side springs only, then filter/disinfect. A dog has died from exposure.",
+      "bestTimes": null
+    },
+    {
+      "id": "angels",
+      "title": "Angels Landing",
+      "heroImage": "https://www.nps.gov/common/uploads/cropped_image/primary/23EF45DA-96CE-AEDD-E6FA82FF43279637.jpg?width=1600&quality=90&mode=crop",
+      "heroCaption": "Angels Landing — Chain section with 1,000ft drops — Photo: NPS",
+      "hike": {
+        "distance": "5.4 mi RT",
+        "elevationGain": "1,488ft",
+        "time": "~4 hours",
+        "start": "The Grotto (shuttle stop 6)",
+        "details": [
+          "First 2 mi: switchback trail through Refrigerator Canyon",
+          "Walter's Wiggles: 21 tight switchbacks to Scout Lookout",
+          "Scout Lookout: Excellent views, no permit needed here",
+          "Final 0.5 mi: Narrow spine, chains, 1,000ft+ drops both sides",
+          "Bring gloves for chain section (better grip)",
+          "Do NOT hike if wet or icy — sandstone becomes extremely slippery",
+          "Trekking poles NOT recommended on chain section"
+        ]
+      },
+      "permit": {
+        "description": "Required for any portion past Scout Lookout. $6 application + $3/person if selected. Max group: 6.",
+        "url": "https://www.recreation.gov/permits/4675310",
+        "seasonalLottery": [
+          {
+            "hikeDates": "Mar 1 – May 31",
+            "applyOpens": "Feb 13",
+            "applyCloses": "Feb 25",
+            "results": "Feb 26"
+          },
+          {
+            "hikeDates": "Jun 1 – Aug 31",
+            "applyOpens": "Apr 1",
+            "applyCloses": "Apr 20",
+            "results": "Apr 25"
+          },
+          {
+            "hikeDates": "Sep 1 – Nov 30",
+            "applyOpens": "Jul 1",
+            "applyCloses": "Jul 20",
+            "results": "Jul 25"
+          },
+          {
+            "hikeDates": "Dec 1 – Feb 28",
+            "applyOpens": "Oct 1",
+            "applyCloses": "Oct 20",
+            "results": "Oct 25"
+          }
+        ],
+        "dayBeforeLottery": {
+          "applyWindow": "12:01 AM – 3:00 PM MT the day before",
+          "results": "4 PM MT",
+          "note": "Surprisingly successful if you're flexible with start time."
+        }
+      }
+    },
+    {
+      "id": "shuttle",
+      "title": "Shuttle System",
+      "schedule2026": [
+        {
+          "period": "Mar 7 – May 16",
+          "canyonFirstBus": "7:00 AM",
+          "springdaleFirstBus": "8:00 AM",
+          "lastOut": "7:15 PM"
+        },
+        {
+          "period": "May 17 – Sep 12",
+          "canyonFirstBus": "7:00 AM",
+          "springdaleFirstBus": "8:00 AM",
+          "lastOut": "8:15 PM"
+        },
+        {
+          "period": "Sep 13 – Oct 24",
+          "canyonFirstBus": "7:00 AM",
+          "springdaleFirstBus": "8:00 AM",
+          "lastOut": "7:15 PM"
+        },
+        {
+          "period": "Oct 25 – Nov 28",
+          "canyonFirstBus": "7:00 AM",
+          "springdaleFirstBus": "8:00 AM",
+          "lastOut": "6:15 PM"
+        },
+        {
+          "period": "Dec 26 – Jan 2",
+          "canyonFirstBus": "8:00 AM",
+          "springdaleFirstBus": "8:00 AM",
+          "lastOut": "5:45 PM"
+        }
+      ],
+      "frequency": "Every 5–10 min (Canyon line), 10–15 min (Springdale line). Private vehicles prohibited in canyon during shuttle season.",
+      "canyonStops": [
+        {
+          "number": 1,
+          "name": "Visitor Center",
+          "info": "info, maps, water refill",
+          "coords": [
+            37.2001,
+            -112.987
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Canyon+Visitor+Center"
+        },
+        {
+          "number": 2,
+          "name": "Human History Museum",
+          "info": "exhibits, water refill",
+          "note": "northbound only",
+          "coords": [
+            37.209,
+            -112.98028
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Human+History+Museum"
+        },
+        {
+          "number": 3,
+          "name": "Canyon Junction",
+          "info": "bridge photo spot",
+          "note": "northbound only",
+          "coords": [
+            37.21832,
+            -112.97401
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Canyon+Junction+Bridge+Zion"
+        },
+        {
+          "number": 4,
+          "name": "Court of the Patriarchs",
+          "info": "short viewpoint walk",
+          "coords": [
+            37.237,
+            -112.9606
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Court+of+the+Patriarchs+Zion"
+        },
+        {
+          "number": 5,
+          "name": "Zion Lodge",
+          "info": "Emerald Pools, food, water refill",
+          "coords": [
+            37.2521,
+            -112.956
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Lodge+Zion+National+Park"
+        },
+        {
+          "number": 6,
+          "name": "The Grotto",
+          "info": "Angels Landing trailhead, water refill",
+          "coords": [
+            37.2592,
+            -112.9508
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=The+Grotto+Zion+National+Park"
+        },
+        {
+          "number": 7,
+          "name": "Weeping Rock",
+          "info": "short trail reopened Sep 2025 (East Rim / Hidden Canyon still closed)",
+          "coords": [
+            37.2709,
+            -112.9385
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Weeping+Rock+Zion+National+Park"
+        },
+        {
+          "number": 8,
+          "name": "Big Bend",
+          "info": "great views, photo stop",
+          "note": "southbound only — no stop heading up-canyon",
+          "coords": [
+            37.2729,
+            -112.9464
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Big+Bend+Zion+National+Park"
+        },
+        {
+          "number": 9,
+          "name": "Temple of Sinawava",
+          "info": "Riverside Walk / Narrows, water refill",
+          "coords": [
+            37.2849,
+            -112.9476
+          ],
+          "mapLink": "https://www.google.com/maps/search/?api=1&query=Temple+of+Sinawava+Zion+National+Park"
+        }
+      ],
+      "springdaleStops": [
+        {
+          "number": 1,
+          "name": "Hotel De Novo",
+          "info": "West end of Springdale. Formerly Majestic View Lodge.",
+          "note": "Request-only stop",
+          "coords": [
+            37.1677,
+            -113.014
+          ]
+        },
+        {
+          "number": 2,
+          "name": "Silver Bear / Park House Cafe",
+          "info": "Rock shop, Cafe",
+          "note": "Request-only stop",
+          "coords": [
+            37.175,
+            -113.0095
+          ]
+        },
+        {
+          "number": 3,
+          "name": "Driftwood Lodge / Quality Inn",
+          "info": "Hotel pickup",
+          "coords": [
+            37.1799,
+            -113.0063
+          ]
+        },
+        {
+          "number": 4,
+          "name": "Hampton Inn / Hyatt Place / Bit & Spur",
+          "info": "Hotels, Restaurants",
+          "coords": [
+            37.184,
+            -113.002
+          ]
+        },
+        {
+          "number": 5,
+          "name": "Bumbleberry Inn / Zion Pizza & Noodle",
+          "info": "Hotels, Restaurants",
+          "coords": [
+            37.1887,
+            -112.9997
+          ]
+        },
+        {
+          "number": 6,
+          "name": "Desert Pearl Inn / Canyon Ranch",
+          "info": "Hotels, Shops",
+          "note": "Request-only stop",
+          "coords": [
+            37.19,
+            -112.994
+          ]
+        },
+        {
+          "number": 7,
+          "name": "Flanigan's Inn / Whiptail Grill",
+          "info": "Hotels, Restaurants",
+          "coords": [
+            37.1944,
+            -112.9934
+          ]
+        },
+        {
+          "number": 8,
+          "name": "Cliffrose Lodge / Thai Sapa",
+          "info": "Hotels, Restaurants",
+          "note": "Request-only stop",
+          "coords": [
+            37.1971,
+            -112.9917
+          ]
+        },
+        {
+          "number": 9,
+          "name": "Zion Canyon Village",
+          "info": "Narrows gear rental, Restaurants. Walk into park. Connects to Canyon Line",
+          "coords": [
+            37.1987,
+            -112.9905
+          ]
+        }
+      ],
+      "eBikeTip": "Rent e-bikes in Springdale to bypass shuttle lines entirely. Cycle the 6-mile Scenic Drive at your own pace with 360° views.",
+      "eBikeRentals": [
+        {
+          "name": "Zion Cycles",
+          "url": "https://www.zioncycles.com/ebikes"
+        },
+        {
+          "name": "Zion Adventures",
+          "url": "https://www.zionadventures.com/zion-canyon-bike-rentals.html"
+        },
+        {
+          "name": "Utah E-Bike Adventures",
+          "url": "https://utahebikeadventures.com/"
+        }
+      ],
+      "shuttleRules": "No food, smoking, or pets on shuttles (service animals excepted)."
+    }
+  ],
+  "insiderTips": [
+    {
+      "number": 1,
+      "title": "Arrive before 8 AM or skip the car entirely.",
+      "detail": "Park lots fill by 8:00–8:30 AM. Park in Springdale and take the free town shuttle, or rent e-bikes to bypass lines completely."
+    },
+    {
+      "number": 2,
+      "title": "Visit late October for ideal conditions.",
+      "detail": "The fall colors are peaking, temps are in the 70s, and the summer families have long since gone home. Alternatively, winter for solitude + self-driving access."
+    },
+    {
+      "number": 3,
+      "title": "In summer, start at 5 AM.",
+      "detail": "Be on the first shuttle. Finish your big hike by 10:30 AM, then spend the afternoon in the river or at the lodge. Temps exceed 100°F."
+    },
+    {
+      "number": 4,
+      "title": "Day-before Angels Landing lottery works more often than you'd think.",
+      "detail": "Apply 12:01 AM–3 PM the day before. Be flexible with your time slot."
+    },
+    {
+      "number": 5,
+      "title": "Never skip gear rental for The Narrows.",
+      "detail": "~$25–32 saves your trip. \"The rocks are like walking on greased bowling balls.\" Regular sneakers will not survive."
+    },
+    {
+      "number": 6,
+      "title": "Kolob Canyons is the best-kept secret.",
+      "detail": "Same $35 entry covers all Zion entrances. Same stunning beauty, a fraction of the crowds. 50 min from main canyon via I-15."
+    },
+    {
+      "number": 7,
+      "title": "Observation Point via East Mesa > Angels Landing for views.",
+      "detail": "No permit, no chains, no exposure. Look DOWN on Angels Landing from 2,148ft above the canyon. Arrive by 7 AM for parking."
+    },
+    {
+      "number": 8,
+      "title": "Mid-week visits are dramatically better than weekends for crowds.",
+      "detail": "Avoid Memorial Day and Labor Day weekends entirely."
+    },
+    {
+      "number": 9,
+      "title": "Carry at least 3 liters of water for any major hike.",
+      "detail": "The dry desert air \"wicks moisture from your body before you even feel sweaty.\" Drink before you're thirsty."
+    },
+    {
+      "number": 10,
+      "title": "Download everything before arrival.",
+      "detail": "Cell service is spotty to non-existent on trails. Get offline maps (AllTrails, Google Maps), screenshot permits, and leave your itinerary with someone."
+    },
+    {
+      "number": 11,
+      "title": "Watchman Trail at sunset is an underrated experience.",
+      "detail": "Great views, rarely crowded, and the golden light on the canyon walls is stunning."
+    },
+    {
+      "number": 12,
+      "title": "Zion is a Dark Sky Certified area.",
+      "detail": "Stargazing is exceptional. Pa'rus Trail at night for the Milky Way. Kolob Terrace has minimal light pollution for astrophotography."
+    }
+  ],
+  "gear": {
+    "always": [
+      "3+ liters of water per person (park doesn't sell plastic bottles)",
+      "Reusable water bottle",
+      "Sturdy hiking boots with ankle support",
+      "Sunscreen SPF 50+, wide-brim hat, sunglasses",
+      "Layers — mornings are chilly even when afternoons are hot",
+      "Backpack with trail snacks (mix, bars, jerky)",
+      "First aid kit",
+      "Headlamp / flashlight",
+      "Paper trail map (from Visitor Center)",
+      "Offline maps downloaded on phone"
+    ],
+    "seasonal": [
+      "Summer: Cooling towel, electrolyte packets, extra water",
+      "Winter: Yaktrax / microspikes ($15–30), warm layers, gloves, beanie",
+      "Spring/Fall: Rain jacket, extra wind layer"
+    ],
+    "angelsLanding": [
+      "Gloves for chain section (better grip)",
+      "Nothing dangling — secure all gear",
+      "No trekking poles on chain section",
+      "1 gallon of water per person"
+    ],
+    "narrows": [
+      "Rent canyoneering boots ($25–32/day)",
+      "Rent neoprene socks",
+      "Rent sturdy (non-collapsible) walking stick",
+      "Dry bag for phone/camera",
+      "NO cotton — wear merino, polyester, or nylon",
+      "Extra dry clothes in the car"
+    ]
+  },
+  "food": {
+    "restaurants": [
+      {
+        "name": "Bit & Spur Restaurant",
+        "priceRange": "$$–$$$",
+        "description": "The longtime local favorite. Creative Southwestern fare: sweet potato tamales, roasted poblano mac & cheese, chicken mole. Famous prickly pear margaritas (by the pitcher). Outdoor lawn seating under fairy lights.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Bit+%26+Spur+Restaurant+Springdale+UT"
+      },
+      {
+        "name": "Oscar's Cafe",
+        "priceRange": "$–$$",
+        "description": "Crowd-pleaser for breakfast & lunch. Gigantic breakfast burritos smothered in verde sauce, huevos rancheros, garlic burger. Also known for carrot cake and full rack of ribs. Fun Tex-Mex vibe.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Oscar%27s+Cafe+Springdale+UT"
+      },
+      {
+        "name": "Whiptail Grill",
+        "priceRange": "$–$$",
+        "description": "Converted gas station. Goat cheese chile rellenos, spaghetti squash enchiladas, fish tacos, avocado salad. Good beer and wine selection. Casual and delicious.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Whiptail+Grill+Springdale+UT"
+      },
+      {
+        "name": "Spotted Dog Cafe",
+        "priceRange": "$$–$$$",
+        "description": "Best-reviewed restaurant in Springdale. Casual American bistro with art-filled dining rooms and Euro-style sidewalk seating. Great for a sit-down dinner.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Spotted+Dog+Cafe+Springdale+UT"
+      },
+      {
+        "name": "MeMe's Cafe",
+        "priceRange": "$–$$",
+        "description": "\"We stop at MeMe's every time we pass through Zion.\" Delicious savory and sweet crepes. Wonderful service. A local gem.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=MeMe%27s+Cafe+Springdale+UT"
+      },
+      {
+        "name": "Zion Canyon Brew Pub",
+        "priceRange": "$–$$",
+        "description": "Southern Utah's first microbrewery. Sits at the Virgin River's edge with sweeping red rock views. Perfect for post-hike beers.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Canyon+Brew+Pub+Springdale+UT"
+      }
+    ],
+    "inPark": [
+      {
+        "name": "Red Rock Grill",
+        "location": "Zion Lodge",
+        "description": "Sit-down, breakfast/lunch/dinner. Steaks, trout, salads. ~$10–20/meal.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Red+Rock+Grill+Zion+Lodge"
+      },
+      {
+        "name": "Castle Dome Cafe",
+        "location": "Zion Lodge",
+        "description": "Seasonal quick-service. Coffee, pastries, burgers, beer.",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Castle+Dome+Cafe+Zion+Lodge"
+      }
+    ],
+    "waterRefillStations": [
+      "Visitor Center",
+      "History Museum",
+      "Zion Lodge",
+      "The Grotto",
+      "Temple of Sinawava"
+    ],
+    "groceries": [
+      {
+        "name": "Sol Foods",
+        "location": "995 Zion Park Blvd, Springdale",
+        "note": "convenient but pricey",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Sol+Foods+Supermarket+Springdale+UT"
+      },
+      {
+        "name": "Davis Food & Drug",
+        "location": "La Verkin",
+        "note": "good prices, basic grocery",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Davis+Market+La+Verkin+UT"
+      },
+      {
+        "name": "Walmart Supercenter",
+        "location": "Hurricane, UT",
+        "note": "best prices/selection, ~25 min from park",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Walmart+Supercenter+Hurricane+UT"
+      }
+    ]
+  },
+  "lodging": [
+    {
+      "name": "Zion Lodge (In-Park)",
+      "description": "Only lodging inside the park. Cabins with gas fireplaces and private porches. Walking distance to Emerald Pools and Grotto.",
+      "bookingNote": "Book Months Ahead",
+      "url": "https://www.zionlodge.com/",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Lodge+Zion+National+Park"
+    },
+    {
+      "name": "Cliffrose Springdale (Curio Collection by Hilton)",
+      "description": "Near south entrance. Heated pool, waterfall hot tub, gardens with red rock views. Good for families (playground).",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cliffrose+Springdale+Hilton+UT"
+    },
+    {
+      "name": "Cable Mountain Lodge",
+      "description": "Closest hotel to south entrance. Pool, restaurant, spa, market. Premium convenience.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Cable+Mountain+Lodge+Springdale+UT"
+    },
+    {
+      "name": "Budget Options",
+      "description": "Bumbleberry Inn (central Springdale). Hurricane/La Verkin hotels (20–30 min west, significantly cheaper). Under Canvas Zion (glamping)."
+    }
+  ],
+  "camping": [
+    {
+      "name": "Watchman Campground",
+      "type": "NPS",
+      "status": "open",
+      "season": "Year-Round",
+      "reservation": "Required",
+      "sites": 176,
+      "electricHookups": 95,
+      "price": "$35–45",
+      "bookAhead": "6 months",
+      "amenities": "Flush toilets, drinking water, dump station",
+      "description": "Near Visitor Center and Springdale. Spring–fall dates sell out within hours of opening.",
+      "tip": "Loop F walk-in sites have the most privacy and shade.",
+      "bookingUrl": "https://www.recreation.gov/camping/campgrounds/232445",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Watchman+Campground+Zion+National+Park"
+    },
+    {
+      "name": "Lava Point Campground",
+      "type": "NPS",
+      "status": "open",
+      "season": "May–Sep",
+      "reservation": "Required (14-day advance)",
+      "sites": 6,
+      "price": "$25",
+      "bookAhead": "14 days",
+      "amenities": "No water, pit toilets",
+      "description": "Remote, peaceful, at 7,900ft on Kolob Terrace Road. Good base for West Rim Trail. 10–15°F cooler than the canyon.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Lava+Point+Campground+Zion+National+Park"
+    },
+    {
+      "name": "South Campground",
+      "type": "NPS",
+      "status": "closed",
+      "closureNote": "Closed for long-term rehabilitation. No confirmed reopening date. Do not plan on this for 2026."
+    },
+    {
+      "name": "Sheep Bridge Road (BLM)",
+      "type": "BLM",
+      "status": "open",
+      "price": "Free",
+      "sites": 56,
+      "description": "Near south entrance between Hurricane and Virgin. 56 designated BLM sites with fire rings. Arrive early.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Sheep+Bridge+Road+BLM+camping+Virgin+UT"
+    },
+    {
+      "name": "Gooseberry Mesa (BLM)",
+      "type": "BLM",
+      "status": "open",
+      "price": "Free",
+      "description": "~1 hour from south entrance. Tremendous canyon views. No amenities.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Gooseberry+Mesa+Utah"
+    },
+    {
+      "name": "Dalton Wash Road (BLM)",
+      "type": "BLM",
+      "status": "open",
+      "price": "Free",
+      "description": "Near south entrance. High-clearance 4x4 recommended.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Dalton+Wash+Road+Zion+Utah"
+    },
+    {
+      "name": "Burnt Flat Gulch (BLM)",
+      "type": "BLM",
+      "status": "open",
+      "price": "Free",
+      "description": "East of park near Hwy 9. Suitable for RVs.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Burnt+Flat+Gulch+Utah+Hwy+9"
+    }
+  ],
+  "campingNotes": {
+    "blmStayLimit": "14-day stay limit on all BLM land within a 28-day period. Bring all water and supplies.",
+    "showers": "No showers in any NPS campground. Public showers in Springdale: $5–7 at Zion Outfitter or Sol Foods Supermarket."
+  },
+  "itineraries": [
+    {
+      "name": "1-Day Sprint",
+      "badge": "Ambitious",
+      "badgeClass": "strenuous",
+      "items": [
+        {
+          "time": "7:00 AM",
+          "title": "Pick up Narrows rental gear",
+          "description": "At Zion Outfitter before park entry"
+        },
+        {
+          "time": "8:00 AM – 12:00 PM",
+          "title": "Angels Landing (with permit)",
+          "description": "Or: Canyon Overlook + Watchman Trail"
+        },
+        {
+          "time": "1:00 PM – 5:30 PM",
+          "title": "The Narrows (bottom-up)",
+          "description": "First few miles to Wall Street section"
+        }
+      ]
+    },
+    {
+      "name": "2-Day Ideal Minimum",
+      "badge": "Recommended",
+      "badgeClass": "moderate",
+      "items": [
+        {
+          "time": "Day 1 AM",
+          "title": "Angels Landing",
+          "description": "Early start with permit"
+        },
+        {
+          "time": "Day 1 PM",
+          "title": "Canyon Overlook or Emerald Pools",
+          "description": "Lighter afternoon hike"
+        },
+        {
+          "time": "Day 2 Full",
+          "title": "The Narrows (bottom-up)",
+          "description": "Start early, plan 6+ hours. Go to Big Spring if ambitious."
+        }
+      ]
+    },
+    {
+      "name": "3-Day Deep Dive",
+      "badge": "Best Experience",
+      "badgeClass": "easy",
+      "items": [
+        {
+          "time": "Day 1 AM",
+          "title": "Angels Landing",
+          "description": "Early morning with permit"
+        },
+        {
+          "time": "Day 1 PM",
+          "title": "Pa'rus Trail at sunset",
+          "description": "Or Watchman Trail for golden hour views"
+        },
+        {
+          "time": "Day 2 Full",
+          "title": "The Narrows (full day)",
+          "description": "Bottom-up to Orderville Canyon or Big Spring"
+        },
+        {
+          "time": "Day 3",
+          "title": "Observation Point or Kolob Canyons",
+          "description": "East Mesa Trail OR Taylor Creek + Timber Creek Overlook"
+        }
+      ]
+    }
+  ],
+  "seasons": {
+    "best": "Fall (Sep–Nov) — especially October",
+    "avoid": "Mid-summer weekends, Memorial Day, Labor Day",
+    "details": [
+      {
+        "season": "Spring (Mar–May)",
+        "tempRange": "50–80°F",
+        "description": "Wildflowers (mid-April), pleasant hiking temps, waterfalls at peak flow. Narrows often closed April–May due to snowmelt. Crowds build through May. Best for Emerald Pools, Canyon Overlook."
+      },
+      {
+        "season": "Summer (Jun–Aug)",
+        "tempRange": "85–105°F",
+        "description": "Extreme heat + largest crowds. Monsoon season mid-July through September (flash flood risk). Start hikes before 8 AM. Narrows usually open in June. Long days."
+      },
+      {
+        "season": "Fall (Sep–Nov)",
+        "tempRange": "50s–80s°F",
+        "badge": "BEST OVERALL",
+        "description": "\"October is the undisputed king of Zion.\" Mild temps, fall colors peak late Oct, decreasing crowds, excellent Narrows conditions. Best for everything."
+      },
+      {
+        "season": "Winter (Dec–Feb)",
+        "tempRange": "30–50°F",
+        "description": "Solitude, snow-dusted cliffs (stunning photos). No shuttle — drive your own car up the canyon. Some trails icy (bring Yaktrax). Narrows too cold. 70% fewer visitors than June."
+      }
+    ],
+    "freeEntranceDays2026": [
+      {
+        "date": "Feb 16",
+        "name": "Presidents Day"
+      },
+      {
+        "date": "May 25",
+        "name": "Memorial Day"
+      },
+      {
+        "date": "Jun 14",
+        "name": "Flag Day"
+      },
+      {
+        "date": "Jul 3–5",
+        "name": "Independence Day weekend"
+      },
+      {
+        "date": "Aug 25",
+        "name": "NPS 110th Birthday"
+      },
+      {
+        "date": "Sep 17",
+        "name": "Constitution Day"
+      },
+      {
+        "date": "Oct 27",
+        "name": "Theodore Roosevelt's Birthday"
+      },
+      {
+        "date": "Nov 11",
+        "name": "Veterans Day"
+      }
+    ],
+    "freeEntranceNote": "As of 2026, fee-free days apply to U.S. citizens and residents only.",
+    "entranceFees": [
+      {
+        "type": "Private vehicle",
+        "price": "$35",
+        "duration": "7 days"
+      },
+      {
+        "type": "Motorcycle",
+        "price": "$30",
+        "duration": "7 days"
+      },
+      {
+        "type": "Individual (foot/bike, 16+)",
+        "price": "$20",
+        "duration": "7 days"
+      },
+      {
+        "type": "Under 16",
+        "price": "Free",
+        "duration": ""
+      },
+      {
+        "type": "America the Beautiful Annual Pass",
+        "price": "$80",
+        "note": "all federal sites; $250 for non-residents"
+      },
+      {
+        "type": "Zion Annual Pass",
+        "price": "$70",
+        "note": "Zion only"
+      },
+      {
+        "type": "Non-U.S. Resident Surcharge (new 2026)",
+        "price": "+$100 per person",
+        "note": "at the gate"
+      }
+    ]
+  },
+  "photography": [
+    {
+      "location": "Canyon Junction Bridge",
+      "bestTime": "Sunrise / blue hour",
+      "notes": "The Watchman glows red. Virgin River reflects sky. Use 5–30 sec long exposure.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Canyon+Junction+Bridge+Zion+National+Park"
+    },
+    {
+      "location": "Canyon Overlook",
+      "bestTime": "Sunrise / sunset",
+      "notes": "Best overall canyon panorama. East Temple lit at sunrise. 0.5mi hike.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Canyon+Overlook+Trail+Zion+National+Park"
+    },
+    {
+      "location": "Towers of the Virgin",
+      "bestTime": "Sunrise (facing west)",
+      "notes": "Set up 30 min early. Shuttle stop 2 (History Museum). f/9–f/14, ISO 100–200.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Human+History+Museum"
+    },
+    {
+      "location": "Court of the Patriarchs",
+      "bestTime": "Morning / late PM",
+      "notes": "Short walk from shuttle stop 4. Abraham, Isaac, Jacob peaks.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Court+of+the+Patriarchs+Zion+National+Park"
+    },
+    {
+      "location": "Observation Point",
+      "bestTime": "Sunrise (pre-dawn)",
+      "notes": "270° unobstructed views. 4–6 hr RT via East Mesa.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Observation+Point+Zion+National+Park"
+    },
+    {
+      "location": "Narrows Wall Street",
+      "bestTime": "Midday (light enters)",
+      "notes": "1.75 mi in. Tripod essential, dry bag for camera. HDR imaging.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=The+Narrows+Wall+Street+Zion+National+Park"
+    },
+    {
+      "location": "Angels Landing",
+      "bestTime": "Any time",
+      "notes": "Most iconic canyon shots. Permit required.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Angels+Landing+Zion+National+Park"
+    },
+    {
+      "location": "Kolob Terrace",
+      "bestTime": "Night",
+      "notes": "Minimal light pollution. Best for Milky Way astrophotography.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Kolob+Terrace+Road+Zion+National+Park"
+    }
+  ],
+  "hiddenGems": [
+    {
+      "name": "Kolob Canyons (NW Section)",
+      "description": "Physically separate from main canyon via I-15 north (Exit 40). All the beauty, none of the crowds. 2,000ft cliff walls and deep finger canyons. Taylor Creek Trail and Timber Creek Overlook are highlights. Same $35 entry covers all Zion.",
+      "mapLink": "https://www.google.com/maps/search/?api=1&query=Kolob+Canyons+Visitor+Center+Zion+National+Park"
+    },
+    {
+      "name": "Kolob Terrace Road",
+      "description": "Higher elevation = 10–15°F cooler. The Subway trailhead. Northgate Peaks Trail for unique views. Excellent Milky Way photography at night. Starts in Virgin, UT."
+    },
+    {
+      "name": "East Side / Mt. Carmel Hwy",
+      "description": "Underrated zone. Scenic switchbacks, the mile-long tunnel, Checkerboard Mesa. Canyon Overlook trailhead here (no shuttle needed). Many Pools Trail has sculpted sandstone."
+    },
+    {
+      "name": "Divergent Dam",
+      "description": "A \"true Zion secret.\" Crystal-clear water, secluded location ideal for swimming, sunbathing, or picnicking. Ask locally for directions."
+    },
+    {
+      "name": "Cable Mountain",
+      "description": "8 mi RT (from Stave Spring). Remains of a historic cable system used to transport lumber (operated 1901–1926, cables removed 1930). Historical curiosity with great views."
+    },
+    {
+      "name": "Pine Creek Waterfall",
+      "description": "~1 mile off-trail from a dirt pullout on Mt. Carmel Hwy, 1.5 mi north of south entrance. Crystal-clear falls with swimming in summer."
+    }
+  ],
+  "scenicDrives": [
+    {
+      "name": "Zion-Mt. Carmel Highway (SR-9)",
+      "distance": "11.3 miles",
+      "route": "South to East Entrance",
+      "description": "Features the 1.1-mile historic tunnel, dramatic switchbacks, and Checkerboard Mesa. Standard-size vehicles proceed through the tunnel normally.",
+      "oversizedVehicleBan": "Starting June 7, 2026, oversized vehicles will be banned entirely from the Zion-Mt. Carmel Tunnel.",
+      "restrictionsUrl": "https://zionarea.udot.utah.gov/road-restrictions-2/"
+    },
+    {
+      "name": "Kolob Canyons Road",
+      "distance": "5.2 miles",
+      "route": "Kolob Visitor Center to viewpoint",
+      "description": "NW section via I-15 Exit 40. Least visited area. Timber Creek Overlook Trail at the end. No seasonal closure (may close in bad weather)."
+    },
+    {
+      "name": "Kolob Terrace Road",
+      "distance": "25 miles",
+      "route": "Virgin, UT to Kolob Reservoir",
+      "description": "Climbs 3,600ft to 8,100ft. Subway trailhead, Lava Point Overlook. Closed in winter.",
+      "trailInfoUrl": "https://www.nps.gov/zion/planyourvisit/kolob-terrace-wilderness-trail-descriptions.htm"
+    }
+  ],
+  "offlineMaps": {
+    "pdfMaps": [
+      {
+        "name": "Zion Park Brochure & Map",
+        "description": "Official NPS brochure with full park map, trail locations, shuttle stops, and visitor info. The same map handed out at the entrance gate.",
+        "size": "5 MB",
+        "url": "https://www.nps.gov/zion/planyourvisit/upload/ZionUnigrid.pdf"
+      },
+      {
+        "name": "Zion Wilderness Map",
+        "description": "Detailed backcountry/wilderness map showing all trails, campsites, and route overlaps. Essential for West Rim, Kolob Arch, Narrows top-down, and Subway planning.",
+        "url": "https://www.nps.gov/zion/planyourvisit/upload/Map-Page.pdf"
+      },
+      {
+        "name": "Zion Area Map",
+        "description": "Regional overview showing Zion Canyon, Kolob Canyons, Kolob Terrace, surrounding towns (Springdale, Hurricane, Virgin), and road connections.",
+        "url": "https://www.nps.gov/zion/planyourvisit/upload/Zion-Area-Map-Website.pdf"
+      }
+    ],
+    "apps": [
+      {
+        "name": "AllTrails",
+        "price": "Free / $36 yr Pro",
+        "description": "Download individual trail maps for offline use. Pro version allows full offline map downloads for the entire park area. GPS tracking works without cell service. Best for trail navigation.",
+        "url": "https://www.alltrails.com/parks/us/utah/zion-national-park"
+      },
+      {
+        "name": "Google Maps (Offline Area)",
+        "price": "Free",
+        "description": "Download the Zion area for offline use: open Google Maps > search \"Zion National Park\" > tap your profile > Offline Maps > Select Your Own Map. Covers roads and basic trails. Good for driving directions."
+      },
+      {
+        "name": "Gaia GPS",
+        "price": "Free / $40 yr Premium",
+        "description": "Serious backcountry navigation app. Topo maps, satellite imagery, public land boundaries, and trail overlays. Download entire Zion region. Best for wilderness routes and off-trail navigation."
+      },
+      {
+        "name": "NPS App",
+        "price": "Free",
+        "description": "Official National Park Service app. Download the Zion park guide for offline access including maps, trail info, alerts, and ranger programs. Available on iOS and Android."
+      }
+    ],
+    "offlineChecklist": [
+      "Download Zion park brochure PDF to your phone",
+      "Save offline Google Maps area covering Springdale to Mt. Carmel Junction",
+      "Download AllTrails/Gaia maps for specific trails you plan to hike",
+      "Screenshot your Angels Landing / Subway / Narrows permits",
+      "Screenshot campground reservation confirmation",
+      "Screenshot restaurant addresses and gear rental reservations",
+      "Save the weather forecast as a screenshot the morning of your visit",
+      "Note the USGS river flow reading before entering the canyon",
+      "Download the NPS Zion app for offline alerts and info"
+    ]
+  },
+  "safety": {
+    "hazards": [
+      {
+        "name": "Flash Floods",
+        "description": "The #1 killer in Zion's slot canyons. Can occur with NO warning, even from storms miles away. Check daily flash flood potential at Visitor Center. Monsoon season (mid-Jul–Sep) is highest risk. If water rises or turns muddy: GET TO HIGH GROUND IMMEDIATELY."
+      },
+      {
+        "name": "Heat",
+        "description": "Summer temps regularly exceed 100°F. Drink 1 gallon/day minimum. Start hikes before 8 AM. Heat exhaustion: nausea, dizziness, headache. Heat stroke: confusion, hot/dry skin — call 911."
+      },
+      {
+        "name": "Falling / Cliffs",
+        "description": "Stay on trails and behind barriers. Wet sandstone is extremely slippery. Avoid Angels Landing chain section and Canyon Overlook if wet or icy. Rockfall is common after rain — don't linger under overhangs."
+      },
+      {
+        "name": "Wildlife",
+        "description": "Mule deer and rock squirrels common — do not feed. Rattlesnakes: watch where you step/place hands. Mountain lions present but rarely seen. California condors occasionally spotted."
+      },
+      {
+        "name": "Swift Water",
+        "description": "The Virgin River current can knock you off your feet. Always use a walking stick in the Narrows. Never attempt to cross swiftly flowing water. Face upstream when crossing."
+      },
+      {
+        "name": "Dehydration",
+        "description": "More common than people realize. The dry desert air wicks moisture before you feel sweaty. Drink before you're thirsty. Carry electrolytes. Minimum 3L for any major hike."
+      }
+    ],
+    "emergencyContacts": [
+      {
+        "name": "Park Emergency",
+        "number": "911"
+      },
+      {
+        "name": "Zion NP Main Line",
+        "number": "(435) 772-3256",
+        "note": "recorded 24/7, rangers 10 AM+"
+      }
+    ],
+    "medical": [
+      {
+        "name": "Zion Canyon Medical Clinic",
+        "address": "120 Lion Blvd, Springdale",
+        "phone": "(435) 772-3226",
+        "hours": "Tue & Fri 8 AM–4 PM",
+        "services": "X-rays, stitches, splinting",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Zion+Canyon+Medical+Clinic+120+Lion+Blvd+Springdale+UT"
+      },
+      {
+        "name": "Zion Direct Care",
+        "description": "Mobile urgent care",
+        "url": "https://ziondirectcare.com/"
+      },
+      {
+        "name": "St. George Regional Hospital",
+        "distance": "~42 mi / ~1 hour drive",
+        "note": "Nearest hospital",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=St.+George+Regional+Hospital+UT"
+      }
+    ],
+    "practicalInfo": {
+      "gas": {
+        "nearest": "Shell station, 962 Zion Park Blvd (1 mi from south entrance)",
+        "other": "La Verkin, Hurricane",
+        "mapLink": "https://www.google.com/maps/search/?api=1&query=Shell+962+Zion+Park+Blvd+Springdale+UT"
+      },
+      "cellService": "Spotty near Visitor Center/Lodge. None on trails. Wi-Fi at Visitor Center, Museum, Lodge.",
+      "dogs": "Only allowed on Pa'rus Trail (leashed)",
+      "parkHours": "24/7 year-round",
+      "zionLodgePhone": "833-778-9290"
+    }
+  },
+  "commonMistakes": [
+    {
+      "number": 1,
+      "title": "Not planning hikes in advance.",
+      "detail": "Know your trailheads, shuttle stops, and timing before you arrive. Cell service won't save you."
+    },
+    {
+      "number": 2,
+      "title": "Arriving mid-morning.",
+      "detail": "Cars wait up to 2 hours to enter the park. Be there before 8 AM or park in Springdale."
+    },
+    {
+      "number": 3,
+      "title": "Underestimating the altitude.",
+      "detail": "The lush scenery is deceptive — trails climb 1,000+ feet at elevation. You'll feel it."
+    },
+    {
+      "number": 4,
+      "title": "Not enough water.",
+      "detail": "1 quart per 2 hours minimum, 3+ liters for major hikes. Desert air dehydrates you before you realize it."
+    },
+    {
+      "number": 5,
+      "title": "Skipping gear rental for The Narrows.",
+      "detail": "~$25–32 for boots/socks/stick. Rocks are like \"greased bowling balls.\" Regular sneakers = misery."
+    },
+    {
+      "number": 6,
+      "title": "Hiking Angels Landing at midday.",
+      "detail": "Dangerous congestion on narrow sections with 1,000ft drops. Go early."
+    },
+    {
+      "number": 7,
+      "title": "Allocating only one day.",
+      "detail": "One day = one major hike. Minimum two days recommended for a real experience."
+    },
+    {
+      "number": 8,
+      "title": "Ignoring flash flood warnings.",
+      "detail": "A clear sky in the canyon doesn't mean it's not pouring miles upstream. If rangers close The Narrows, they mean it."
+    }
+  ],
+  "externalLinks": {
+    "npsOfficial": [
+      {
+        "label": "Main Park Page",
+        "url": "https://www.nps.gov/zion/"
+      },
+      {
+        "label": "Official Maps & PDFs",
+        "url": "https://www.nps.gov/zion/planyourvisit/maps.htm"
+      },
+      {
+        "label": "Current Conditions & Closures",
+        "url": "https://www.nps.gov/zion/planyourvisit/conditions.htm"
+      },
+      {
+        "label": "Shuttle System",
+        "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm"
+      },
+      {
+        "label": "Trail Descriptions",
+        "url": "https://www.nps.gov/zion/planyourvisit/zion-canyon-trail-descriptions.htm"
+      },
+      {
+        "label": "Angels Landing Permits Info",
+        "url": "https://www.nps.gov/zion/planyourvisit/angels-landing-hiking-permits.htm"
+      },
+      {
+        "label": "Flash Flood Info",
+        "url": "https://www.nps.gov/zion/planyourvisit/flash-flood.htm"
+      },
+      {
+        "label": "Narrows Safety",
+        "url": "https://www.nps.gov/zion/planyourvisit/narrowssafety.htm"
+      },
+      {
+        "label": "Weather & Climate",
+        "url": "https://www.nps.gov/zion/planyourvisit/weather-and-climate.htm"
+      },
+      {
+        "label": "Fees & Passes",
+        "url": "https://www.nps.gov/zion/planyourvisit/fees.htm"
+      },
+      {
+        "label": "Operating Hours",
+        "url": "https://www.nps.gov/zion/planyourvisit/hours.htm"
+      },
+      {
+        "label": "Camping Info",
+        "url": "https://www.nps.gov/zion/planyourvisit/campgrounds-in-zion.htm"
+      }
+    ],
+    "bookingAndPermits": [
+      {
+        "label": "Angels Landing Lottery (Spring)",
+        "url": "https://www.recreation.gov/permits/4675310"
+      },
+      {
+        "label": "Angels Landing Lottery (Summer)",
+        "url": "https://www.recreation.gov/permits/4675324"
+      },
+      {
+        "label": "Angels Landing Lottery (Fall)",
+        "url": "https://www.recreation.gov/permits/4675325"
+      },
+      {
+        "label": "Angels Landing Lottery (Winter)",
+        "url": "https://www.recreation.gov/permits/4675310"
+      },
+      {
+        "label": "Watchman Campground",
+        "url": "https://www.recreation.gov/camping/campgrounds/232445"
+      },
+      {
+        "label": "South Campground (Closed)",
+        "url": "https://www.recreation.gov/camping/campgrounds/272266"
+      },
+      {
+        "label": "Wilderness Overnight Permits",
+        "url": "https://www.recreation.gov/permits/4675338"
+      },
+      {
+        "label": "The Subway Permits",
+        "url": "https://www.recreation.gov/permits/4251917"
+      },
+      {
+        "label": "Zion Lodge Booking",
+        "url": "https://www.zionlodge.com/"
+      }
+    ],
+    "weatherAndConditions": [
+      {
+        "label": "NWS Point Forecast",
+        "url": "https://forecast.weather.gov/MapClick.php?lon=-112.915249&lat=37.191502"
+      },
+      {
+        "label": "USGS River Flow (CFS)",
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-09405500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+      },
+      {
+        "label": "NOAA River Gauge",
+        "url": "https://water.noaa.gov/gauges/nfvu1"
+      },
+      {
+        "label": "Narrows Water Levels",
+        "url": "https://www.canyoneeringusa.com/zion/narrows-water-levels"
+      },
+      {
+        "label": "Joe's Guide - Conditions",
+        "url": "https://www.citrusmilo.com/zionguide/conditions.php"
+      },
+      {
+        "label": "NWS Flash Flood Info",
+        "url": "https://www.weather.gov/slc/flashflood"
+      }
+    ],
+    "alltrails": [
+      {
+        "label": "Zion Overview",
+        "url": "https://www.alltrails.com/parks/us/utah/zion-national-park"
+      },
+      {
+        "label": "Angels Landing",
+        "url": "https://www.alltrails.com/trail/us/utah/angels-landing-trail"
+      },
+      {
+        "label": "The Narrows",
+        "url": "https://www.alltrails.com/trail/us/utah/the-zion-narrows-riverside-walk"
+      },
+      {
+        "label": "Observation Point (East Mesa)",
+        "url": "https://www.alltrails.com/trail/us/utah/observation-point-via-east-rim-and-east-mesa-trail"
+      },
+      {
+        "label": "Canyon Overlook",
+        "url": "https://www.alltrails.com/trail/us/utah/canyon-overlook-trail"
+      },
+      {
+        "label": "The Subway",
+        "url": "https://www.alltrails.com/trail/us/utah/the-subway-trail"
+      }
+    ],
+    "outfitters": [
+      {
+        "label": "Zion Outfitter - Narrows Gear",
+        "url": "https://zionoutfitter.com/the-narrows-rentals/"
+      },
+      {
+        "label": "Zion Adventures",
+        "url": "https://www.zionadventures.com/"
+      },
+      {
+        "label": "Zion Guru - Equipment",
+        "url": "https://www.zionguru.com/rentals/narrows/equipment"
+      },
+      {
+        "label": "Zion Cycles - Gear",
+        "url": "https://www.zioncycles.com/narrows-gear"
+      }
+    ],
+    "videoGuides": [
+      {
+        "label": "NPS Introduction Video",
+        "url": "https://www.nps.gov/zion/planyourvisit/zion-park-introduction-video.htm"
+      },
+      {
+        "label": "Zion 8K Film (More Than Just Parks)",
+        "url": "https://www.youtube.com/embed/ecc7t3PkkiM"
+      },
+      {
+        "label": "PBS: Call of the Canyon",
+        "url": "https://www.pbs.org/video/call-of-the-canyon-zion-national-park-fpyr3q/"
+      },
+      {
+        "label": "NPS Educational Videos",
+        "url": "https://www.nps.gov/zion/learn/education/videos.htm"
+      }
+    ]
+  },
+  "galleryImages": {
+    "trailPhotos": [
+      {
+        "src": "https://images.unsplash.com/photo-1558836809-c94f6e3dfbaa?w=1600&q=80",
+        "alt": "Angels Landing trail view at Zion National Park",
+        "label": "Angels Landing"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1524274165673-750e79bf7e2e?w=1600&q=80",
+        "alt": "Hiking The Narrows slot canyon with golden light",
+        "label": "The Narrows"
+      },
+      {
+        "src": "https://www.nps.gov/zion/learn/news/images/NPS-Abby-Furnish-Canyon-Overlook-Jan_1.jpg?maxwidth=1600",
+        "alt": "Canyon Overlook Trail panoramic view",
+        "label": "Canyon Overlook"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1469528209190-4a45a86d817b?w=1600&q=80",
+        "alt": "Panoramic view from Observation Point looking down into Zion Canyon",
+        "label": "Observation Point"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1515601915049-08c8836c2204?w=1600&q=80",
+        "alt": "Virgin River flowing under red rock mountains",
+        "label": "Virgin River"
+      },
+      {
+        "src": "https://www.nps.gov/common/uploads/structured_data/68BFC1AC-BF96-629F-89D261D78F181C64.jpg?maxwidth=1600",
+        "alt": "The Watchman monolith at Zion National Park",
+        "label": "The Watchman"
+      }
+    ],
+    "hiddenGemPhotos": [
+      {
+        "src": "https://www.nps.gov/common/uploads/structured_data/69033C8D-B439-855D-6B260FB2F4CDB53B.jpg?maxwidth=1600",
+        "alt": "Kolob Arch and red canyon cliffs",
+        "label": "Kolob Canyons"
+      },
+      {
+        "src": "https://www.nps.gov/common/uploads/grid_builder/zion/D3DE15D8-B4B1-C0C4-EBEB0A0574915F11.jpg",
+        "alt": "Kolob Terrace area in Zion",
+        "label": "Kolob Terrace"
+      },
+      {
+        "src": "https://www.nps.gov/zion/planyourvisit/images/WestRimTrailWilderness_06232016.jpg?maxwidth=1600",
+        "alt": "West Rim Trail sunset view",
+        "label": "West Rim Trail"
+      }
+    ],
+    "seasonPhotos": [
+      {
+        "src": "https://www.nps.gov/zion/planyourvisit/images/Watchman_Sunset.jpg?maxwidth=1600",
+        "alt": "The Watchman at sunset with pink clouds",
+        "label": "The Watchman at Sunset"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1551645442-ff8414364444?w=1600&q=80",
+        "alt": "Winter snow covering Zion National Park canyon",
+        "label": "Winter in Zion"
+      }
+    ],
+    "itineraryPhotos": [
+      {
+        "src": "https://www.nps.gov/common/uploads/cropped_image/primary/BDB9C3B7-0F11-4312-A8CC58A24D800D39.jpg?width=1600&quality=90&mode=crop",
+        "alt": "Lower Emerald Pool waterfall",
+        "label": "Emerald Pools"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1594357570657-12d14a5b530f?w=1600&q=80",
+        "alt": "Hiker in The Narrows slot canyon",
+        "label": "Deep in The Narrows"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1663134205083-eadaa612e21b?w=1600&q=80",
+        "alt": "Valley view with Zion canyon walls in background",
+        "label": "Court of the Patriarchs"
+      }
+    ],
+    "scenicDrivePhotos": [
+      {
+        "src": "https://www.nps.gov/common/uploads/grid_builder/zion/D414D18E-9BD2-9537-7E971E087FBBEF08.jpeg",
+        "alt": "Checkerboard Mesa and East Side of Zion",
+        "label": "Checkerboard Mesa / East Side"
+      },
+      {
+        "src": "https://www.nps.gov/common/uploads/grid_builder/zion/D5217F72-065C-F59A-D78B0A145874701A.jpeg",
+        "alt": "Kolob Canyons red rock finger canyons",
+        "label": "Kolob Canyons"
+      }
+    ],
+    "photographyHero": {
+      "src": "https://www.nps.gov/common/uploads/structured_data/69162F54-D4AF-8695-A42F97A8F9774C19.jpg?maxwidth=1600",
+      "alt": "Towers of the Virgin at sunset in Zion",
+      "caption": "Zion Canyon Cliffs at Sunset — Photo: NPS"
+    },
+    "foodHero": {
+      "src": "https://images.unsplash.com/photo-1566879619312-f4324479c5db?w=1600&q=80",
+      "alt": "Virgin River flowing through Zion canyon with red rock walls",
+      "caption": "Virgin River & Springdale — Gateway to Zion"
+    },
+    "narrowsHero": {
+      "src": "https://www.nps.gov/common/uploads/structured_data/68ED8C2C-A9D3-90B2-BBC96E7A21BC3744.jpg?maxwidth=1600",
+      "alt": "Hikers wading through The Narrows slot canyon",
+      "caption": "The Narrows — Hiking through the Virgin River — Photo: NPS"
+    },
+    "angelsHero": {
+      "src": "https://www.nps.gov/common/uploads/cropped_image/primary/23EF45DA-96CE-AEDD-E6FA82FF43279637.jpg?width=1600&quality=90&mode=crop",
+      "alt": "Angels Landing summit view with chain handrails",
+      "caption": "Angels Landing — Chain section with 1,000ft drops — Photo: NPS"
+    }
+  },
+  "mapData": {
+    "center": [
+      37.228,
+      -112.97
+    ],
+    "defaultZoom": 13,
+    "tileLayer": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    "canyonRouteCoords": [
+      [
+        37.20025,
+        -112.98671
+      ],
+      [
+        37.20066,
+        -112.9861
+      ],
+      [
+        37.2024,
+        -112.98744
+      ],
+      [
+        37.20291,
+        -112.98745
+      ],
+      [
+        37.2036,
+        -112.98667
+      ],
+      [
+        37.20461,
+        -112.98444
+      ],
+      [
+        37.2067,
+        -112.98288
+      ],
+      [
+        37.20756,
+        -112.98038
+      ],
+      [
+        37.20827,
+        -112.97946
+      ],
+      [
+        37.20892,
+        -112.97913
+      ],
+      [
+        37.21068,
+        -112.97886
+      ],
+      [
+        37.2152,
+        -112.97706
+      ],
+      [
+        37.21735,
+        -112.97595
+      ],
+      [
+        37.21762,
+        -112.97548
+      ],
+      [
+        37.21749,
+        -112.97396
+      ],
+      [
+        37.21809,
+        -112.97406
+      ],
+      [
+        37.2192,
+        -112.97347
+      ],
+      [
+        37.22014,
+        -112.97364
+      ],
+      [
+        37.22064,
+        -112.97348
+      ],
+      [
+        37.2216,
+        -112.97114
+      ],
+      [
+        37.22359,
+        -112.9692
+      ],
+      [
+        37.22626,
+        -112.96737
+      ],
+      [
+        37.22776,
+        -112.9667
+      ],
+      [
+        37.22993,
+        -112.96304
+      ],
+      [
+        37.23124,
+        -112.96311
+      ],
+      [
+        37.23231,
+        -112.96261
+      ],
+      [
+        37.23329,
+        -112.96253
+      ],
+      [
+        37.23476,
+        -112.96134
+      ],
+      [
+        37.23678,
+        -112.96088
+      ],
+      [
+        37.24187,
+        -112.95731
+      ],
+      [
+        37.24301,
+        -112.95682
+      ],
+      [
+        37.24444,
+        -112.95686
+      ],
+      [
+        37.25097,
+        -112.95795
+      ],
+      [
+        37.25175,
+        -112.95785
+      ],
+      [
+        37.25477,
+        -112.95453
+      ],
+      [
+        37.25841,
+        -112.95254
+      ],
+      [
+        37.25915,
+        -112.95147
+      ],
+      [
+        37.25981,
+        -112.94932
+      ],
+      [
+        37.26052,
+        -112.94848
+      ],
+      [
+        37.26119,
+        -112.94832
+      ],
+      [
+        37.26306,
+        -112.94875
+      ],
+      [
+        37.26458,
+        -112.94782
+      ],
+      [
+        37.26498,
+        -112.94723
+      ],
+      [
+        37.2654,
+        -112.94564
+      ],
+      [
+        37.26794,
+        -112.94408
+      ],
+      [
+        37.26897,
+        -112.94105
+      ],
+      [
+        37.26968,
+        -112.94022
+      ],
+      [
+        37.27087,
+        -112.9395
+      ],
+      [
+        37.27177,
+        -112.93933
+      ],
+      [
+        37.27263,
+        -112.9396
+      ],
+      [
+        37.27323,
+        -112.94019
+      ],
+      [
+        37.27382,
+        -112.94147
+      ],
+      [
+        37.27399,
+        -112.94302
+      ],
+      [
+        37.27305,
+        -112.94583
+      ],
+      [
+        37.27327,
+        -112.94656
+      ],
+      [
+        37.27453,
+        -112.94666
+      ],
+      [
+        37.27635,
+        -112.94643
+      ],
+      [
+        37.27818,
+        -112.94466
+      ],
+      [
+        37.27986,
+        -112.94455
+      ],
+      [
+        37.28067,
+        -112.94508
+      ],
+      [
+        37.28173,
+        -112.94683
+      ],
+      [
+        37.28224,
+        -112.94707
+      ],
+      [
+        37.28265,
+        -112.94671
+      ],
+      [
+        37.28332,
+        -112.94506
+      ],
+      [
+        37.2839,
+        -112.94448
+      ],
+      [
+        37.28438,
+        -112.94442
+      ],
+      [
+        37.28484,
+        -112.94486
+      ],
+      [
+        37.2851,
+        -112.94796
+      ],
+      [
+        37.28485,
+        -112.9476
+      ]
+    ],
+    "springdaleRouteCoords": [
+      [
+        37.1677,
+        -113.01389
+      ],
+      [
+        37.16717,
+        -113.01396
+      ],
+      [
+        37.16711,
+        -113.0135
+      ],
+      [
+        37.16889,
+        -113.01317
+      ],
+      [
+        37.17139,
+        -113.01344
+      ],
+      [
+        37.17283,
+        -113.01293
+      ],
+      [
+        37.17736,
+        -113.00879
+      ],
+      [
+        37.1815,
+        -113.00573
+      ],
+      [
+        37.18321,
+        -113.00364
+      ],
+      [
+        37.18839,
+        -113.00067
+      ],
+      [
+        37.18868,
+        -113.00016
+      ],
+      [
+        37.18935,
+        -112.99648
+      ],
+      [
+        37.18985,
+        -112.99559
+      ],
+      [
+        37.19076,
+        -112.99476
+      ],
+      [
+        37.19234,
+        -112.99362
+      ],
+      [
+        37.19641,
+        -112.99259
+      ],
+      [
+        37.19877,
+        -112.99101
+      ],
+      [
+        37.19874,
+        -112.99057
+      ]
+    ]
+  }
+}

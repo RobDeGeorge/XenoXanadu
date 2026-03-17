@@ -13,7 +13,7 @@
  *   - NPS_API_KEY environment variable (get free key at https://developer.nps.gov/)
  *
  * Output:
- *   Writes structured JSON to data/<slug>.json matching data-schema.json
+ *   Writes structured JSON to src/lib/data/<slug>.json matching data-schema.json
  */
 
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
@@ -385,7 +385,7 @@ async function scrape(parkCode) {
   // Write output
   // ---------------------------------------------------------------------------
 
-  const dataDir = resolve(PROJECT_ROOT, 'data');
+  const dataDir = resolve(PROJECT_ROOT, 'src/lib/data');
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true });
   }

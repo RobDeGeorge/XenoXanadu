@@ -105,8 +105,8 @@ function validate(slug) {
   console.log(`  VALIDATING: ${slug}`);
   console.log(`${'='.repeat(60)}\n`);
 
-  const htmlPath = resolve(PROJECT_ROOT, 'parks', `${slug}.html`);
-  const dataPath = resolve(PROJECT_ROOT, 'data', `${slug}.json`);
+  const htmlPath = resolve(PROJECT_ROOT, 'build', 'parks', `${slug}.html`);
+  const dataPath = resolve(PROJECT_ROOT, 'src/lib/data', `${slug}.json`);
 
   // -------------------------------------------------------------------------
   // Check 1: Files exist
