@@ -9,7 +9,7 @@
 
   // ---------- Constants ----------
   const TILE = 32;
-  const VIEW_W = 960, VIEW_H = 640;
+  let VIEW_W = 960, VIEW_H = 640;   // updated to fill the window on resize
   const MAP_W = 60, MAP_H = 60;
   const SAVE_KEY = "verdelve_save_v1";
 
@@ -107,6 +107,11 @@
 
   const HOTBAR = ["pick", "sword", "torch", "brick", "plank", "wood", "stone", "dirt"];
   let activeSlot = 0;
+
+  // character appearance (persisted in the save)
+  const HAIR_COLORS = ["#1a1a1a", "#3a2a18", "#d9b45a", "#b5532a", "#3a6ea5", "#e07ba8"];
+  const SHIRT_COLORS = ["#4aa3ff", "#d35454", "#5fbf52", "#9b6bd6", "#e08a3a", "#e8e8e8"];
+  const character = { name: "Hero", gender: "boy", hair: "#3a2a18", shirt: "#4aa3ff" };
 
   // quest objects
   const owQuest = { step: 0, progress: 0, done: false };
@@ -346,6 +351,7 @@
     if (!owSnap) return false;
     const data = {
       deaths, dungeonsCleared,
+      character: { ...character },
       inv: { ...inv },
       player: { hp: Math.max(1, player.hp), maxHp: player.maxHp, atk: player.atk },
       owQuest: { step: owQuest.step, progress: owQuest.progress, done: owQuest.done },
@@ -362,6 +368,7 @@
     let data; try { data = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return false; }
     if (!data) return false;
     deaths = data.deaths || 0; dungeonsCleared = data.dungeonsCleared || 0;
+    if (data.character) Object.assign(character, data.character);
     for (const k in inv) delete inv[k];
     Object.assign(inv, data.inv || {});
     ensurePlayer();
@@ -388,6 +395,7 @@
     if (k === "c") toggleCraft();
     if (k === "f") useTile();
     if (k === "q") eatFood();
+    if (k === "r") warpHome();
     if (k === "escape" || k === "p") togglePause();
     if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) e.preventDefault();
   });
@@ -415,6 +423,7 @@
   const stickEl = document.getElementById("stick");
   const knobEl = document.getElementById("knob");
   const pauseBtn = document.getElementById("pause-btn");
+  const warpBtn = document.getElementById("warp-btn");
   const stickVec = { x: 0, y: 0 };
   let stickId = null;
 
@@ -449,19 +458,23 @@
         else if (act === "craft") toggleCraft();
         else if (act === "eat") eatFood();
         else if (act === "use") useTile();
+        else if (act === "warp") warpHome();
       }, { passive: false });
       btn.addEventListener("touchend", (e) => { e.preventDefault(); if (act === "mine") touch.mining = false; }, { passive: false });
     });
     pauseBtn.addEventListener("click", () => { if (scene === "play") togglePause(); });
+    warpBtn.addEventListener("click", warpHome);
   }
+  function updateWarpBtn() { warpBtn.classList.toggle("hidden", !(scene === "play" && mode === "dungeon")); }
 
   // =====================================================================
   //  CAMERA / AIM
   // =====================================================================
   const cam = { x: 0, y: 0 };
   function updateCamera() {
-    cam.x = clamp(player.px - VIEW_W / 2, 0, MAP_W * TILE - VIEW_W);
-    cam.y = clamp(player.py - VIEW_H / 2, 0, MAP_H * TILE - VIEW_H);
+    const worldW = MAP_W * TILE, worldH = MAP_H * TILE;
+    cam.x = worldW <= VIEW_W ? (worldW - VIEW_W) / 2 : clamp(player.px - VIEW_W / 2, 0, worldW - VIEW_W);
+    cam.y = worldH <= VIEW_H ? (worldH - VIEW_H) / 2 : clamp(player.py - VIEW_H / 2, 0, worldH - VIEW_H);
   }
   function updateAim() {
     if (touch.active || !mouse.active) {
@@ -606,6 +619,15 @@
     applyOverworld();
     toast("🌿 Back in the overworld");
     renderQuest(); updateHUD(); saveGame();
+  }
+
+  // Warp Stone — every delver carries one; whisks you home from the deep.
+  function warpHome() {
+    if (scene !== "play" || paused) return;
+    if (mode !== "dungeon") { toast("✨ The Warp Stone only hums underground"); return; }
+    spawnParticles(player.px, player.py, "#d6a8ff", 24);
+    spawnFloat(player.px, player.py - 20, "✨ WARP", "#d6a8ff");
+    exitDungeon();
   }
 
   // =====================================================================
@@ -803,8 +825,9 @@
     ctx.strokeStyle = reachable(aimTx, aimTy) ? "rgba(241,196,15,0.8)" : "rgba(255,255,255,0.15)";
     ctx.lineWidth = 2; ctx.strokeRect(ax + 1, ay + 1, TILE - 2, TILE - 2);
 
-    // vignette (lighter in daylight)
-    const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, 120, VIEW_W / 2, VIEW_H / 2, 560);
+    // vignette (lighter in daylight), scaled to the screen
+    const vr = Math.max(VIEW_W, VIEW_H) * 0.62;
+    const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, vr * 0.22, VIEW_W / 2, VIEW_H / 2, vr);
     g.addColorStop(0, "rgba(0,0,0,0)");
     g.addColorStop(1, mode === "overworld" ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.6)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -916,14 +939,32 @@
     ctx.fillStyle = "#000"; ctx.fillRect(sx - 12, sy - 16, 24, 4);
     ctx.fillStyle = "#ff6b6b"; ctx.fillRect(sx - 12, sy - 16, 24 * (m.hp / m.maxHp), 4);
   }
+  // Draws the customizable avatar. Used for the live player AND the creation preview.
+  function drawCharacter(g, cx, cy, s, facing, hurt) {
+    const shirt = hurt ? "#fff" : character.shirt;
+    const hair = hurt ? "#fff" : character.hair;
+    const skin = hurt ? "#fff" : "#f0c89a";
+    const girl = character.gender === "girl";
+    // body / shirt (girls a touch narrower)
+    const bw = girl ? 16 : 18;
+    g.fillStyle = shirt; g.fillRect(cx - (bw / 2) * s, cy - 11 * s, bw * s, 22 * s);
+    // head
+    g.fillStyle = skin; g.fillRect(cx - 7 * s, cy - 18 * s, 14 * s, 10 * s);
+    // hair: top fringe + (girl) longer sides
+    g.fillStyle = hair;
+    g.fillRect(cx - 7 * s, cy - 18 * s, 14 * s, 3 * s);
+    if (girl) { g.fillRect(cx - 8 * s, cy - 18 * s, 2 * s, 13 * s); g.fillRect(cx + 6 * s, cy - 18 * s, 2 * s, 13 * s); }
+    else { g.fillRect(cx - 7 * s, cy - 18 * s, 2 * s, 5 * s); g.fillRect(cx + 5 * s, cy - 18 * s, 2 * s, 5 * s); }
+    // eyes
+    g.fillStyle = "#000";
+    const eo = facing > 0 ? 2 : -2;
+    g.fillRect(cx + (-4 + eo) * s, cy - 14 * s, 2 * s, 2 * s);
+    g.fillRect(cx + (2 + eo) * s, cy - 14 * s, 2 * s, 2 * s);
+  }
+
   function drawPlayer() {
     const sx = player.px - cam.x, sy = player.py - cam.y;
-    ctx.fillStyle = player.hurtT > 0 ? "#fff" : "#4aa3ff"; ctx.fillRect(sx - 9, sy - 11, 18, 22);
-    ctx.fillStyle = "#f0c89a"; ctx.fillRect(sx - 7, sy - 18, 14, 10);
-    ctx.fillStyle = "#3a2a18"; ctx.fillRect(sx - 7, sy - 18, 14, 3);
-    ctx.fillStyle = "#000";
-    ctx.fillRect(sx - 4 + (player.facing > 0 ? 2 : -2), sy - 14, 2, 2);
-    ctx.fillRect(sx + 2 + (player.facing > 0 ? 2 : -2), sy - 14, 2, 2);
+    drawCharacter(ctx, sx, sy, 1, player.facing, player.hurtT > 0);
     if (player.swingT > 0) {
       const a = Math.atan2(aimTy * TILE + 16 - player.py, aimTx * TILE + 16 - player.px);
       ctx.font = "16px serif"; ctx.textAlign = "center";
@@ -958,7 +999,7 @@
   function updateHUD() {
     document.getElementById("depth").textContent = mode === "overworld" ? "🌳 Overworld" : "🗡️ Dungeon Lv " + dungeonLevel;
     document.getElementById("deaths").textContent = "☠️ " + deaths;
-    renderHUD(); renderMats();
+    renderHUD(); renderMats(); updateWarpBtn();
   }
   function renderQuest() {
     const el = document.getElementById("quest"); el.classList.remove("hidden");
@@ -1014,14 +1055,53 @@
   // =====================================================================
   //  SCENES: title / pause / death
   // =====================================================================
+  function savedName() { try { return JSON.parse(localStorage.getItem(SAVE_KEY))?.character?.name; } catch (e) { return null; } }
   function showTitle() {
     scene = "title"; paused = false;
     document.getElementById("title").classList.remove("hidden");
+    document.getElementById("create").classList.add("hidden");
     document.getElementById("pause").classList.add("hidden");
     document.getElementById("death").classList.add("hidden");
     craftPanel.classList.add("hidden");
     pauseBtn.classList.add("hidden");
-    document.getElementById("btn-continue").disabled = !hasSave();
+    warpBtn.classList.add("hidden");
+    const sn = savedName();
+    const cont = document.getElementById("btn-continue");
+    cont.disabled = !hasSave();
+    cont.textContent = sn ? `Continue (${sn})` : "Continue";
+  }
+
+  // ----- Character creation screen -----
+  const createScreen = document.getElementById("create");
+  function showCreate() {
+    document.getElementById("title").classList.add("hidden");
+    createScreen.classList.remove("hidden");
+    document.getElementById("char-name").value = character.name === "Hero" ? "" : character.name;
+    buildCreateOptions();
+    drawPreview();
+  }
+  function swatch(parent, sel, onPick, opts) {
+    parent.innerHTML = "";
+    for (const o of opts) {
+      const b = document.createElement("div");
+      b.className = "sw" + (o.text ? " text" : "") + (sel === o.val ? " sel" : "");
+      if (o.text) b.textContent = o.text; else b.style.background = o.val;
+      b.onclick = () => { onPick(o.val); buildCreateOptions(); drawPreview(); };
+      parent.appendChild(b);
+    }
+  }
+  function buildCreateOptions() {
+    swatch(document.getElementById("opt-gender"), character.gender, v => character.gender = v,
+      [{ val: "boy", text: "Boy" }, { val: "girl", text: "Girl" }]);
+    swatch(document.getElementById("opt-hair"), character.hair, v => character.hair = v, HAIR_COLORS.map(c => ({ val: c })));
+    swatch(document.getElementById("opt-shirt"), character.shirt, v => character.shirt = v, SHIRT_COLORS.map(c => ({ val: c })));
+  }
+  function drawPreview() {
+    const cv = document.getElementById("char-preview"), g = cv.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.fillStyle = "#356b2e"; g.fillRect(0, cv.height - 16, cv.width, 16);
+    drawCharacter(g, cv.width / 2, cv.height / 2 + 4, 3, 1, false);
   }
   function startPlay() {
     document.getElementById("title").classList.add("hidden");
@@ -1042,7 +1122,7 @@
     generateOverworld();
     give("torch", 5); give("wood", 2); give("stone", 2);
     startPlay();
-    toast("📜 Chop 3 wood to begin your quest!");
+    toast("📜 " + character.name + ", chop 3 wood to begin!");
     saveGame();
   }
   function continueGame() { if (loadGame()) { startPlay(); toast("Welcome back!"); } else newGame(); }
@@ -1056,7 +1136,7 @@
   function onDeath() {
     deaths++; saveGame();
     scene = "play"; paused = true; // freeze world behind overlay
-    document.getElementById("death-note").textContent = `Total deaths: ${deaths}. Your stuff is safe.`;
+    document.getElementById("death-note").textContent = `${character.name} has fallen. Total deaths: ${deaths}. Your stuff is safe.`;
     document.getElementById("death").classList.remove("hidden");
   }
   function respawn() {
@@ -1070,17 +1150,25 @@
     toast("🌿 Respawned in the overworld");
   }
 
-  // ---------- Responsive scaling ----------
-  function fitScreen() {
-    const wrap = document.getElementById("game-wrap");
-    const scale = Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H);
-    wrap.style.transform = `scale(${scale})`;
+  // ---------- Fullscreen canvas (fills window, never crops) ----------
+  function resizeCanvas() {
+    VIEW_W = canvas.width = Math.max(320, Math.floor(window.innerWidth));
+    VIEW_H = canvas.height = Math.max(240, Math.floor(window.innerHeight));
+    ctx.imageSmoothingEnabled = false;   // reset after a resize
+    mouse.x = VIEW_W / 2; mouse.y = VIEW_H / 2;
   }
-  window.addEventListener("resize", fitScreen);
-  window.addEventListener("orientationchange", fitScreen);
+  window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 120));
 
   // ---------- Wire up menus ----------
-  document.getElementById("btn-new").onclick = newGame;
+  document.getElementById("btn-new").onclick = showCreate;
+  document.getElementById("btn-start").onclick = () => {
+    const nm = document.getElementById("char-name").value.trim();
+    character.name = nm || "Hero";
+    createScreen.classList.add("hidden");
+    newGame();
+  };
+  document.getElementById("btn-create-back").onclick = showTitle;
   document.getElementById("btn-continue").onclick = continueGame;
   document.getElementById("btn-help").onclick = () => document.getElementById("help-box").classList.toggle("hidden");
   document.getElementById("btn-resume").onclick = togglePause;
@@ -1090,7 +1178,7 @@
   document.getElementById("btn-death-quit").onclick = () => { showTitle(); };
 
   // ---------- Boot ----------
-  initStick(); initTouchButtons(); fitScreen();
+  initStick(); initTouchButtons(); resizeCanvas();
   renderHotbar(); showTitle();
   requestAnimationFrame(loop);
 })();

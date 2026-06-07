@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Neon Tilt — Pinball</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="480" height="720"></canvas>
+
+    <div id="hud">
+      <div class="score">SCORE <span id="score">0</span></div>
+      <div class="meta"><span id="balls">●●●</span><span id="best">BEST 0</span></div>
+    </div>
+
+    <!-- Touch flipper zones + launch (mobile only) -->
+    <div id="touch" class="hidden">
+      <div class="flip-zone left">◀</div>
+      <div class="flip-zone right">▶</div>
+      <button id="launch-btn">⬆ HOLD &amp; RELEASE TO LAUNCH</button>
+    </div>
+
+    <!-- Overlays -->
+    <div id="overlay" class="screen">
+      <div class="card">
+        <h1>◓ NEON TILT</h1>
+        <p class="tag">A tiny pinball arcade</p>
+        <div class="how">
+          <div><b>← / →</b> or <b>A / L</b> — flippers</div>
+          <div><b>Space</b> — hold to charge, release to launch</div>
+          <div class="m"><b>Mobile:</b> tap left/right side for flippers</div>
+        </div>
+        <button id="play-btn">Play</button>
+      </div>
+    </div>
+
+    <div id="gameover" class="screen hidden">
+      <div class="card">
+        <h1>GAME OVER</h1>
+        <p class="tag" id="final"></p>
+        <button id="again-btn">Play Again</button>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -2,111 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#07090c" />
-  <title>Verdelve</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: radial-gradient(circle at 50% 0%, #16241a, #07090c);
+      color: #e8e6d9; font-family: "Trebuchet MS", system-ui, sans-serif;
+      display: flex; flex-direction: column; align-items: center; padding: 48px 20px;
+    }
+    h1 { font-size: 40px; color: #9be36b; text-shadow: 0 2px 16px rgba(120,220,90,0.4); margin-bottom: 6px; }
+    p.sub { color: #a9c98b; font-style: italic; margin-bottom: 36px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; width: 100%; max-width: 760px; }
+    a.card {
+      display: block; text-decoration: none; color: inherit;
+      background: rgba(255,255,255,0.04); border: 1px solid #2a3a2a; border-radius: 12px;
+      padding: 22px; transition: transform 0.08s, border-color 0.15s, background 0.15s;
+    }
+    a.card:hover { transform: translateY(-3px); border-color: #9be36b; background: rgba(155,227,107,0.08); }
+    .card .emoji { font-size: 40px; }
+    .card h2 { font-size: 22px; margin: 10px 0 4px; }
+    .card p { font-size: 13px; color: #b8c4ad; line-height: 1.4; }
+    .card .play { margin-top: 12px; display: inline-block; font-weight: bold; color: #9be36b; }
+    footer { margin-top: 40px; font-size: 12px; color: #5a6a55; }
+  </style>
 </head>
 <body>
-  <div id="game-wrap">
-    <canvas id="game" width="960" height="640"></canvas>
-
-    <!-- HUD -->
-    <div id="hud">
-      <div id="stats">
-        <div class="bar-label">HP</div>
-        <div class="bar"><div id="hp-fill" class="bar-fill hp"></div></div>
-      </div>
-      <div id="hud-row2">
-        <span id="depth">🌳 Overworld</span>
-        <span id="deaths">☠️ 0</span>
-        <span id="mats"></span>
-      </div>
-    </div>
-
-    <!-- Quest tracker -->
-    <div id="quest" class="hidden">
-      <div class="q-head">📜 Quest</div>
-      <div id="q-title"></div>
-      <div id="q-prog" class="q-prog"></div>
-    </div>
-
-    <!-- Hotbar -->
-    <div id="hotbar"></div>
-
-    <!-- Touch controls (shown only on touch devices) -->
-    <div id="touch" class="hidden">
-      <div id="stick"><div id="knob"></div></div>
-      <div id="touch-actions">
-        <button class="tbtn big" data-act="mine">⛏️</button>
-        <button class="tbtn big" data-act="place">🧱</button>
-      </div>
-      <div id="touch-mini">
-        <button class="tbtn" data-act="craft">C</button>
-        <button class="tbtn" data-act="eat">🍖</button>
-        <button class="tbtn" data-act="use">F</button>
-      </div>
-    </div>
-    <button id="pause-btn" class="hidden">⏸</button>
-
-    <!-- Crafting panel -->
-    <div id="craft-panel" class="panel hidden">
-      <h2>Crafting <span class="hint">(press C to close)</span></h2>
-      <div id="recipe-list"></div>
-    </div>
-
-    <!-- Title screen -->
-    <div id="title" class="screen">
-      <div class="screen-card">
-        <h1 class="logo">🌿 Verdelve</h1>
-        <p class="tag">A cozy overworld · a dangerous deep</p>
-        <div class="menu">
-          <button id="btn-new">New Game</button>
-          <button id="btn-continue">Continue</button>
-          <button id="btn-help">How to Play</button>
-        </div>
-        <div id="help-box" class="controls hidden">
-          <div><b>WASD / Arrows</b> — move</div>
-          <div><b>Left click</b> — mine / attack · <b>Right click</b> — place block</div>
-          <div><b>1–8</b> — hotbar · <b>C</b> — craft · <b>Q</b> — eat food</div>
-          <div><b>F</b> — use 🌀 portal / ▲ exit · <b>Esc</b> — pause</div>
-          <div class="lore">Gather wood &amp; stone in the sunny overworld, raise animals, and build.
-          The <b>rarest materials</b> (💎 gems, 🔻 rubies) only come from clearing the
-          <b>miniquests</b> inside 🌀 dungeons that dot the world. Delve, survive, return rich.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pause menu -->
-    <div id="pause" class="screen hidden">
-      <div class="screen-card">
-        <h1 class="logo small">⏸️ Paused</h1>
-        <div class="menu">
-          <button id="btn-resume">Resume</button>
-          <button id="btn-save">Save Game</button>
-          <button id="btn-quit">Quit to Title</button>
-        </div>
-        <p id="save-note" class="tag"></p>
-      </div>
-    </div>
-
-    <!-- Death screen -->
-    <div id="death" class="screen hidden">
-      <div class="screen-card">
-        <h1 class="logo small">💀 You Died</h1>
-        <p id="death-note" class="tag"></p>
-        <div class="menu">
-          <button id="btn-respawn">Respawn in Overworld</button>
-          <button id="btn-death-quit">Quit to Title</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="toast"></div>
+  <h1>🎮 Game Hub</h1>
+  <p class="sub">A growing collection of little web games</p>
+  <div class="grid">
+    <a class="card" href="verdelve/index.html">
+      <div class="emoji">🌿</div>
+      <h2>Verdelve</h2>
+      <p>A cozy overworld and a dangerous deep. Mine, build, farm, and delve into dungeons for rare loot. Works on desktop &amp; mobile.</p>
+      <span class="play">Play ▸</span>
+    </a>
+    <a class="card" href="pinball/index.html">
+      <div class="emoji">◓</div>
+      <h2>Neon Tilt</h2>
+      <p>A tiny neon pinball arcade. Launch the ball, work the flippers, light up the bumpers, and chase a high score. Desktop &amp; mobile.</p>
+      <span class="play">Play ▸</span>
+    </a>
+    <!-- Add future games here as new folders + cards -->
   </div>
-
-  <script src="game.js"></script>
+  <footer>More games coming soon…</footer>
 </body>
 </html>
