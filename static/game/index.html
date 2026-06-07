@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#07090c" />
+  <title>Verdelve</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-wrap">
+    <canvas id="game" width="960" height="640"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="stats">
+        <div class="bar-label">HP</div>
+        <div class="bar"><div id="hp-fill" class="bar-fill hp"></div></div>
+      </div>
+      <div id="hud-row2">
+        <span id="depth">🌳 Overworld</span>
+        <span id="deaths">☠️ 0</span>
+        <span id="mats"></span>
+      </div>
+    </div>
+
+    <!-- Quest tracker -->
+    <div id="quest" class="hidden">
+      <div class="q-head">📜 Quest</div>
+      <div id="q-title"></div>
+      <div id="q-prog" class="q-prog"></div>
+    </div>
+
+    <!-- Hotbar -->
+    <div id="hotbar"></div>
+
+    <!-- Touch controls (shown only on touch devices) -->
+    <div id="touch" class="hidden">
+      <div id="stick"><div id="knob"></div></div>
+      <div id="touch-actions">
+        <button class="tbtn big" data-act="mine">⛏️</button>
+        <button class="tbtn big" data-act="place">🧱</button>
+      </div>
+      <div id="touch-mini">
+        <button class="tbtn" data-act="craft">C</button>
+        <button class="tbtn" data-act="eat">🍖</button>
+        <button class="tbtn" data-act="use">F</button>
+      </div>
+    </div>
+    <button id="pause-btn" class="hidden">⏸</button>
+
+    <!-- Crafting panel -->
+    <div id="craft-panel" class="panel hidden">
+      <h2>Crafting <span class="hint">(press C to close)</span></h2>
+      <div id="recipe-list"></div>
+    </div>
+
+    <!-- Title screen -->
+    <div id="title" class="screen">
+      <div class="screen-card">
+        <h1 class="logo">🌿 Verdelve</h1>
+        <p class="tag">A cozy overworld · a dangerous deep</p>
+        <div class="menu">
+          <button id="btn-new">New Game</button>
+          <button id="btn-continue">Continue</button>
+          <button id="btn-help">How to Play</button>
+        </div>
+        <div id="help-box" class="controls hidden">
+          <div><b>WASD / Arrows</b> — move</div>
+          <div><b>Left click</b> — mine / attack · <b>Right click</b> — place block</div>
+          <div><b>1–8</b> — hotbar · <b>C</b> — craft · <b>Q</b> — eat food</div>
+          <div><b>F</b> — use 🌀 portal / ▲ exit · <b>Esc</b> — pause</div>
+          <div class="lore">Gather wood &amp; stone in the sunny overworld, raise animals, and build.
+          The <b>rarest materials</b> (💎 gems, 🔻 rubies) only come from clearing the
+          <b>miniquests</b> inside 🌀 dungeons that dot the world. Delve, survive, return rich.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause menu -->
+    <div id="pause" class="screen hidden">
+      <div class="screen-card">
+        <h1 class="logo small">⏸️ Paused</h1>
+        <div class="menu">
+          <button id="btn-resume">Resume</button>
+          <button id="btn-save">Save Game</button>
+          <button id="btn-quit">Quit to Title</button>
+        </div>
+        <p id="save-note" class="tag"></p>
+      </div>
+    </div>
+
+    <!-- Death screen -->
+    <div id="death" class="screen hidden">
+      <div class="screen-card">
+        <h1 class="logo small">💀 You Died</h1>
+        <p id="death-note" class="tag"></p>
+        <div class="menu">
+          <button id="btn-respawn">Respawn in Overworld</button>
+          <button id="btn-death-quit">Quit to Title</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
