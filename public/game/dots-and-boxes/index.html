@@ -4,7 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DOTS &amp; BOXES // RETRO</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
+  html.hosted .ai-only { display: none !important; }
   :root {
     --bg: #160f29;
     --bg-2: #241b3c;
@@ -215,6 +218,32 @@
   @media (max-width: 520px) {
     .name-field input { width: 100px; }
   }
+  /* ---- AI opponent (local only) ---- */
+  #dbAi { max-width: 560px; margin: 4px auto 22px; padding: 14px 16px;
+          background: var(--panel); border: 1px solid var(--grid); border-radius: 12px;
+          display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); }
+  #dbAi .ai-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  #dbAi .ai-label { width: 70px; flex: none; color: var(--muted); font-size: 11px;
+                    text-transform: uppercase; letter-spacing: .08em; }
+  #dbAi .seg { display: inline-flex; border: 1px solid var(--grid); border-radius: 7px; overflow: hidden; }
+  #dbAi .seg button { background: transparent; border: 0; color: var(--muted); padding: 5px 12px;
+                      font-size: 12px; cursor: pointer; font-family: var(--mono); }
+  #dbAi .seg button.active { background: var(--accent); color: #1a1230; font-weight: 800; }
+  #dbAi select, #dbAi input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text);
+                      border: 1px solid var(--grid); border-radius: 6px; padding: 5px 8px;
+                      font-size: 12px; font-family: var(--mono); }
+  #dbAi #dbRefresh { flex: none; background: var(--panel-2); color: var(--p2); border: 1px solid var(--grid);
+                      border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  #dbAi .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  #dbAi .ai-dot { width: 9px; height: 9px; border-radius: 2px; background: #6c5f95; flex: none; }
+  #dbAi .ai-dot.on { background: var(--p2); box-shadow: 0 0 7px var(--p2); }
+  #dbAi .ai-dot.err { background: var(--p1); box-shadow: 0 0 7px var(--p1); }
+  #dbAi .ai-think { max-height: 120px; overflow: auto; background: var(--bg-2);
+                    border: 1px solid var(--grid); border-radius: 7px; padding: 9px; color: var(--text);
+                    white-space: pre-wrap; font-size: 12px; line-height: 1.45; }
+  #dbAi .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.45; }
+  #dbAi .ai-hint a { color: var(--accent); }
+  #dbAi.hide-seat #dbSeatRow { display: none; }
 </style>
 </head>
 <body>
@@ -239,6 +268,13 @@
           <button type="button" class="seg-btn" data-size="8">Large</button>
         </div>
       </div>
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="dbOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
       <button type="button" id="newGame">New Game</button>
     </div>
 
@@ -247,6 +283,31 @@
       <div class="name-field" data-idx="1"><span class="swatch" style="background:var(--p2)"></span><input id="name1" value="Player 2" maxlength="14" /></div>
       <div class="name-field hidden" data-idx="2"><span class="swatch" style="background:var(--p3)"></span><input id="name2" value="Player 3" maxlength="14" /></div>
       <div class="name-field hidden" data-idx="3"><span class="swatch" style="background:var(--p4)"></span><input id="name3" value="Player 4" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) ---------- -->
+    <div id="dbAi" class="ai-only">
+      <div class="ai-row" id="dbSeatRow">
+        <span class="ai-label">AI plays</span>
+        <select id="dbSeatSel"></select>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select id="dbModelSel"><option>loading…</option></select>
+        <button id="dbRefresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" id="dbEndpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="dbAiDot"></span><span id="dbAiStatus">Humans only</span></div>
+      <div class="ai-think" id="dbAiThink">The AI's reasoning streams here as it picks an edge&#8230;</div>
+      <div class="ai-hint">
+        Play against a model on <em>your</em> machine &mdash;
+        <a href="../../ai-setup.html">connect a model &#9656;</a>.
+        It only ever picks from the game's list of <em>legal</em> edges (each tagged with whether it
+        completes a box or hands one over), so it plays by the rules.
+      </div>
     </div>
 
     <div class="scoreboard" id="scoreboard"></div>
@@ -262,6 +323,7 @@
     <div class="winner-banner" id="winner"></div>
   </div>
 
+<script src="../../lib/byom.js"></script>
 <script>
 (function () {
   "use strict";
@@ -329,6 +391,7 @@
     updateScoreboard();
     updateStatus();
     document.getElementById("winner").textContent = "";
+    if (typeof dbOnNewGame === "function") dbOnNewGame();   // reset AI + open if AI is first seat
   }
 
   function buildScoreboard() {
@@ -408,8 +471,9 @@
     return [hKey(r, c), hKey(r + 1, c), vKey(r, c), vKey(r, c + 1)];
   }
 
-  function claimEdge(key) {
+  function claimEdge(key, byAI) {
     if (gameOver) return;
+    if (!byAI && (aiBusy || isAITurn())) return;   // hands off while the AI is on move
     if (edges[key] !== -1) return;
 
     edges[key] = current;
@@ -441,6 +505,7 @@
 
     updateScoreboard();
     updateStatus(completedAny);
+    maybeAIMove();          // if it's (still) the AI's turn, let it play
   }
 
   function affectedBoxes(key) {
@@ -545,7 +610,206 @@
     });
   }
 
+  /* ============================================================
+   *  AI opponent — Bring Your Own Model (local only)
+   *  The browser tags every legal edge (does it complete a box? does it
+   *  hand one over?) and the model picks one by number. It can only ever
+   *  play a legal edge; a bad reply falls back to the best-ranked move.
+   * ============================================================ */
+  const dbAi        = document.getElementById("dbAi");
+  const dbOppSeg    = document.getElementById("dbOppSeg");
+  const dbSeatSel   = document.getElementById("dbSeatSel");
+  const dbModelSel  = document.getElementById("dbModelSel");
+  const dbEndpoint  = document.getElementById("dbEndpoint");
+  const dbAiThink   = document.getElementById("dbAiThink");
+  const dbAiStatusEl= document.getElementById("dbAiStatus");
+  const dbAiDot     = document.getElementById("dbAiDot");
+
+  let aiMode = "humans";       // 'humans' | 'ai'
+  let aiSeat = 1;              // player index the AI controls (default Player 2)
+  let aiBusy = false, aiGen = 0, aiController = null;
+  const aiIsReasoning = (m) => /r1\b|deepseek-r1|qwq|reason|think|gpt-oss/i.test(m || "");
+
+  function endpointBase() { return (dbEndpoint.value || XenoBYOM.DEFAULT_ENDPOINT).replace(/\/$/, ""); }
+  function isAITurn() { return aiMode === "ai" && !gameOver && current === aiSeat; }
+  function setAiStatus(text, state) { dbAiStatusEl.textContent = text; dbAiDot.className = "ai-dot" + (state ? " " + state : ""); }
+  function aiInterrupt() { aiGen++; if (aiController) { try { aiController.abort(); } catch (e) {} aiController = null; } aiBusy = false; }
+
+  // ---- edge analysis (this is what makes the model play sensibly) ----
+  function boxSides(r, c) { return boxEdges(r, c).reduce((n, k) => n + (edges[k] !== -1 ? 1 : 0), 0); }
+  function analyzeEdge(key) {
+    let completes = 0, gives = 0;
+    for (const [r, c] of affectedBoxes(key)) {
+      const s = boxSides(r, c);
+      if (s === 3) completes++;        // this would be the 4th side
+      else if (s === 2) gives++;       // would make a 3-sided box → opponent takes it
+    }
+    return { completes, gives };
+  }
+  function rankedMoves() {
+    const list = Object.keys(edges).filter(k => edges[k] === -1).map(k => Object.assign({ key: k }, analyzeEdge(k)));
+    list.sort((a, b) => (b.completes - a.completes) || (a.gives - b.gives));
+    return list;
+  }
+  function fallbackMove() { const r = rankedMoves(); return r.length ? r[0].key : null; }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const shown = ranked.slice(0, 70);     // plenty; ranked so the good moves are always listed
+    const nm = names();
+    const me = nm[aiSeat];
+    const lines = shown.map((m, i) => {
+      const tag = m.completes > 0 ? `COMPLETES ${m.completes} box(es) — take it, then move again`
+                : m.gives > 0 ? `UNSAFE — hands the opponent ${m.gives} box(es)`
+                : `safe — completes nothing, gives nothing away`;
+      return `${i + 1}. ${m.key}  [${tag}]`;
+    }).join("\n");
+    const system =
+`You are a sharp Dots and Boxes player ("${me}"). On your turn you draw ONE line (edge). Completing the 4th side of a box claims it and lets you move AGAIN. Most boxes wins.
+Strategy, in order: (1) take any box you can complete, and keep chaining them; (2) otherwise play a SAFE edge that doesn't create a 3-sided box; (3) only if no safe edge exists, give away as few boxes as possible.
+You get a numbered list of every legal edge, each tagged with its effect. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`Scores — ${nm.slice(0, numPlayers).map((n, i) => `${n}: ${scores[i]}`).join(", ")}. You are ${me}.
+Board: ${rows}x${cols} boxes. Edge keys read type-row-col (h = horizontal line, v = vertical line).
+Legal edges:
+${lines}
+
+Pick the best edge and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], shown };
+  }
+
+  function parseMove(reply, shown) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < shown.length) return shown[k].key; }
+    const km = seg.match(/[hv]-\d+-\d+/i);              // model spat an edge key directly
+    if (km) { const key = km[0].toLowerCase(); if (edges[key] === -1) return key; }
+    return null;
+  }
+
+  function maybeAIMove() {
+    if (!isAITurn() || aiBusy) return;
+    if (!XenoBYOM.isLocal()) return;
+    if (!dbModelSel.value || dbModelSel.disabled) { setAiStatus("No model — pull one (e.g. ollama pull llama3.2:3b) and hit ↻", "err"); return; }
+    setTimeout(doAIMove, 300);
+  }
+
+  async function doAIMove() {
+    if (!isAITurn() || aiBusy) return;
+    const myGen = ++aiGen;
+    aiBusy = true;
+    const me = names()[aiSeat];
+    setAiStatus(`${me} (${dbModelSel.value}) thinking…`, "on");
+    dbAiThink.textContent = "";
+
+    const { messages, shown } = buildMessages();
+    aiController = new AbortController();
+    let reply = "";
+    try {
+      reply = await XenoBYOM.chat({
+        endpoint: endpointBase(),
+        model: dbModelSel.value,
+        messages,
+        temperature: 0.4,
+        maxTokens: aiIsReasoning(dbModelSel.value) ? 2048 : 600,
+        onToken: (d) => { if (myGen === aiGen) { dbAiThink.textContent += d; dbAiThink.scrollTop = dbAiThink.scrollHeight; } },
+        onThinking: (d) => { if (myGen === aiGen) { dbAiThink.textContent += d; dbAiThink.scrollTop = dbAiThink.scrollHeight; } },
+        signal: aiController.signal,
+      });
+    } catch (e) {
+      if (myGen !== aiGen) return;                  // superseded — stay quiet
+      aiBusy = false; aiController = null;
+      const hint = (e.kind === "network" || e.kind === "http") ? " — check the setup page (link below)." : "";
+      setAiStatus("Model error: " + e.message + hint, "err");
+      return;
+    }
+    aiController = null;
+    if (myGen !== aiGen || gameOver || !isAITurn()) { aiBusy = false; return; }
+
+    let key = parseMove(reply, shown);
+    if (!key || edges[key] !== -1) {
+      key = fallbackMove();
+      dbAiThink.textContent += `\n\n[couldn't read a legal MOVE: — played ${key} as a safe fallback]`;
+      dbAiThink.scrollTop = dbAiThink.scrollHeight;
+    }
+    aiBusy = false;
+    if (!key) return;
+    const a = analyzeEdge(key);
+    setAiStatus(`${me} drew ${key}${a.completes ? " — boxed it!" : ""}`, "on");
+    // brief beat, then play it (claimEdge re-triggers the AI if it gets another turn)
+    setTimeout(() => { if (myGen !== aiGen || gameOver || !isAITurn()) return; claimEdge(key, true); }, 260);
+  }
+
+  // ---- model list (shared BYOM connection) ----
+  async function loadModels() {
+    XenoBYOM.saveConfig({ endpoint: endpointBase() });
+    dbModelSel.disabled = true;
+    dbModelSel.innerHTML = "<option>loading…</option>";
+    const saved = XenoBYOM.loadConfig().model;
+    const res = await XenoBYOM.test({ endpoint: endpointBase() });
+    if (!res.ok) {
+      dbModelSel.innerHTML = '<option value="">— model not reachable —</option>';
+      setAiStatus(res.error.message + " — open the setup page to fix it.", "err");
+      return;
+    }
+    dbModelSel.innerHTML = res.models.map(n => `<option value="${n}">${n}</option>`).join("");
+    dbModelSel.disabled = false;
+    const fav = res.models.indexOf(saved) >= 0 ? saved
+      : (res.models.find(n => /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(n)) || res.models[0]);
+    dbModelSel.value = fav;
+    XenoBYOM.saveConfig({ model: fav });
+    if (aiMode === "ai") { setAiStatus(`Ready — ${res.models.length} model(s) via ${res.provider}.`, "on"); maybeAIMove(); }
+    else setAiStatus(`Ready — ${res.models.length} model(s). Switch Opponent to "vs AI".`, "");
+  }
+
+  // rebuild the "AI plays" dropdown for the current players
+  function rebuildSeats() {
+    const nm = names();
+    if (aiSeat >= numPlayers) aiSeat = numPlayers - 1;
+    dbSeatSel.innerHTML = "";
+    for (let i = 0; i < numPlayers; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = nm[i];
+      dbSeatSel.appendChild(o);
+    }
+    dbSeatSel.value = aiSeat;
+  }
+
+  // called at the end of startGame()
+  function dbOnNewGame() {
+    aiInterrupt();
+    rebuildSeats();
+    if (aiMode === "ai") { setAiStatus("vs AI — AI plays " + names()[aiSeat], "on"); maybeAIMove(); }
+    else setAiStatus(XenoBYOM.isLocal() ? "Humans — switch Opponent to “vs AI”" : "Humans only", "");
+  }
+
+  // ---- UI wiring ----
+  dbOppSeg.addEventListener("click", (e) => {
+    const b = e.target.closest(".seg-btn"); if (!b) return;
+    aiMode = b.dataset.opp;
+    dbOppSeg.querySelectorAll(".seg-btn").forEach(x => x.classList.toggle("active", x === b));
+    dbAi.classList.toggle("hide-seat", aiMode !== "ai");
+    aiInterrupt();
+    if (aiMode === "ai") { setAiStatus("vs AI — AI plays " + names()[aiSeat], "on"); maybeAIMove(); }
+    else setAiStatus("Humans only", "");
+  });
+  dbSeatSel.addEventListener("change", () => {
+    aiSeat = +dbSeatSel.value; aiInterrupt();
+    if (aiMode === "ai") { setAiStatus("AI plays " + names()[aiSeat], "on"); maybeAIMove(); }
+  });
+  dbModelSel.addEventListener("change", () => XenoBYOM.saveConfig({ model: dbModelSel.value }));
+  document.getElementById("dbRefresh").addEventListener("click", loadModels);
+  dbEndpoint.addEventListener("change", loadModels);
+
+  dbAi.classList.add("hide-seat");           // seat picker only matters in "vs AI"
   startGame();
+  // only reach out to a local model when the page itself is served locally
+  if (XenoBYOM.isLocal()) {
+    dbEndpoint.value = XenoBYOM.loadConfig().endpoint;
+    loadModels();
+  }
 })();
 </script>
 </body>

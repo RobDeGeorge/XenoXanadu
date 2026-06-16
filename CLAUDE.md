@@ -25,7 +25,7 @@ public/                 Everything that ships (this folder IS the website)
     pinball/            "Neon Tilt" — neon pinball
     chess/              Full chess (check, mate, castling) — 🤖 optional local-model opponent
     connect-four/       Connect Four — 🤖 optional local Ollama opponent
-    dots-and-boxes/     Retro neon Dots & Boxes
+    dots-and-boxes/     Retro neon Dots & Boxes — 🤖 optional local-model opponent
     sand-falling/       "Sand Garden" falling-sand sim + optional Node AI bridge
 .github/workflows/
   deploy.yml            Uploads public/ to GitHub Pages (no build)
@@ -65,6 +65,9 @@ Games:
   must pick one from it (replies `MOVE: <SAN>`), so it can't make an illegal move; an unparseable
   reply falls back to a sensible legal move. AI hooks into `doMove`/`newGame`/`undo`.
 - **connect-four** — uses `XenoBYOM.chat` directly (browser → user's model, no server).
+- **dots-and-boxes** — `XenoBYOM.chat`. The browser tags every legal edge (does it complete a
+  box / hand one over?) and the model picks one by number (`MOVE: <n>`); unparseable → best-ranked
+  fallback. One configurable AI seat; handles the extra-turn chain via `claimEdge`.
 - **sand-falling** — runs the gardener loop **two ways**, auto-selected at load:
   - *Browser-native* (default on the hosted site): the same observe→think→act loop ported into the
     page, driving the user's own model via `XenoBYOM`. `SAND_SYSTEM` in `index.html` mirrors
