@@ -10,7 +10,10 @@
   <meta property="og:description" content="A growing arcade of classic games rebuilt from scratch. Play in your browser." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
+  <!-- Mark hosted (non-local) before paint, so BYO-model bits never flash on the public site -->
+  <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
   <style>
+    html.hosted .ai-only { display: none !important; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh; background: radial-gradient(circle at 50% 0%, #16241a, #07090c);
@@ -64,7 +67,7 @@
       <div class="emoji">🔴</div>
       <h2>Connect Four</h2>
       <p>Drop your discs and line up four in a row. Play a friend, or take on a local Ollama model.</p>
-      <span class="tag">🤖 Local LLM</span>
+      <span class="tag ai-only">🤖 Local LLM</span>
       <span class="play">Play ▸</span>
     </a>
 
@@ -79,17 +82,18 @@
       <div class="emoji">⏳</div>
       <h2>Sand Garden</h2>
       <p>A falling-sand playground — pour sand, water, fire, and more, and watch the elements react. Optional local-LLM gardener.</p>
-      <span class="tag">🤖 Local LLM</span>
+      <span class="tag ai-only">🤖 Local LLM</span>
       <span class="play">Play ▸</span>
     </a>
 
     <!-- Add future games here as new folders in game/ + a card -->
   </div>
   <footer>
-    More games coming soon…<br />
+    More games coming soon…
+    <span class="ai-only"><br />
     🤖 marks games you can play against your own local model —
     <a href="ai-setup.html" style="color:#9be36b;font-weight:bold">connect a model ▸</a><br />
-    bring your own <a href="https://ollama.com" style="color:#7ab85a">Ollama</a> or any OpenAI-compatible server; nothing leaves your machine.
+    bring your own <a href="https://ollama.com" style="color:#7ab85a">Ollama</a> or any OpenAI-compatible server; nothing leaves your machine.</span>
   </footer>
 </body>
 </html>

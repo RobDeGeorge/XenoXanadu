@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Sand Garden</title>
+<!-- hide the AI player on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
+  html.hosted #aiPanel { display: none !important; }
   :root {
     --bg: #14111d;
     --panel: #1e1a2b;
@@ -2838,8 +2841,10 @@ aiModelSel.addEventListener('change', () => {
   }
 });
 
+// The AI player is local-only — a hosted HTTPS page can't reach a visitor's
+// localhost model. On the public site the panel is hidden and we never connect.
 aiBtnRun.disabled = true;
-aiConnect();
+if (XenoBYOM.isLocal()) aiConnect();
 
 // ============================================================
 //  main loop

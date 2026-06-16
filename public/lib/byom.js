@@ -71,6 +71,18 @@
     } catch (e) { return false; }
   }
 
+  // Is the page itself being served locally? AI play is only offered when it is —
+  // a public HTTPS page can't reach a visitor's localhost model (PNA/CORS), so the
+  // hosted site is arcade-only and the local copy gets the BYO-model features.
+  function isLocal() {
+    try {
+      var h = global.location.hostname;
+      return global.location.protocol === 'file:' ||
+        /^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h) ||
+        /\.local$/i.test(h);
+    } catch (e) { return false; }
+  }
+
   function originHint() {
     // The exact origin the user must allow in OLLAMA_ORIGINS.
     try { return global.location.origin; } catch (e) { return '*'; }
@@ -296,6 +308,7 @@
     chat: chat,
     test: test,
     originHint: originHint,
+    isLocal: isLocal,
     isCrossSchemeLocal: isCrossSchemeLocal
   };
 })(window);

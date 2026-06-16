@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Connect Four — vs Local LLM</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
+  html.hosted .ai-only { display: none !important; }
   :root {
     --board: #1b3a8f;
     --board-dark: #14296b;
@@ -325,8 +328,8 @@
     <button id="resetScores">Reset Scores</button>
   </div>
 
-  <!-- ---------- AI opponent panel ---------- -->
-  <div class="ai-panel">
+  <!-- ---------- AI opponent panel (local only) ---------- -->
+  <div class="ai-panel ai-only">
     <div class="ai-row">
       <span class="label">Mode</span>
       <div class="seg" id="modeSeg">
@@ -824,11 +827,15 @@ Think briefly, then give your COLUMN: line.`;
   ollamaUrlEl.addEventListener('change', loadModels);
   modelSel.addEventListener('change', () => XenoBYOM.saveConfig({ model: modelSel.value }));
 
-  // start it up — hydrate the endpoint from the site-wide saved connection
-  ollamaUrlEl.value = XenoBYOM.loadConfig().endpoint;
+  // start it up
   sideRow.classList.add('hide');     // only relevant in "You vs AI"
   newGame();
-  loadModels();
+  // AI opponent only on a locally-run copy — the public site is human-vs-human.
+  // (A hosted HTTPS page can't reach a visitor's localhost model; see ai-setup.)
+  if (XenoBYOM.isLocal()) {
+    ollamaUrlEl.value = XenoBYOM.loadConfig().endpoint;   // hydrate saved connection
+    loadModels();
+  }
 </script>
 </body>
 </html>
