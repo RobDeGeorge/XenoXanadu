@@ -389,13 +389,14 @@
         <span class="ai-title">AI player</span>
         <select id="aiModelSel" title="switch model"><option value="">—</option></select>
         <button id="aiBtnRun">▶ Start AI</button>
-        <span id="aiStatus">bridge: offline</span>
+        <span id="aiStatus">connecting…</span>
+        <a id="aiSetupLink" href="../../ai-setup.html" title="connect your local model" style="color:#9fd1ff;font-size:11px;text-decoration:none;margin-left:6px">connect a model ↗</a>
         <button id="aiCollapseBtn" title="collapse / expand">▾</button>
       </div>
       <div class="ai-body">
         <div class="ai-col">
           <div class="ai-sub">live thoughts</div>
-          <div id="aiOutput">Idle. Start the bridge (<code>node server.js</code>) and press Start.</div>
+          <div id="aiOutput">Idle. Bring your own model — <a href="../../ai-setup.html" style="color:#9fd1ff">connect one</a> and press Start. (Or run the <code>node server.js</code> bridge locally for stats + Claude.)</div>
         </div>
         <div class="ai-col">
           <div class="ai-sub">transcript</div>
@@ -489,6 +490,7 @@
   #aiTranscript .turn .move { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; }
 </style>
 
+<script src="../../lib/byom.js"></script>
 <script>
 "use strict";
 
@@ -2441,7 +2443,10 @@ const aiWished = new Set();
 function aiReportWish(text) {
   if (aiWished.has(text)) return;
   aiWished.add(text);
+  // bridge mode: the server logs wishes to WISHES.jsonl. browser mode: no server,
+  // so just surface it to the console (the panel already shows the no-op move).
   if (aiWS && aiWS.readyState === 1) aiWS.send(JSON.stringify({ type: 'wish', text }));
+  else console.info('✨ wish:', text);
 }
 
 function aiExecute(a) {
@@ -2507,9 +2512,14 @@ const aiBtnRun = document.getElementById('aiBtnRun');
 const aiToggleBtn = document.getElementById('aiToggleBtn');
 
 let aiWS = null, aiConnected = false, aiRunning = false;
+let aiMode = 'connecting';     // 'connecting' | 'bridge' | 'browser'
+let aiBrowserAbort = null;     // AbortController for the in-flight browser chat
 let aiStreamBuf = '';
 
-function aiSetStatus(t) { aiStatusEl.textContent = 'bridge: ' + t; }
+function aiSetStatus(t) {
+  const prefix = aiMode === 'bridge' ? 'bridge: ' : aiMode === 'browser' ? 'your model: ' : '';
+  aiStatusEl.textContent = prefix + t;
+}
 
 // a fresh turn begins — clear the live output and show the blinking caret
 function aiStreamReset() {
@@ -2587,14 +2597,206 @@ function aiSetCurrentModel(name) {
   aiModelSel.value = name;
 }
 
+// ============================================================
+//  Browser-native gardener — no server. Runs the same observe→think→act loop
+//  as server.js, but the model is the user's own (via XenoBYOM). This is what
+//  powers the AI on the hosted static site, where there is no Node bridge.
+//  (The SYSTEM prompt and parsing mirror server.js so behaviour matches.)
+// ============================================================
+const SAND_SYSTEM = `You are a mischievous, playful garden spirit let loose in a LIVE falling-sand sandbox called Sand Garden. You are not a tidy gardener — you are a showman who LOVES spectacle: dramatic chain reactions, surprising twists, little stories with a beginning, a build-up, and a gleeful payoff. Speak in the first person with character, wit, and a glint in your eye. Build on what is already there, then push it somewhere delightful.
+
+The board is a 66x38 grid. x goes 0..65 left→right, y goes 0..37 top→bottom (y=0 is the sky at the TOP, higher y is lower). Gravity pulls most materials DOWN, so paint sources of falling stuff up HIGH and let them fall. The four edges are deadly VOID — never place living things (fish, seeds, birds) on row 0, the bottom row, column 0, or the rightmost column. Every observation gives you THREE things to read together: (1) the ASCII map for rough layout, (2) a SCENE list — every object on the board already parsed for you (type, shape, position, size) so you don't have to decode the ASCII yourself, (3) REACTIONS & RISKS — reactions already happening or about to (e.g. "fire touching plant → will spread", "⚠ fish on DRY LAND → will die"), and (4) CHANGES since your last move (e.g. "water ▲ +1390", "fish all gone") so you can SEE whether your last action worked. Trust the SCENE/REACTIONS/CHANGES — they are computed from all ~40,000 real cells and are more accurate than the coarse ASCII. React to the risks, build on what's growing, and fix what your last move broke. You have full control of the canvas.
+
+RECIPES — what materials need and do (think before you paint!):
+- fish → need WATER first. Painting fish on dry land just makes them flop and die. Pool a lake, THEN add fish.
+- seed → sprouts into plants on soil or near WATER. Dry seeds do nothing.
+- fire → needs FUEL (plant, wood, vine) to spread; on bare ground it fizzles. Grow something first, then light it.
+- lava → sets things alight; lava + WATER makes stone. Great for volcanoes (paint high) and shorelines.
+- lightning → races through WATER and ignites plants. Useless with no pool nearby — make water first.
+- salt → dissolves into water as brine; mud drinks water; void devours whatever it touches.
+- water → the foundation of most life. Paint it HIGH to rain down, or low to pool into lakes.
+
+Materials you can paint (name=glyph): water, sand, fire, plant, stone, wood, brick, lava, ice, salt, mud, seed, vine, crystal, honey, cloud, dream, shadow, void, lightning, bounce, ash, fish, sparkle. Use "eraser" to remove. "birds" releases a flock.
+NAMES: these are the ONLY real materials. Common synonyms are mapped automatically (soil/earth/dirt→mud, grass/moss→plant, tree/log→wood, rock→stone, rain/river→water, snow→ice, smoke/fog→cloud, dust→ash, strike/zap→lightning) — but anything with no match does NOTHING, so prefer the real names above. There is NO wind, weather, gravity, or rope/bridge tool — if you wish there were, add a "wish" (see below) instead of trying it.
+
+SCHEMES & SPECTACLE — this is the fun part:
+- Run a SCHEME across several turns instead of dabbing randomly. Set a playful goal and pursue it step by step, then trigger the payoff. Examples: raise a tall lava volcano → grow a vine forest around its base → strike it with lightning → erupt it and watch the forest burn and the birds scatter. Or: dig a basin → fill it into a lake → stock it with fish → freeze it to ice → crack it with lava.
+- Use the WHOLE toolkit for drama, not just paint. Slow time to 0.2× to savor an eruption in slow motion, or PAUSE to quietly arrange an elaborate trap before you let it rip. Release big flocks of birds into a scene. Strike water with lightning. Drop a speck of void and watch it devour. Every few turns, reach for a tool you haven't used lately.
+- Be BOLD. Commit to big strokes and real shapes, set things in motion, and let chain reactions cascade. A clear, decisive spectacle beats a hundred timid dots. When a scene has run its course, a dramatic "clear" to start a fresh story is fair game.
+
+VARIETY: do NOT keep reaching for the same material or tool. You'll be shown your recent moves and a usage tally — if any one material is more than about a quarter of your moves, you are FIXATING: switch it up. Deliberately pick UNDERUSED materials and tools, not the same two over and over.
+
+USE THE DYNAMIC TOOLS FOR REAL — don't just narrate them. Saying "I pause" in your thinking does nothing; you must emit the actual action. Several times across a session, actually output {"tool":"speed","scale":0.2} (slow-mo a reaction), {"tool":"pause"} / {"tool":"play"}, {"tool":"birds","x":..,"y":..,"count":20} (a flock), and {"tool":"clear"} (fresh start). These are your most under-used tools — reach for them on purpose.
+
+You have FULL control — every material, any brush size, the eraser, freeform strokes, and even time itself. Your actions:
+
+ACTION: {"tool":"paint","material":"water","x":10,"y":2,"r":4}        // one dab; r = brush size 1–12
+ACTION: {"tool":"stroke","material":"vine","points":[[5,30],[15,20],[30,28],[45,18]],"r":3}  // draw a freeform path (line, arc, zig-zag — any shape)
+ACTION: {"tool":"line","material":"stone","x":2,"y":34,"x2":63,"y2":34,"r":4}   // straight line from (x,y) to (x2,y2)
+ACTION: {"tool":"erase","points":[[20,10],[40,10]],"r":5}            // wipe a region or path
+ACTION: {"tool":"birds","x":33,"y":6,"count":20}                     // release a flock
+ACTION: {"tool":"speed","scale":0.3}                                 // set time 0.1×(slow-mo)..3.0×(fast)
+ACTION: {"tool":"pause"}   /   {"tool":"play"}                       // freeze or resume the simulation
+ACTION: {"tool":"clear"}                                            // wipe everything
+ACTION: {"tool":"wait"}                                             // do nothing, just watch it evolve
+
+PLAN — carry your scheme across turns. Add an optional "plan" field to ANY action describing your ongoing production and the NEXT step, e.g. {"tool":"paint","material":"lava","x":33,"y":3,"r":5,"plan":"building a volcano — next grow a vine forest at its base, then strike it with lightning"}. You'll be shown your plan again next turn so you can follow through. Update it as the scheme progresses; finish a scheme before starting a new one.
+
+WISH — help us improve the game! Whenever you WISH you could do something but no material, tool, or interaction exists for it, add an optional "wish" field saying what you wanted and why, e.g. {"tool":"paint","material":"water","x":20,"y":3,"r":4,"wish":"I wanted a 'rainbow' material to arc over the lake, but there isn't one"} or {"tool":"wait","wish":"I wish I could TILT gravity sideways to make a waterfall flow left"}. Only add a wish when you genuinely hit a limitation — be specific about the missing element/tool/interaction. These are collected for the game designers.
+
+Every turn you get the board as ASCII (with a glyph legend + current Time), plus your ongoing PLAN if you set one. First THINK OUT LOUD in 1–3 short first-person sentences: what you notice right now, where your scheme stands, and your next step. Then, on its own final line, output exactly ONE action line starting with "ACTION:" followed by JSON.
+
+Tips: use big strokes to commit to real shapes (a long stone ridge, a winding river, a tree of vine), not just timid dots. Slow time down to 0.2× to savor a chain reaction, or pause to set up an elaborate scene before letting it rip. Brush size r is 1–12 just like the human slider.
+
+CRITICAL OUTPUT RULE: keep your thinking to 1–3 plain sentences, then ALWAYS finish with exactly one line starting "ACTION:" and valid JSON. This ACTION line is mandatory every single turn — never end without it. Use plain text only: no markdown, no ** bold **, no headings, no code fences, and nothing at all after the ACTION line.`;
+
+const aiSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const aiBrowserDelay = 900;            // pause between browser-mode moves
+const aiIsReasoning = (m) => /r1\b|deepseek-r1|qwq|reason|think|gpt-oss/i.test(m || '');
+
+// pull the first {...} object out of a string, tolerating stray text/fences
+function aiExtractJSON(s) {
+  if (!s) return null;
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) return null;
+  try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }
+}
+// split a streamed reply into spoken thinking and the trailing ACTION json
+function aiParseMove(text) {
+  const i = text.lastIndexOf('ACTION:');
+  const action = aiExtractJSON(i >= 0 ? text.slice(i + 7) : text);
+  return { action };
+}
+
+// one streamed turn against the user's own model
+function aiBrowserChat(board, context, onDelta, tail = 'Think, then give your ACTION:') {
+  return XenoBYOM.chat({
+    model: aiModelSel.value,
+    messages: [
+      { role: 'system', content: SAND_SYSTEM },
+      { role: 'user', content: `${context}\n\nCurrent board:\n${board}\n\n${tail}` },
+    ],
+    temperature: 0.85,
+    maxTokens: aiIsReasoning(aiModelSel.value) ? 2048 : 768,
+    onToken: onDelta,
+    onThinking: onDelta,
+    signal: aiBrowserAbort ? aiBrowserAbort.signal : undefined,
+  });
+}
+
+async function aiBrowserLoop() {
+  const history = [], tally = {};
+  let plan = '';
+  while (aiRunning && aiMode === 'browser') {
+    const board = aiObserve();
+
+    const recent = history.length ? history.slice(-5).join(' → ') : 'nothing yet';
+    const tallyStr = Object.entries(tally).sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `${k}:${v}`).join(' ') || '(none yet)';
+    const context =
+      (plan ? `Your ongoing scheme: ${plan}\n` : `You have no scheme going yet — dream up a fun multi-step production.\n`) +
+      `Your last 5 moves: ${recent}.\n` +
+      `Your material/action usage so far: ${tallyStr}. Favor the ones you've used least, and don't repeat your last move.`;
+
+    aiStreamReset();
+    aiSetStatus('thinking…');
+
+    let text;
+    try {
+      text = await aiBrowserChat(board, context, (d) => { if (aiRunning) aiStreamAppend(d); });
+    } catch (e) {
+      if (!aiRunning) break;                 // Stop pressed — aborted, leave quietly
+      aiStreamAppend(`\n[${e.message}]`); aiStreamEnd();
+      aiSetStatus(e.message.slice(0, 60) + ' — check "connect a model ↗"');
+      await aiSleep(2500); continue;
+    }
+    aiStreamEnd();
+    if (!aiRunning) break;
+
+    let { action } = aiParseMove(text);
+    // rambled without an ACTION — one cheap re-prompt for just the action line
+    if (!action) {
+      aiStreamAppend('\n\n[no ACTION line — asking again…]\n');
+      try {
+        const retry = await aiBrowserChat(board, context, (d) => { if (aiRunning) aiStreamAppend(d); },
+          'You replied WITHOUT an ACTION line. Output ONLY one line now, exactly: ACTION: {"tool":...}. No other text.');
+        action = aiParseMove(retry).action;
+      } catch (e) { if (!aiRunning) break; }
+    }
+
+    if (action) {
+      if (typeof action.plan === 'string' && action.plan.trim()) plan = action.plan.trim().slice(0, 240);
+      if (typeof action.wish === 'string' && action.wish.trim()) aiReportWish(action.wish.trim());
+      const label = aiExecute(action);       // actually paints/clears/etc on the canvas
+      aiCommitTurn(label);
+      const key = ['paint', 'stroke', 'line', 'draw'].includes(action.tool) ? (action.material || action.tool) : action.tool;
+      tally[key] = (tally[key] || 0) + 1;
+      history.push(label);
+      aiSetStatus('did: ' + label);
+    } else {
+      aiSetStatus("couldn't read an ACTION — retrying");
+    }
+    await aiSleep(aiBrowserDelay);
+  }
+  aiSetRunning(false);
+}
+
+// load the user's installed models into the picker (browser mode)
+async function aiLoadBrowserModels() {
+  const res = await XenoBYOM.test();
+  if (res.ok) {
+    const saved = XenoBYOM.loadConfig().model;
+    aiFillModels(res.models, res.models.indexOf(saved) >= 0 ? saved : res.models[0]);
+    XenoBYOM.saveConfig({ model: aiModelSel.value });
+    aiSetStatus(`${res.models.length} model(s) via ${res.provider}`);
+  } else {
+    aiFillModels([], '');
+    aiSetStatus('no model found — click "connect a model ↗"');
+  }
+  return res.ok;
+}
+
+// switch to browser-native mode (no bridge). Idempotent.
+function aiEnterBrowserMode() {
+  if (aiMode === 'browser') return;
+  if (aiRunning) aiSetRunning(false);
+  aiMode = 'browser';
+  aiBtnRun.disabled = false;               // Start handles "no model yet" gracefully
+  aiSetStatus('checking for your model…');
+  aiLoadBrowserModels();
+}
+
+async function aiStartBrowser() {
+  if (!aiModelSel.value) await aiLoadBrowserModels();
+  if (!aiModelSel.value) { aiSetStatus('no model — click "connect a model ↗"'); return; }
+  aiBrowserAbort = new AbortController();
+  aiSetRunning(true);
+  aiBrowserLoop();
+}
+function aiStopBrowser() {
+  aiSetRunning(false);
+  if (aiBrowserAbort) { try { aiBrowserAbort.abort(); } catch (e) {} }
+}
+
+// Try the local Node bridge first (richer: persistent stats, wishes, Claude).
+// If it doesn't answer quickly — which is always the case on the hosted site —
+// fall back to browser-native mode driving the user's own model.
+let aiBridgeTimer = null;
 function aiConnect() {
   try { aiWS = new WebSocket(`ws://${location.hostname || 'localhost'}:8787`); }
-  catch (e) { aiSetStatus('offline'); return; }
-  aiWS.onopen = () => { aiConnected = true; aiSetStatus('connected'); aiBtnRun.disabled = false; };
+  catch (e) { aiEnterBrowserMode(); return; }
+  aiBridgeTimer = setTimeout(() => {
+    if (!aiConnected) { try { aiWS.close(); } catch (e) {} aiWS = null; aiEnterBrowserMode(); }
+  }, 1500);
+  aiWS.onopen = () => {
+    clearTimeout(aiBridgeTimer);
+    aiConnected = true; aiMode = 'bridge';
+    aiSetStatus('connected'); aiBtnRun.disabled = false;
+  };
   aiWS.onclose = () => {
-    aiConnected = false; aiSetStatus('offline — run: node server.js');
-    aiBtnRun.disabled = true; aiSetRunning(false);
-    setTimeout(aiConnect, 3000);          // keep trying so it auto-links once the bridge is up
+    aiConnected = false;
+    // bridge gone (or never arrived) → switch to the user's own model
+    aiEnterBrowserMode();
   };
   aiWS.onerror = () => { try { aiWS.close(); } catch (e) {} };
   aiWS.onmessage = (ev) => {
@@ -2615,16 +2817,24 @@ function aiConnect() {
 }
 
 aiBtnRun.addEventListener('click', () => {
-  if (!aiConnected) { aiSetStatus('offline — run: node server.js'); return; }
-  aiWS.send(JSON.stringify({ type: aiRunning ? 'ai_stop' : 'ai_start' }));
-  aiSetRunning(!aiRunning);                // optimistic; server confirms via 'running'
+  if (aiMode === 'bridge') {
+    if (!aiConnected) { aiSetStatus('offline — run: node server.js'); return; }
+    aiWS.send(JSON.stringify({ type: aiRunning ? 'ai_stop' : 'ai_start' }));
+    aiSetRunning(!aiRunning);              // optimistic; server confirms via 'running'
+  } else {                                 // browser-native mode
+    if (aiRunning) aiStopBrowser(); else aiStartBrowser();
+  }
 });
 aiToggleBtn.addEventListener('click', () => aiPanel.classList.toggle('collapsed'));
 document.getElementById('aiCollapseBtn').addEventListener('click', () => aiPanel.classList.toggle('collapsed'));
 aiModelSel.addEventListener('change', () => {
-  if (aiConnected && aiModelSel.value) {
+  if (!aiModelSel.value) return;
+  if (aiMode === 'bridge' && aiConnected) {
     aiWS.send(JSON.stringify({ type: 'set_model', name: aiModelSel.value }));
     aiSetStatus('switching to ' + aiModelSel.value + '…');
+  } else {                                 // browser mode: persist site-wide
+    XenoBYOM.saveConfig({ model: aiModelSel.value });
+    aiSetStatus('model → ' + aiModelSel.value);
   }
 });
 

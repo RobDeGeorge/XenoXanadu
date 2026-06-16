@@ -352,7 +352,7 @@
     </div>
 
     <div class="ai-row">
-      <span class="label">Ollama</span>
+      <span class="label">Endpoint</span>
       <input type="text" id="ollamaUrl" value="http://localhost:11434">
     </div>
 
@@ -360,13 +360,14 @@
     <div class="ai-think" id="aiThink">The model's reasoning will stream here as it decides its move…</div>
 
     <div class="hint" id="aiHint">
-      Needs <a href="https://ollama.com" target="_blank" style="color:#8ab4ff">Ollama</a> running locally with a model pulled
-      (e.g. <code>ollama pull llama3.2:3b</code>). Open this page from <code>http://localhost</code>
-      (e.g. <code>python3 -m http.server</code> in this folder) — opening the file directly can trip Ollama's CORS;
-      if so, start Ollama with <code>OLLAMA_ORIGINS=* ollama serve</code>.
+      Plays against a model on <em>your</em> machine —
+      <a href="../../ai-setup.html" style="color:#8ab4ff;font-weight:bold">connect a model ▸</a>.
+      Bring your own <a href="https://ollama.com" target="_blank" style="color:#8ab4ff">Ollama</a> or any OpenAI-compatible
+      server (LM Studio, llama.cpp…). The connection you set there is shared here.
     </div>
   </div>
 
+<script src="../../lib/byom.js"></script>
 <script>
   const ROWS = 6, COLS = 7;
   const board = document.getElementById('board');
@@ -570,7 +571,11 @@
   let aiGen = 0;             // bumped on any state change to abort stale moves
   let aiController = null;    // AbortController for the in-flight fetch
 
-  function ollamaBase() { return (ollamaUrlEl.value || 'http://localhost:11434').replace(/\/$/, ''); }
+  function ollamaBase() { return (ollamaUrlEl.value || XenoBYOM.DEFAULT_ENDPOINT).replace(/\/$/, ''); }
+
+  // Persist the endpoint to the site-wide BYOM config so it's shared with the
+  // setup hub and the other AI games.
+  function syncEndpoint() { XenoBYOM.saveConfig({ endpoint: ollamaBase() }); }
 
   // Does the given colour belong to the AI under the current mode?
   function isAISide(player) {
@@ -678,39 +683,19 @@ Think briefly, then give your COLUMN: line.`;
     return [{ role: 'system', content: system }, { role: 'user', content: user }];
   }
 
-  // stream a chat completion from Ollama, forwarding each token via onDelta
+  // stream a chat completion from the user's model, forwarding each token via
+  // onDelta. Delegates to the shared BYOM pipeline (Ollama or OpenAI-compatible).
   async function streamOllama(messages, onDelta, signal) {
-    const res = await fetch(`${ollamaBase()}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: modelSel.value,
-        stream: true,
-        options: { temperature: 0.7, num_predict: 512 },
-        messages,
-      }),
+    return XenoBYOM.chat({
+      endpoint: ollamaBase(),
+      model: modelSel.value,
+      messages,
+      temperature: 0.7,
+      maxTokens: 512,
+      onToken: onDelta,       // visible answer text
+      onThinking: onDelta,    // reasoning models stream a separate field; show it too
       signal,
     });
-    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '', full = '';
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      let nl;
-      while ((nl = buf.indexOf('\n')) >= 0) {
-        const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
-        if (!line.trim()) continue;
-        let j; try { j = JSON.parse(line); } catch { continue; }
-        const msg = j.message || {};
-        // reasoning models (deepseek-r1, qwq…) may stream a separate `thinking` field
-        if (msg.thinking) { full += msg.thinking; onDelta(msg.thinking); }
-        if (msg.content)  { full += msg.content;  onDelta(msg.content); }
-      }
-    }
-    return full;
   }
 
   // pull a legal column index (0-6) out of the model's reply, or null
@@ -752,8 +737,9 @@ Think briefly, then give your COLUMN: line.`;
       if (myGen !== aiGen) return;                 // aborted by a state change — stay quiet
       aiBusy = false;
       board.classList.remove('locked');
-      const hint = /Failed to fetch|NetworkError|HTTP 403/.test(String(e))
-        ? ' — is Ollama running? CORS may be blocking; see the note below.' : '';
+      // XenoBYOM errors carry a kind + remedies; nudge to the setup page for connection issues
+      const hint = (e.kind === 'network' || e.kind === 'http')
+        ? ' — check the connection on the setup page (link below).' : '';
       setStatus('Model error: ' + e.message + hint, 'err');
       return;
     }
@@ -782,28 +768,25 @@ Think briefly, then give your COLUMN: line.`;
 
   // ----- model list -----
   async function loadModels() {
+    syncEndpoint();
     modelSel.disabled = true;
     modelSel.innerHTML = '<option>loading…</option>';
-    try {
-      const res = await fetch(`${ollamaBase()}/api/tags`);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const j = await res.json();
-      const names = (j.models || []).map(m => m.name).sort();
-      if (!names.length) {
-        modelSel.innerHTML = '<option value="">— no models — run: ollama pull llama3.2:3b</option>';
-        setStatus('Ollama is up but has no models. Pull one, then hit ↻.', 'err');
-        return;
-      }
-      modelSel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
-      modelSel.disabled = false;
-      // prefer a small, fast model if present
-      const fav = names.find(n => /llama3\.2:3b|qwen2\.5:3b|3b|mini|small/i.test(n));
-      if (fav) modelSel.value = fav;
-      if (mode === 'hvh') setStatus(`Ready — ${names.length} model(s). Switch to "You vs AI" to play.`, '');
-    } catch (e) {
-      modelSel.innerHTML = '<option value="">— Ollama not reachable —</option>';
-      setStatus('Can’t reach Ollama at ' + ollamaBase() + '. Is it running?', 'err');
+    const saved = XenoBYOM.loadConfig().model;
+    const res = await XenoBYOM.test({ endpoint: ollamaBase() });
+    if (!res.ok) {
+      modelSel.innerHTML = '<option value="">— model not reachable —</option>';
+      setStatus(res.error.message + ' — open the setup page (link below) to fix it.', 'err');
+      return;
     }
+    const names = res.models;
+    modelSel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+    modelSel.disabled = false;
+    // keep the site-wide saved model if still installed, else prefer a small one
+    const fav = names.indexOf(saved) >= 0 ? saved
+      : (names.find(n => /llama3\.2:3b|qwen2\.5:3b|3b|mini|small/i.test(n)) || names[0]);
+    modelSel.value = fav;
+    XenoBYOM.saveConfig({ model: fav });
+    if (mode === 'hvh') setStatus(`Ready — ${names.length} model(s) via ${res.provider}. Switch to "You vs AI" to play.`, '');
   }
 
   // ----- UI wiring -----
@@ -839,8 +822,10 @@ Think briefly, then give your COLUMN: line.`;
 
   document.getElementById('refreshModels').addEventListener('click', loadModels);
   ollamaUrlEl.addEventListener('change', loadModels);
+  modelSel.addEventListener('change', () => XenoBYOM.saveConfig({ model: modelSel.value }));
 
-  // start it up
+  // start it up — hydrate the endpoint from the site-wide saved connection
+  ollamaUrlEl.value = XenoBYOM.loadConfig().endpoint;
   sideRow.classList.add('hide');     // only relevant in "You vs AI"
   newGame();
   loadModels();

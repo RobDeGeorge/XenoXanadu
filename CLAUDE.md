@@ -15,8 +15,11 @@ contents of `public/` are published as-is.
 ```
 public/                 Everything that ships (this folder IS the website)
   index.html            Arcade homepage / game hub — one card per game
+  ai-setup.html         "Bring Your Own Model" hub — connect/test a local LLM (shared by all AI games)
   CNAME                 xenoxanadu.com
   .nojekyll             Serve dotfiles/underscored paths verbatim
+  lib/
+    byom.js             Shared client-side LLM pipeline (window.XenoBYOM) — see "Local-LLM games"
   game/
     verdelve/           Cozy overworld + dungeon delver
     pinball/            "Neon Tilt" — neon pinball
@@ -39,17 +42,42 @@ public/                 Everything that ships (this folder IS the website)
 
 ## Local-LLM games (🤖)
 
-Some games can play against a local model via [Ollama](https://ollama.com) (default
-`http://localhost:11434`):
+The model is **Bring Your Own**: the site ships the pipeline, the *visitor* runs the model on
+their own machine. Nothing goes to a XenoXanadu server (there isn't one) — the browser talks
+straight to the user's endpoint.
 
-- **connect-four** — browser fetches the Ollama API directly.
-- **sand-falling** — `server.js` is a Node bridge (HTTP + WebSocket) that runs an autonomous
-  Ollama "gardener". Run locally with `npm install && node server.js` (default port 8787;
-  env: `OLLAMA_URL`, `OLLAMA_MODEL`, `AI_DELAY_MS`, `PORT`). See `sand-falling/AI_PLAYER.md`.
+**`public/lib/byom.js`** (global `window.XenoBYOM`) is the shared, dependency-free pipeline used
+by every AI game. It is common infrastructure, not a game importing another game — that's the one
+sanctioned exception to "games don't import from each other". It provides:
+- Provider abstraction: **Ollama native** (`/api/tags`, `/api/chat`) *and* **OpenAI-compatible**
+  (`/v1/models`, `/v1/chat/completions`) — so LM Studio / llama.cpp / Jan / vLLM also work.
+- One config (`endpoint`/`provider`/`model`/`apiKey`) persisted in `localStorage` (`xeno.byom.v1`),
+  shared across games — the user connects once.
+- `listModels`, streaming `chat({messages,onToken,onThinking,signal})`, and `test()`.
+- **Connection diagnostics**: `fetch` hides *why* a local call failed (down vs CORS vs mixed-content
+  vs Private Network Access), so errors carry actionable `remedies` instead of a bare failure.
 
-On the **hosted static site** there is no server and no localhost model, so these AI features
-no-op; the games stay fully playable without them. Bringing the AI online (hosted inference or
-a deployed bridge) is an open future task — don't assume it works on xenoxanadu.com yet.
+**`public/ai-setup.html`** is the canonical "connect a model" hub: live connection tester +
+an origin-tailored `OLLAMA_ORIGINS` command. Every AI game links to it.
+
+Games:
+- **connect-four** — uses `XenoBYOM.chat` directly (browser → user's model, no server).
+- **sand-falling** — runs the gardener loop **two ways**, auto-selected at load:
+  - *Browser-native* (default on the hosted site): the same observe→think→act loop ported into the
+    page, driving the user's own model via `XenoBYOM`. `SAND_SYSTEM` in `index.html` mirrors
+    `server.js`'s `SYSTEM` prompt so behaviour matches. No server needed.
+  - *Bridge* (if `server.js` is reachable on `ws://localhost:8787`): the Node bridge takes over,
+    adding persistent per-model stats (`ELEMENT_USAGE.json`), wish logging (`WISHES.jsonl`),
+    reflection turns, and Claude models. Run locally with `npm install && node server.js` (env:
+    `OLLAMA_URL`, `OLLAMA_MODEL`, `AI_DELAY_MS`, `PORT`). See `sand-falling/AI_PLAYER.md`.
+  The page tries the bridge first (~1.5s), then falls back to browser-native. Keep `SAND_SYSTEM`
+  and `server.js`'s `SYSTEM` in sync if you edit either.
+
+**Hosted reality**: BYO works on xenoxanadu.com *for visitors who run their own model*, but an
+HTTPS page reaching `http://localhost` can be blocked by the browser's Private Network Access
+(Chrome/Edge) — `byom.js` detects this and `ai-setup.html` explains the fix (allow the origin in
+`OLLAMA_ORIGINS`, use Firefox, or run the arcade locally). sand-falling's *bridge-only* extras
+(stats, wishes, Claude) still need the local Node process; the core AI play does not.
 
 `node_modules/` (e.g. under `sand-falling/`) is gitignored and not deployed.
 
