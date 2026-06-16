@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chess</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
+  html.hosted .ai-only { display: none !important; }
   :root {
     --light: #f0d9b5;
     --dark: #b58863;
@@ -268,6 +271,34 @@
     .board { --sq: 11.4vw; }
     .panel { width: 90vw; }
   }
+
+  /* ---- AI opponent panel (local only) ---- */
+  #chessAi { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.12);
+             display: flex; flex-direction: column; gap: 9px; font-size: 13px; }
+  #chessAi .ai-row { display: flex; align-items: center; gap: 8px; }
+  #chessAi .ai-label { width: 62px; flex: none; color: #b7a98f; font-size: 11px;
+                       text-transform: uppercase; letter-spacing: .04em; }
+  #chessAi .seg { display: inline-flex; border: 1px solid #5f5747; border-radius: 7px; overflow: hidden; }
+  #chessAi .seg button { background: transparent; border: 0; color: #cdbfa3; padding: 5px 11px;
+                         font-size: 12px; cursor: pointer; font-family: inherit; }
+  #chessAi .seg button.active { background: var(--accent); color: #fff; font-weight: bold; }
+  #chessAi select, #chessAi input[type=text] { flex: 1; min-width: 0; background: #2a2723; color: #ededed;
+                         border: 1px solid #5f5747; border-radius: 6px; padding: 5px 7px;
+                         font-size: 12px; font-family: inherit; }
+  #chessAi #chessRefresh { flex: none; background: #34302a; color: #a7c98a; border: 1px solid #5f5747;
+                         border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  #chessAi .ai-statusline { display: flex; align-items: center; gap: 7px; color: #cdbfa3; }
+  #chessAi .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: #777; flex: none; }
+  #chessAi .ai-dot.on { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  #chessAi .ai-dot.err { background: #d9624a; }
+  #chessAi .ai-think { max-height: 124px; overflow: auto; background: rgba(0,0,0,0.25);
+                       border: 1px solid rgba(255,255,255,0.08); border-radius: 7px; padding: 8px;
+                       color: #d8cdb6; white-space: pre-wrap; font-size: 12px; line-height: 1.45; }
+  #chessAi .ai-think.aim { border-color: var(--accent); }
+  #chessAi .ai-hint { font-size: 11px; color: #9c8f76; line-height: 1.45; }
+  #chessAi .ai-hint a { color: #a7c98a; }
+  #chessAi.hide-side #chessSideRow { display: none; }
+  .sq.ai-aim { box-shadow: inset 0 0 0 4px var(--accent); }
 </style>
 </head>
 <body>
@@ -307,6 +338,40 @@
       <div class="buttons">
         <button class="secondary" id="flipBtn">Flip Board</button>
       </div>
+
+      <!-- ---------- AI opponent (local only) ---------- -->
+      <div id="chessAi" class="ai-only">
+        <div class="ai-row">
+          <span class="ai-label">Opponent</span>
+          <div class="seg" id="chessModeSeg">
+            <button data-mode="pvp" class="active">2 players</button>
+            <button data-mode="pva">vs AI</button>
+          </div>
+        </div>
+        <div class="ai-row" id="chessSideRow">
+          <span class="ai-label">AI plays</span>
+          <div class="seg" id="chessSideSeg">
+            <button data-color="b" class="active">Black</button>
+            <button data-color="w">White</button>
+          </div>
+        </div>
+        <div class="ai-row">
+          <span class="ai-label">Model</span>
+          <select id="chessModelSel"><option>loading…</option></select>
+          <button id="chessRefresh" title="Re-scan for installed models">↻</button>
+        </div>
+        <div class="ai-row">
+          <span class="ai-label">Endpoint</span>
+          <input type="text" id="chessEndpoint" value="http://localhost:11434">
+        </div>
+        <div class="ai-statusline"><span class="ai-dot" id="chessAiDot"></span><span id="chessAiStatus">2-player mode</span></div>
+        <div class="ai-think" id="chessAiThink">The AI's reasoning will stream here as it picks its move…</div>
+        <div class="ai-hint">
+          Plays against a model on <em>your</em> machine —
+          <a href="../../ai-setup.html">connect a model ▸</a>.
+          The model only ever picks from the game's list of <em>legal</em> moves, so it can't cheat.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -317,6 +382,7 @@
     </div>
   </div>
 
+<script src="../../lib/byom.js"></script>
 <script>
 "use strict";
 
@@ -357,7 +423,9 @@ function newGame() {
   halfmove = 0;
   fullmove = 1;
   gameOver = false;
+  if (typeof aiInterrupt === "function") aiInterrupt();
   render();
+  if (typeof maybeAIChessMove === "function") maybeAIChessMove();  // AI opens if it plays White
 }
 
 const inBounds = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
@@ -655,6 +723,7 @@ function doMove(move) {
 
   checkGameEnd();
   render();
+  maybeAIChessMove();        // if it's now the AI's turn, let it think
 }
 
 function checkGameEnd() {
@@ -713,6 +782,7 @@ function currentLegal() {
 
 function onSquareClick(r, c) {
   if (gameOver) return;
+  if (aiBusy || isAIChessTurn()) return;     // hands off while the AI is on move
   const piece = board[r][c];
 
   if (selected) {
@@ -890,11 +960,287 @@ function updatePanel() {
 document.getElementById("newBtn").addEventListener("click", () => {
   if (history.length === 0 || gameOver || confirm("Start a new game?")) newGame();
 });
-document.getElementById("undoBtn").addEventListener("click", undo);
+document.getElementById("undoBtn").addEventListener("click", () => {
+  aiInterrupt();
+  undo();
+  // in vs-AI, step back past the AI's reply too, so it's the human's move again
+  if (aiMode === "pva" && !gameOver && isAIChessTurn() && history.length) undo();
+});
 document.getElementById("flipBtn").addEventListener("click", () => { flipped = !flipped; render(); });
 
+/* ============================================================
+ *  AI opponent — Bring Your Own Model (local only)
+ *  The browser hands the model the *legal* move list (computed by this
+ *  engine) and asks it to pick one. It can't make an illegal move; a bad
+ *  or unparseable reply falls back to a sensible legal move.
+ * ============================================================ */
+const chessModeSeg  = document.getElementById("chessModeSeg");
+const chessSideSeg  = document.getElementById("chessSideSeg");
+const chessModelSel = document.getElementById("chessModelSel");
+const chessEndpoint = document.getElementById("chessEndpoint");
+const chessAiThink  = document.getElementById("chessAiThink");
+const chessAiStatus = document.getElementById("chessAiStatus");
+const chessAiDot    = document.getElementById("chessAiDot");
+const chessAiPanel  = document.getElementById("chessAi");
+
+let aiMode = "pvp";          // 'pvp' | 'pva'
+let aiColor = "b";           // colour the AI plays in 'pva'
+let aiBusy = false;          // a move is being computed
+let aiGen = 0;               // bump to invalidate an in-flight move
+let aiController = null;      // AbortController for the active request
+
+function endpointBase() { return (chessEndpoint.value || XenoBYOM.DEFAULT_ENDPOINT).replace(/\/$/, ""); }
+function isAIChessTurn() { return aiMode === "pva" && !gameOver && turn === aiColor; }
+
+function setAiStatus(text, state) {
+  chessAiStatus.textContent = text;
+  chessAiDot.className = "ai-dot" + (state ? " " + state : "");
+}
+
+// cancel any in-flight / scheduled AI move
+function aiInterrupt() {
+  aiGen++;
+  if (aiController) { try { aiController.abort(); } catch (e) {} aiController = null; }
+  aiBusy = false;
+  clearAim();
+}
+function clearAim() {
+  boardEl.querySelectorAll(".sq.ai-aim").forEach(el => el.classList.remove("ai-aim"));
+  chessAiThink.classList.remove("aim");
+}
+function showAim(move) {
+  clearAim();
+  const mark = ([r, c]) => {
+    const idx = (flipped ? 7 - r : r) * 8 + (flipped ? 7 - c : c);
+    const sq = boardEl.children[idx];
+    if (sq) sq.classList.add("ai-aim");
+  };
+  mark(move.from); mark(move.to);
+}
+
+// ----- position → text the model reads -----
+const PIECE_FEN = { p: "p", n: "n", b: "b", r: "r", q: "q", k: "k" };
+function pieceChar(p) { const ch = PIECE_FEN[p.type]; return p.color === "w" ? ch.toUpperCase() : ch; }
+
+function toFEN() {
+  let rows = [];
+  for (let r = 0; r < 8; r++) {
+    let row = "", empty = 0;
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p) { empty++; continue; }
+      if (empty) { row += empty; empty = 0; }
+      row += pieceChar(p);
+    }
+    if (empty) row += empty;
+    rows.push(row);
+  }
+  let cr = "";
+  const wk = board[7][4], bk = board[0][4];
+  if (wk && wk.type === "k" && !wk.moved) {
+    if (board[7][7] && board[7][7].type === "r" && !board[7][7].moved) cr += "K";
+    if (board[7][0] && board[7][0].type === "r" && !board[7][0].moved) cr += "Q";
+  }
+  if (bk && bk.type === "k" && !bk.moved) {
+    if (board[0][7] && board[0][7].type === "r" && !board[0][7].moved) cr += "k";
+    if (board[0][0] && board[0][0].type === "r" && !board[0][0].moved) cr += "q";
+  }
+  const ep = enPassant ? sqName(enPassant.row, enPassant.col) : "-";
+  return `${rows.join("/")} ${turn} ${cr || "-"} ${ep} ${halfmove} ${fullmove}`;
+}
+
+function asciiBoard() {
+  let s = "";
+  for (let r = 0; r < 8; r++) {
+    s += (8 - r) + " ";
+    for (let c = 0; c < 8; c++) { const p = board[r][c]; s += (p ? pieceChar(p) : ".") + " "; }
+    s += "\n";
+  }
+  return s + "  a b c d e f g h";
+}
+
+// normalise a SAN / coordinate string for lenient matching
+function normMove(s) { return String(s).trim().replace(/[+#!?]/g, "").replace(/0/g, "O"); }
+
+// build the legal-move table the model chooses from
+function legalTable() {
+  const legal = currentLegal();
+  return legal.map(m => {
+    const san = moveToSAN(board, m, legal);
+    const coord = sqName(m.from[0], m.from[1]) + sqName(m.to[0], m.to[1]) + (m.promotion || "");
+    return { move: m, san, coord };
+  });
+}
+
+function buildChessMessages() {
+  const table = legalTable();
+  const me = aiColor === "w" ? "White" : "Black";
+  const list = table.map((e, i) => `${i + 1}. ${e.san}`).join("   ");
+  const system =
+`You are a strong, decisive chess engine playing as ${me}. Play to win: develop pieces, control the centre, keep your king safe, take free material, and watch for tactics (forks, pins, mates) for and against you.
+You will be given the position and a numbered list of EVERY legal move in standard algebraic notation (SAN). You MUST pick exactly one move FROM THAT LIST — copy its SAN verbatim. Do not invent moves or squares.
+Reply with at most ONE short sentence of reasoning, then on the FINAL line output exactly:
+MOVE: <SAN>
+copied character-for-character from the list (e.g. "MOVE: Nf3", "MOVE: exd5", "MOVE: O-O"). Nothing after that line.`;
+  const user =
+`Position (FEN): ${toFEN()}
+
+Board (uppercase = White, lowercase = Black, . = empty):
+${asciiBoard()}
+
+You are ${me}. Your legal moves:
+${list}
+
+Pick the best move and give your MOVE: line.`;
+  return { messages: [{ role: "system", content: system }, { role: "user", content: user }], table };
+}
+
+// best-effort: match the model's reply to one of the legal moves
+function parseChessMove(reply, table) {
+  const i = reply.toUpperCase().lastIndexOf("MOVE:");
+  const seg = i >= 0 ? reply.slice(i + 5) : reply;
+  const token = normMove((seg.match(/[^\s]+/) || [""])[0]);
+
+  // 1) exact SAN (case-insensitive), 2) coordinate, anywhere in the tail
+  const tail = normMove(seg).toLowerCase();
+  for (const e of table) {
+    const san = normMove(e.san);
+    if (san.toLowerCase() === token.toLowerCase() || e.coord.toLowerCase() === token.toLowerCase()) return e.move;
+  }
+  // 3) a move number from the list
+  const num = seg.match(/\b(\d{1,3})\b/);
+  if (num) { const k = +num[1] - 1; if (k >= 0 && k < table.length) return table[k].move; }
+  // 4) any legal SAN/coord appearing in the reply tail
+  for (const e of table) {
+    const san = normMove(e.san).toLowerCase();
+    if (san.length >= 2 && tail.includes(san)) return e.move;
+    if (tail.includes(e.coord.toLowerCase())) return e.move;
+  }
+  return null;
+}
+
+// a reasonable move when the model's pick is unusable: best immediate capture, else random
+function fallbackChessMove(table) {
+  let best = null, bestVal = -1;
+  for (const e of table) {
+    const t = board[e.move.to[0]][e.move.to[1]];
+    const val = e.move.enpassant ? 1 : (t ? VALUE[t.type] : 0);
+    if (val > bestVal) { bestVal = val; best = e.move; }
+  }
+  return best || table[Math.floor(Math.random() * table.length)].move;
+}
+
+function maybeAIChessMove() {
+  if (!isAIChessTurn() || aiBusy) return;
+  if (!XenoBYOM.isLocal()) return;
+  if (!chessModelSel.value || chessModelSel.disabled) {
+    setAiStatus("No model — pull one (e.g. ollama pull llama3.2:3b) and hit ↻", "err");
+    return;
+  }
+  setTimeout(doAIChessMove, 350);
+}
+
+async function doAIChessMove() {
+  if (!isAIChessTurn() || aiBusy) return;
+  const myGen = ++aiGen;
+  aiBusy = true;
+  const me = aiColor === "w" ? "White" : "Black";
+  setAiStatus(`${me} (${chessModelSel.value}) thinking…`, "on");
+  chessAiThink.textContent = "";
+
+  const { messages, table } = buildChessMessages();
+  aiController = new AbortController();
+  let reply = "";
+  try {
+    reply = await XenoBYOM.chat({
+      endpoint: endpointBase(),
+      model: chessModelSel.value,
+      messages,
+      temperature: 0.4,
+      maxTokens: 700,
+      onToken: (d) => { if (myGen === aiGen) { chessAiThink.textContent += d; chessAiThink.scrollTop = chessAiThink.scrollHeight; } },
+      onThinking: (d) => { if (myGen === aiGen) { chessAiThink.textContent += d; chessAiThink.scrollTop = chessAiThink.scrollHeight; } },
+      signal: aiController.signal,
+    });
+  } catch (e) {
+    if (myGen !== aiGen) return;                  // superseded — stay quiet
+    aiBusy = false; aiController = null;
+    const hint = (e.kind === "network" || e.kind === "http") ? " — check the setup page (link below)." : "";
+    setAiStatus("Model error: " + e.message + hint, "err");
+    return;
+  }
+  aiController = null;
+  if (myGen !== aiGen || gameOver || !isAIChessTurn()) { aiBusy = false; return; }
+
+  let move = parseChessMove(reply, table);
+  if (!move) {
+    move = fallbackChessMove(table);
+    chessAiThink.textContent += `\n\n[couldn't read a legal MOVE: — played ${moveToSAN(board, move, currentLegal())} as a safe fallback]`;
+    chessAiThink.scrollTop = chessAiThink.scrollHeight;
+  }
+  const san = moveToSAN(board, move, currentLegal());
+  showAim(move); chessAiThink.classList.add("aim");
+  setAiStatus(`${me} played ${san}`, "on");
+  aiBusy = false;
+  // brief beat so the highlighted move is visible, then play it
+  setTimeout(() => {
+    if (myGen !== aiGen || gameOver || !isAIChessTurn()) return;
+    clearAim();
+    doMove(move);          // advances turn, renders, and re-triggers if still AI's turn
+  }, 260);
+}
+
+// ----- model list (shared BYOM connection) -----
+async function loadChessModels() {
+  XenoBYOM.saveConfig({ endpoint: endpointBase() });
+  chessModelSel.disabled = true;
+  chessModelSel.innerHTML = "<option>loading…</option>";
+  const saved = XenoBYOM.loadConfig().model;
+  const res = await XenoBYOM.test({ endpoint: endpointBase() });
+  if (!res.ok) {
+    chessModelSel.innerHTML = '<option value="">— model not reachable —</option>';
+    setAiStatus(res.error.message + " — open the setup page to fix it.", "err");
+    return;
+  }
+  chessModelSel.innerHTML = res.models.map(n => `<option value="${n}">${n}</option>`).join("");
+  chessModelSel.disabled = false;
+  const fav = res.models.indexOf(saved) >= 0 ? saved
+    : (res.models.find(n => /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(n)) || res.models[0]);
+  chessModelSel.value = fav;
+  XenoBYOM.saveConfig({ model: fav });
+  if (aiMode === "pvp") setAiStatus(`Ready — ${res.models.length} model(s) via ${res.provider}. Switch to "vs AI".`, "");
+  else { setAiStatus(`Ready — ${res.models.length} model(s) via ${res.provider}.`, "on"); maybeAIChessMove(); }
+}
+
+// ----- UI wiring -----
+chessModeSeg.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  aiMode = b.dataset.mode;
+  [...chessModeSeg.children].forEach(x => x.classList.toggle("active", x === b));
+  chessAiPanel.classList.toggle("hide-side", aiMode !== "pva");
+  aiInterrupt();
+  if (aiMode === "pvp") setAiStatus("2-player mode", "");
+  else { setAiStatus("vs AI — AI plays " + (aiColor === "w" ? "White" : "Black"), "on"); maybeAIChessMove(); }
+});
+chessSideSeg.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  aiColor = b.dataset.color;
+  [...chessSideSeg.children].forEach(x => x.classList.toggle("active", x === b));
+  aiInterrupt();
+  if (aiMode === "pva") { setAiStatus("AI plays " + (aiColor === "w" ? "White" : "Black"), "on"); maybeAIChessMove(); }
+});
+chessModelSel.addEventListener("change", () => XenoBYOM.saveConfig({ model: chessModelSel.value }));
+document.getElementById("chessRefresh").addEventListener("click", loadChessModels);
+chessEndpoint.addEventListener("change", loadChessModels);
+
 flipped = false;
+chessAiPanel.classList.add("hide-side");      // AI colour only matters in vs-AI
 newGame();
+// only reach out to a local model when the page itself is served locally
+if (XenoBYOM.isLocal()) {
+  chessEndpoint.value = XenoBYOM.loadConfig().endpoint;
+  loadChessModels();
+}
 </script>
 </body>
 </html>

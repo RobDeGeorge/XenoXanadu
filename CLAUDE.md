@@ -23,7 +23,7 @@ public/                 Everything that ships (this folder IS the website)
   game/
     verdelve/           Cozy overworld + dungeon delver
     pinball/            "Neon Tilt" — neon pinball
-    chess/              Full chess (check, mate, castling)
+    chess/              Full chess (check, mate, castling) — 🤖 optional local-model opponent
     connect-four/       Connect Four — 🤖 optional local Ollama opponent
     dots-and-boxes/     Retro neon Dots & Boxes
     sand-falling/       "Sand Garden" falling-sand sim + optional Node AI bridge
@@ -61,6 +61,9 @@ sanctioned exception to "games don't import from each other". It provides:
 an origin-tailored `OLLAMA_ORIGINS` command. Every AI game links to it.
 
 Games:
+- **chess** — `XenoBYOM.chat` directly. The engine computes the *legal* move list and the model
+  must pick one from it (replies `MOVE: <SAN>`), so it can't make an illegal move; an unparseable
+  reply falls back to a sensible legal move. AI hooks into `doMove`/`newGame`/`undo`.
 - **connect-four** — uses `XenoBYOM.chat` directly (browser → user's model, no server).
 - **sand-falling** — runs the gardener loop **two ways**, auto-selected at load:
   - *Browser-native* (default on the hosted site): the same observe→think→act loop ported into the
