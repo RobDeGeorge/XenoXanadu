@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XenoXanadu — Classic Games, Handmade</title>
+  <meta name="description" content="A growing arcade of classic games rebuilt from scratch — chess, connect four, dots & boxes, pinball, a falling-sand garden, and more. Some play against a local LLM." />
+  <meta name="theme-color" content="#0b140d" />
+  <meta property="og:title" content="XenoXanadu — Classic Games, Handmade" />
+  <meta property="og:description" content="A growing arcade of classic games rebuilt from scratch. Play in your browser." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: radial-gradient(circle at 50% 0%, #16241a, #07090c);
+      color: #e8e6d9; font-family: "Trebuchet MS", system-ui, sans-serif;
+      display: flex; flex-direction: column; align-items: center; padding: 48px 20px;
+    }
+    h1 { font-size: 44px; color: #9be36b; text-shadow: 0 2px 16px rgba(120,220,90,0.4); margin-bottom: 6px; letter-spacing: 0.5px; }
+    p.sub { color: #a9c98b; font-style: italic; margin-bottom: 36px; text-align: center; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; width: 100%; max-width: 760px; }
+    a.card {
+      display: block; text-decoration: none; color: inherit;
+      background: rgba(255,255,255,0.04); border: 1px solid #2a3a2a; border-radius: 12px;
+      padding: 22px; transition: transform 0.08s, border-color 0.15s, background 0.15s;
+    }
+    a.card:hover { transform: translateY(-3px); border-color: #9be36b; background: rgba(155,227,107,0.08); }
+    .card .emoji { font-size: 40px; }
+    .card h2 { font-size: 22px; margin: 10px 0 4px; }
+    .card p { font-size: 13px; color: #b8c4ad; line-height: 1.4; }
+    .card .tag { display: inline-block; margin: 8px 0 0; font-size: 11px; color: #0b140d; background: #9be36b; border-radius: 999px; padding: 2px 9px; font-weight: bold; }
+    .card .play { margin-top: 12px; display: inline-block; font-weight: bold; color: #9be36b; }
+    footer { margin-top: 40px; font-size: 12px; color: #5a6a55; text-align: center; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <h1>🕹️ XenoXanadu</h1>
+  <p class="sub">Classic games, rebuilt by hand — playable right in your browser.</p>
+  <div class="grid">
+
+    <a class="card" href="game/verdelve/index.html">
+      <div class="emoji">🌿</div>
+      <h2>Verdelve</h2>
+      <p>A cozy overworld and a dangerous deep. Mine, build, farm, and delve into dungeons for rare loot. Desktop &amp; mobile.</p>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <a class="card" href="game/pinball/index.html">
+      <div class="emoji">◓</div>
+      <h2>Neon Tilt</h2>
+      <p>A tiny neon pinball arcade. Launch the ball, work the flippers, light up the bumpers, and chase a high score. Desktop &amp; mobile.</p>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <a class="card" href="game/chess/index.html">
+      <div class="emoji">♟️</div>
+      <h2>Chess</h2>
+      <p>The full game of kings — legal moves, check, checkmate, and castling. Sit down across the board and play.</p>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <a class="card" href="game/connect-four/index.html">
+      <div class="emoji">🔴</div>
+      <h2>Connect Four</h2>
+      <p>Drop your discs and line up four in a row. Play a friend, or take on a local Ollama model.</p>
+      <span class="tag">🤖 Local LLM</span>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <a class="card" href="game/dots-and-boxes/index.html">
+      <div class="emoji">⊞</div>
+      <h2>Dots &amp; Boxes</h2>
+      <p>The pencil-and-paper classic, in retro neon. Claim the most boxes by closing their fourth side.</p>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <a class="card" href="game/sand-falling/index.html">
+      <div class="emoji">⏳</div>
+      <h2>Sand Garden</h2>
+      <p>A falling-sand playground — pour sand, water, fire, and more, and watch the elements react. Optional local-LLM gardener.</p>
+      <span class="tag">🤖 Local LLM</span>
+      <span class="play">Play ▸</span>
+    </a>
+
+    <!-- Add future games here as new folders in game/ + a card -->
+  </div>
+  <footer>
+    More games coming soon…<br />
+    🤖 marks games that can play against a model running locally via <a href="https://ollama.com" style="color:#7ab85a">Ollama</a>.
+  </footer>
+</body>
+</html>

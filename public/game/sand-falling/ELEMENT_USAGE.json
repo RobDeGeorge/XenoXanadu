@@ -1,0 +1,159 @@
+{
+  "llama3.2:3b": {
+    "moves": 336,
+    "elements": {
+      "vine": 62,
+      "lava": 17,
+      "fire": 41,
+      "wood": 24,
+      "water": 37,
+      "stone": 5,
+      "mud": 19,
+      "lightning": 10,
+      "sparkle": 39,
+      "strike": 21,
+      "ash": 11,
+      "salt": 4,
+      "fish": 5,
+      "birds": 9,
+      "erase": 14,
+      "void": 3,
+      "wait": 2,
+      "ice": 1,
+      "light": 1,
+      "line": 1,
+      "speed": 4,
+      "air": 3,
+      "!": 2,
+      "pause": 1
+    }
+  },
+  "qwen2.5-coder:14b": {
+    "moves": 199,
+    "elements": {
+      "clear": 2,
+      "lava": 4,
+      "vine": 6,
+      "water": 70,
+      "pause": 3,
+      "play": 1,
+      "fire": 3,
+      "wood": 2,
+      "seed": 7,
+      "soil": 70,
+      "plant": 3,
+      "mud": 6,
+      "earth": 17,
+      "erase": 5
+    }
+  },
+  "mistral-nemo:12b": {
+    "moves": 428,
+    "elements": {
+      "water": 61,
+      "vine": 53,
+      "seed": 4,
+      "birds": 23,
+      "lightning": 49,
+      "fish": 5,
+      "speed": 100,
+      "lava": 27,
+      "pause": 26,
+      "wait": 19,
+      "fire": 8,
+      "play": 10,
+      "clear": 2,
+      "erase": 3,
+      "cloud": 4,
+      "crystal": 2,
+      "sparkle": 5,
+      "plant": 3,
+      "undefined": 1,
+      "stone": 18,
+      "ice": 5
+    }
+  },
+  "deepseek-r1:14b": {
+    "moves": 33,
+    "elements": {
+      "sparkle": 1,
+      "water": 4,
+      "lava": 4,
+      "salt": 5,
+      "void": 3,
+      "birds": 1,
+      "erase": 2,
+      "vine": 2,
+      "fire": 3,
+      "speed": 1,
+      "wood": 2,
+      "lightning": 3,
+      "paint": 1,
+      "stone": 1
+    }
+  },
+  "gemma4:26b": {
+    "moves": 97,
+    "elements": {
+      "stone": 2,
+      "lava": 24,
+      "vine": 14,
+      "lightning": 9,
+      "fire": 1,
+      "seed": 2,
+      "wood": 39,
+      "ash": 3,
+      "salt": 1,
+      "water": 2
+    }
+  },
+  "mistral:7b": {
+    "moves": 29,
+    "elements": {
+      "vine": 2,
+      "speed": 1,
+      "fire": 10,
+      "sparkle": 1,
+      "lava": 5,
+      "pause": 4,
+      "play": 3,
+      "lightning": 2,
+      "wait": 1
+    }
+  },
+  "deepseek-r1:7b": {
+    "moves": 50,
+    "elements": {
+      "water": 15,
+      "lava": 8,
+      "stone": 12,
+      "seed": 1,
+      "vine": 4,
+      "paint": 1,
+      "fire": 4,
+      "plant": 2,
+      "erase": 1,
+      "speed": 1,
+      "mud": 1
+    }
+  },
+  "gemma3:4b": {
+    "moves": 229,
+    "elements": {
+      "lava": 100,
+      "stone": 39,
+      "fire": 35,
+      "ice": 12,
+      "water": 4,
+      "wood": 7,
+      "vine": 5,
+      "crystal": 12,
+      "lightning": 2,
+      "sparkle": 5,
+      "salt": 3,
+      "speed": 1,
+      "ash": 3,
+      "brick": 1
+    }
+  }
+}

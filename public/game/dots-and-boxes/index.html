@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DOTS &amp; BOXES // RETRO</title>
+<style>
+  :root {
+    --bg: #160f29;
+    --bg-2: #241b3c;
+    --panel: #1d1535;
+    --panel-2: #2a1f49;
+    --grid: #4a3f73;
+    --line-empty: #5a4d86;
+    /* Dots deliberately LOW-contrast vs background to defeat the
+       Hermann / scintillating grid illusion (no bright discs on a dark grid). */
+    --dot: #6c5f95;
+    --text: #f3e9ff;
+    --muted: #9d8fc7;
+    --p1: #ff2e88;            /* neon magenta */
+    --p1-soft: #ff2e8826;
+    --p2: #2bf0e0;            /* neon cyan */
+    --p2-soft: #2bf0e026;
+    --p3: #b6ff3d;            /* neon lime */
+    --p3-soft: #b6ff3d26;
+    --p4: #ff9f1c;            /* neon orange */
+    --p4-soft: #ff9f1c26;
+    --accent: #ffd23f;        /* arcade amber */
+    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(900px 600px at 80% -15%, #3a2a5e 0%, rgba(58,42,94,0) 55%),
+      radial-gradient(900px 600px at 0% 110%, #2a1a4a 0%, rgba(42,26,74,0) 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+  }
+
+  /* CRT scanline overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+    mix-blend-mode: multiply;
+    z-index: 9999;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 30px 20px 70px; }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 4px;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow:
+      0 0 6px rgba(255,210,63,0.6),
+      3px 3px 0 var(--p1),
+      6px 6px 0 var(--p2);
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin: 10px 0 26px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    align-items: flex-end;
+    justify-content: center;
+    background: var(--panel);
+    border: 2px solid var(--grid);
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px #0006, 0 10px 30px #0007, inset 0 0 30px #0003;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field > label {
+    font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* segmented option buttons */
+  .seg { display: flex; gap: 6px; }
+  .seg-btn {
+    padding: 9px 15px;
+    border: 2px solid var(--grid);
+    background: #120c22;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+    transition: color .12s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .seg-btn:hover { color: var(--text); border-color: var(--muted); background: #120c22; box-shadow: none; }
+  .seg-btn.active { border-color: var(--accent); color: var(--accent); background: #1a1330; box-shadow: 0 0 8px var(--accent); }
+
+  button#newGame {
+    cursor: pointer;
+    border: 2px solid var(--accent);
+    border-radius: 3px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: var(--mono);
+    color: var(--accent);
+    background: transparent;
+    transition: transform .06s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  button#newGame:hover { background: var(--accent); color: #1a1228; box-shadow: 0 0 14px var(--accent); }
+  button#newGame:active { transform: translateY(2px); }
+
+  /* player name inputs */
+  .names { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
+  .name-field {
+    display: flex; align-items: center; gap: 9px;
+    background: var(--panel);
+    border: 2px solid var(--grid);
+    border-radius: 3px;
+    padding: 8px 12px;
+    transition: border-color .12s ease;
+  }
+  .name-field:focus-within { border-color: var(--accent); }
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 2px; flex: none; }
+  .name-field input {
+    background: transparent; border: none; color: var(--text);
+    font-family: var(--mono); font-size: 14px; width: 118px;
+  }
+  .name-field input:focus { outline: none; }
+  .name-field.hidden { display: none; }
+
+  .scoreboard { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 24px; }
+  .score-card {
+    flex: 1 1 150px;
+    max-width: 210px;
+    background: var(--panel);
+    border: 2px solid var(--grid);
+    border-radius: 4px;
+    padding: 14px 16px;
+    text-align: center;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .score-card .name {
+    font-weight: 700; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .score-card .dot-marker { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+  .score-card .score { font-size: 40px; font-weight: 800; line-height: 1.15; }
+
+  .status {
+    text-align: center; min-height: 26px; font-size: 15px; letter-spacing: 1px;
+    margin-bottom: 18px; color: var(--muted); text-transform: uppercase;
+  }
+  .status b { color: var(--text); }
+
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    background: #130d24;
+    border: 2px solid var(--grid);
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0004;
+  }
+  svg { max-width: 100%; height: auto; touch-action: manipulation; display: block; }
+
+  .edge {
+    stroke: var(--line-empty);
+    stroke-width: 5;
+    stroke-linecap: round;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: stroke .12s ease, opacity .12s ease;
+  }
+  .edge.hit { stroke: transparent; stroke-width: 20; opacity: 1; }
+  .edge.preview { stroke: var(--accent); opacity: 0.9; }
+  .edge.filled { cursor: default; opacity: 1; }
+
+  .dot { fill: var(--dot); }
+  .box-fill { opacity: 0; transition: opacity .25s ease; }
+  .box-label {
+    font-weight: 800; font-family: var(--mono);
+    text-anchor: middle; dominant-baseline: central;
+    opacity: 0; transition: opacity .25s ease; pointer-events: none;
+  }
+
+  .winner-banner {
+    text-align: center; margin-top: 20px; font-size: 24px; font-weight: 800;
+    letter-spacing: 2px; min-height: 30px; text-transform: uppercase;
+  }
+
+  @media (max-width: 520px) {
+    .name-field input { width: 100px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>DOTS &amp; BOXES</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Up To 4 Players &#9632;</p>
+
+    <div class="controls">
+      <div class="field">
+        <label>Players</label>
+        <div class="seg" id="playerSeg">
+          <button type="button" class="seg-btn active" data-players="2">2</button>
+          <button type="button" class="seg-btn" data-players="3">3</button>
+          <button type="button" class="seg-btn" data-players="4">4</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Board Size</label>
+        <div class="seg" id="sizeSeg">
+          <button type="button" class="seg-btn" data-size="3">Small</button>
+          <button type="button" class="seg-btn active" data-size="5">Medium</button>
+          <button type="button" class="seg-btn" data-size="8">Large</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field" data-idx="0"><span class="swatch" style="background:var(--p1)"></span><input id="name0" value="Player 1" maxlength="14" /></div>
+      <div class="name-field" data-idx="1"><span class="swatch" style="background:var(--p2)"></span><input id="name1" value="Player 2" maxlength="14" /></div>
+      <div class="name-field hidden" data-idx="2"><span class="swatch" style="background:var(--p3)"></span><input id="name2" value="Player 3" maxlength="14" /></div>
+      <div class="name-field hidden" data-idx="3"><span class="swatch" style="background:var(--p4)"></span><input id="name3" value="Player 4" maxlength="14" /></div>
+    </div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <svg id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div class="winner-banner" id="winner"></div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Layout constants ----
+  const GAP = 70;
+  const MARGIN = 40;
+  const DOT_R = 4;        // small dots lower the grid-illusion effect
+
+  const COLOR_VARS = ["--p1", "--p2", "--p3", "--p4"];
+  const SOFT_VARS  = ["--p1-soft", "--p2-soft", "--p3-soft", "--p4-soft"];
+
+  const svg = document.getElementById("board");
+  const SVGNS = "http://www.w3.org/2000/svg";
+
+  // ---- Selected options (from the control panel) ----
+  let selPlayers = 2;
+  let selSize = 5;
+
+  // ---- Active game state ----
+  let numPlayers, rows, cols;
+  let current, scores, edges, boxes, edgeEls, boxEls;
+  let totalEdges, filledEdges, gameOver;
+
+  const playerColor = (p) => `var(${COLOR_VARS[p]})`;
+  const playerSoft  = (p) => `var(${SOFT_VARS[p]})`;
+
+  function names() {
+    const out = [];
+    for (let i = 0; i < 4; i++) {
+      const v = document.getElementById("name" + i).value.trim();
+      out.push(v || "Player " + (i + 1));
+    }
+    return out;
+  }
+
+  const hKey = (r, c) => `h-${r}-${c}`;
+  const vKey = (r, c) => `v-${r}-${c}`;
+
+  function el(name, attrs, cls) {
+    const e = document.createElementNS(SVGNS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (cls) e.setAttribute("class", cls);
+    return e;
+  }
+
+  function startGame() {
+    numPlayers = selPlayers;
+    rows = cols = selSize;
+
+    current = 0;
+    scores = new Array(numPlayers).fill(0);
+    edges = {};
+    edgeEls = {};
+    boxEls = {};
+    gameOver = false;
+    filledEdges = 0;
+    totalEdges = rows * (cols + 1) + cols * (rows + 1);
+
+    boxes = [];
+    for (let r = 0; r < rows; r++) boxes.push(new Array(cols).fill(-1));
+
+    buildScoreboard();
+    buildBoard();
+    updateScoreboard();
+    updateStatus();
+    document.getElementById("winner").textContent = "";
+  }
+
+  function buildScoreboard() {
+    const board = document.getElementById("scoreboard");
+    board.innerHTML = "";
+    const nm = names();
+    for (let i = 0; i < numPlayers; i++) {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + i;
+      card.innerHTML =
+        '<div class="name"><span class="dot-marker" style="background:' + playerColor(i) + '"></span>' +
+        '<span id="label' + i + '"></span></div>' +
+        '<div class="score" id="score' + i + '" style="color:' + playerColor(i) + '">0</div>';
+      board.appendChild(card);
+      document.getElementById("label" + i).textContent = nm[i];
+    }
+  }
+
+  function buildBoard() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const width = MARGIN * 2 + cols * GAP;
+    const height = MARGIN * 2 + rows * GAP;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+
+    const px = (c) => MARGIN + c * GAP;
+    const py = (r) => MARGIN + r * GAP;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const fill = el("rect", {
+          x: px(c) + 4, y: py(r) + 4,
+          width: GAP - 8, height: GAP - 8, rx: 4,
+        }, "box-fill");
+        svg.appendChild(fill);
+        const label = el("text", {
+          x: px(c) + GAP / 2, y: py(r) + GAP / 2,
+          "font-size": Math.min(26, GAP * 0.4),
+        }, "box-label");
+        svg.appendChild(label);
+        boxEls[`${r}-${c}`] = { fill, label };
+      }
+    }
+
+    const addEdge = (key, x1, y1, x2, y2) => {
+      const line = el("line", { x1, y1, x2, y2 }, "edge");
+      const hit = el("line", { x1, y1, x2, y2 }, "edge hit");
+      svg.appendChild(line);
+      svg.appendChild(hit);
+      edges[key] = -1;
+      edgeEls[key] = line;
+      hit.addEventListener("click", () => claimEdge(key));
+      line.addEventListener("click", () => claimEdge(key));
+      hit.addEventListener("mouseenter", () => {
+        if (!gameOver && edges[key] === -1) line.classList.add("preview");
+      });
+      hit.addEventListener("mouseleave", () => line.classList.remove("preview"));
+    };
+
+    for (let r = 0; r <= rows; r++)
+      for (let c = 0; c < cols; c++)
+        addEdge(hKey(r, c), px(c), py(r), px(c + 1), py(r));
+
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c <= cols; c++)
+        addEdge(vKey(r, c), px(c), py(r), px(c), py(r + 1));
+
+    for (let r = 0; r <= rows; r++)
+      for (let c = 0; c <= cols; c++)
+        svg.appendChild(el("circle", { cx: px(c), cy: py(r), r: DOT_R }, "dot"));
+  }
+
+  function boxEdges(r, c) {
+    return [hKey(r, c), hKey(r + 1, c), vKey(r, c), vKey(r, c + 1)];
+  }
+
+  function claimEdge(key) {
+    if (gameOver) return;
+    if (edges[key] !== -1) return;
+
+    edges[key] = current;
+    filledEdges++;
+    const line = edgeEls[key];
+    line.classList.remove("preview");
+    line.classList.add("filled");
+    line.style.stroke = playerColor(current);
+    line.style.opacity = "1";
+
+    let completedAny = false;
+    affectedBoxes(key).forEach(([r, c]) => {
+      if (boxes[r][c] !== -1) return;
+      if (boxEdges(r, c).every((k) => edges[k] !== -1)) {
+        boxes[r][c] = current;
+        scores[current]++;
+        completedAny = true;
+        fillBox(r, c, current);
+      }
+    });
+
+    if (filledEdges === totalEdges) {
+      updateScoreboard();
+      endGame();
+      return;
+    }
+
+    if (!completedAny) current = (current + 1) % numPlayers;
+
+    updateScoreboard();
+    updateStatus(completedAny);
+  }
+
+  function affectedBoxes(key) {
+    const [type, rStr, cStr] = key.split("-");
+    const r = parseInt(rStr, 10), c = parseInt(cStr, 10);
+    const res = [];
+    if (type === "h") {
+      if (r - 1 >= 0) res.push([r - 1, c]);
+      if (r < rows) res.push([r, c]);
+    } else {
+      if (c - 1 >= 0) res.push([r, c - 1]);
+      if (c < cols) res.push([r, c]);
+    }
+    return res;
+  }
+
+  function fillBox(r, c, owner) {
+    const { fill, label } = boxEls[`${r}-${c}`];
+    fill.setAttribute("fill", playerSoft(owner));
+    fill.style.opacity = "1";
+    const initials = names()[owner].trim().charAt(0).toUpperCase() || (owner + 1);
+    label.textContent = initials;
+    label.setAttribute("fill", playerColor(owner));
+    label.style.opacity = "0.9";
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    for (let i = 0; i < numPlayers; i++) {
+      document.getElementById("label" + i).textContent = nm[i];
+      document.getElementById("score" + i).textContent = scores[i];
+      const card = document.getElementById("card" + i);
+      const active = !gameOver && current === i;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? playerColor(i) : "var(--grid)";
+      card.style.boxShadow = active
+        ? "0 0 16px " + playerSoft(i) + ", 0 0 6px " + playerColor(i)
+        : "inset 0 -3px 0 " + playerColor(i);
+    }
+  }
+
+  function updateStatus(justScored) {
+    const statusEl = document.getElementById("status");
+    if (gameOver) return;
+    const nm = names();
+    let msg = `<b style="color:${playerColor(current)}">${nm[current]}</b>'s turn`;
+    if (justScored) msg += " &mdash; boxed it! Go again &#9733;";
+    statusEl.innerHTML = msg;
+  }
+
+  function endGame() {
+    gameOver = true;
+    updateScoreboard();
+    const nm = names();
+    const statusEl = document.getElementById("status");
+    const banner = document.getElementById("winner");
+
+    const max = Math.max.apply(null, scores);
+    const winners = [];
+    for (let i = 0; i < numPlayers; i++) if (scores[i] === max) winners.push(i);
+
+    if (winners.length > 1) {
+      const who = winners.map((i) => nm[i]).join(" & ");
+      banner.innerHTML = "&#9878; Tie: " + who + " (" + max + ")";
+      banner.style.color = "var(--accent)";
+    } else {
+      const w = winners[0];
+      banner.innerHTML = "&#9733; " + nm[w] + " wins with " + max + " &#9733;";
+      banner.style.color = playerColor(w);
+    }
+    statusEl.innerHTML = "Game over &mdash; press <b>New Game</b> to play again.";
+  }
+
+  // ---- Control panel wiring ----
+  function wireSegment(containerId, dataAttr, onPick) {
+    const container = document.getElementById(containerId);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn");
+      if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(parseInt(btn.getAttribute(dataAttr), 10));
+    });
+  }
+
+  wireSegment("playerSeg", "data-players", (n) => {
+    selPlayers = n;
+    // Show only the name fields for the chosen number of players.
+    document.querySelectorAll("#nameFields .name-field").forEach((f) => {
+      const idx = parseInt(f.getAttribute("data-idx"), 10);
+      f.classList.toggle("hidden", idx >= n);
+    });
+  });
+
+  wireSegment("sizeSeg", "data-size", (n) => { selSize = n; });
+
+  document.getElementById("newGame").addEventListener("click", startGame);
+
+  for (let i = 0; i < 4; i++) {
+    document.getElementById("name" + i).addEventListener("input", () => {
+      if (!gameOver) updateScoreboard();
+    });
+  }
+
+  startGame();
+})();
+</script>
+</body>
+</html>

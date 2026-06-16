@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sand Garden • Interaction Map</title>
+<style>
+  :root {
+    --bg: #14111d;
+    --panel: #1e1a2b;
+    --panel-edge: #2e2840;
+    --ink: #e8e2f4;
+    --ink-dim: #9a92b5;
+    --accent: #ffd97a;
+    --accent2: #c3a6ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: radial-gradient(ellipse at 50% -10%, #211b33 0%, var(--bg) 60%);
+    color: var(--ink);
+    font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
+    margin: 0; padding: 0;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 20px 60px; }
+  header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  header h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: 0.5px; margin: 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  header h1 svg { width: 26px; height: 26px; color: var(--accent); }
+  .subtitle { color: var(--ink-dim); font-size: 15px; margin-top: 2px; }
+
+  .section { margin: 32px 0; }
+  .section h2 {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--panel-edge), transparent); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+
+  .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+  .images img { width: 100%; border-radius: 10px; border: 1px solid var(--panel-edge); display: block; }
+  .img-caption { font-size: 12px; color: var(--ink-dim); margin-top: 6px; text-align: center; }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--ink-dim);
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .swatch {
+    width: 14px; height: 14px; border-radius: 4px; border: 1px solid #3a3450;
+  }
+
+  /* Interactive Graph */
+  #graph-container {
+    background: #0f0c18;
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 12px;
+    position: relative;
+    touch-action: none;
+  }
+  #graph-svg { width: 100%; height: auto; display: block; }
+  .node {
+    cursor: pointer;
+    transition: filter 0.1s, stroke 0.1s;
+  }
+  .node:hover { filter: brightness(1.15) saturate(1.1); }
+  .node.selected { stroke: #fff; stroke-width: 2.5; }
+  .node-label {
+    font-size: 9.5px; font-weight: 600; pointer-events: none;
+    text-anchor: middle; dominant-baseline: middle;
+    fill: #e8e2f4; paint-order: stroke;
+    stroke: #14111d; stroke-width: 2.5; stroke-linejoin: round;
+  }
+  .edge {
+    stroke: #5a516f; stroke-width: 1.1; stroke-opacity: 0.55;
+    fill: none; marker-end: url(#arrow);
+    transition: stroke 0.1s, stroke-opacity 0.1s, stroke-width 0.1s;
+  }
+  .edge.highlight {
+    stroke: var(--accent);
+    stroke-opacity: 0.95;
+    stroke-width: 2.2;
+  }
+  .edge-label {
+    font-size: 7.5px; fill: #b8a8d8; pointer-events: none;
+    text-shadow: 0 0 3px #14111d;
+  }
+
+  .graph-controls {
+    position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 2;
+  }
+  .gbtn {
+    font-size: 11px; padding: 4px 9px; border-radius: 6px;
+    background: #2a243f; color: var(--ink); border: 1px solid var(--panel-edge);
+    cursor: pointer; transition: all 0.1s;
+  }
+  .gbtn:hover { background: #3a3450; border-color: #4a4068; }
+  .gbtn.active { background: var(--accent); color: #14111d; border-color: var(--accent); font-weight: 600; }
+
+  /* Details panel */
+  #details {
+    margin-top: 12px;
+    background: #0f0c18;
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 12px 14px;
+    min-height: 68px;
+    font-size: 13px;
+  }
+  #details .title { font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .rule { margin: 3px 0; padding-left: 4px; border-left: 2px solid #463d5a; }
+  .rule .from { color: #ffcc66; font-weight: 500; }
+  .rule .arrow { color: #6f6590; }
+  .rule .to { color: #8ee4ff; font-weight: 500; }
+  .rule .meta { color: var(--ink-dim); font-size: 11.5px; }
+
+  /* Table */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px; overflow: hidden;
+  }
+  th {
+    background: #252033; text-align: left; font-weight: 600; font-size: 11px;
+    color: var(--accent); padding: 9px 10px; border-bottom: 1px solid var(--panel-edge);
+  }
+  td { padding: 7px 10px; border-bottom: 1px solid #2a2638; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .src { color: #ffcc66; font-weight: 500; white-space: nowrap; }
+  .tgt { color: #8ee4ff; font-weight: 500; white-space: nowrap; }
+  .act { color: #d9b36c; }
+  .meta-col { color: var(--ink-dim); font-size: 11px; max-width: 380px; }
+
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .filters input, .filters select {
+    background: #0f0c18; color: var(--ink); border: 1px solid var(--panel-edge);
+    padding: 6px 9px; border-radius: 7px; font-size: 12px;
+  }
+  .filters input { width: 220px; }
+
+  .mini-diagram {
+    background: #0f0c18;
+    border: 1px solid var(--panel-edge);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .mini-title { font-size: 12px; color: var(--accent); margin-bottom: 8px; font-weight: 600; }
+
+  kbd {
+    background: #252033; border: 1px solid #3a3450; border-radius: 3px;
+    padding: 0 4px; font-size: 10px; color: #c8bfd9;
+  }
+
+  .note {
+    font-size: 12px; color: var(--ink-dim); background: #0f0c18;
+    padding: 10px 12px; border-radius: 8px; border-left: 3px solid #463d5a;
+  }
+  .hub { color: #ff8c4a; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19c4 0 5.5-6 9-6 2.6 0 3.6 2.6 5.2 4.2 1.1 1.1 2.8 1.8 5.8 1.8"/><path d="M17.5 4.5c.5 1.6 1.4 2.5 3 3-1.6.5-2.5 1.4-3 3-.5-1.6-1.4-2.5-3-3 1.6-.5 2.5-1.4 3-3Z" fill="currentColor" stroke="none"/></svg>
+    Sand Garden
+  </h1>
+  <div>
+    <div style="font-weight:700; font-size:21px; letter-spacing:.3px;">Complete Interaction Map</div>
+    <div class="subtitle">Every element-to-element reaction • UI flows • Data &amp; simulation layers • 26 materials</div>
+  </div>
+</header>
+
+<div class="section">
+  <h2>Generated Overviews</h2>
+  <div class="images">
+    <div>
+      <img src="element-interactions-overview.jpg" alt="Element interaction network overview">
+      <div class="img-caption">Element reaction web (AI overview)</div>
+    </div>
+    <div>
+      <img src="system-architecture.jpg" alt="Full system architecture and data flow">
+      <div class="img-caption">Architecture layers &amp; data flow (AI overview)</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Interactive Element Reaction Graph</h2>
+  <div class="card" style="padding:14px 14px 10px;">
+    <div id="graph-container">
+      <div class="graph-controls">
+        <button class="gbtn" id="btn-all">Show All</button>
+        <button class="gbtn active" id="btn-major">Major Only</button>
+        <button class="gbtn" id="btn-clear">Clear</button>
+      </div>
+      <svg id="graph-svg" viewBox="0 0 1000 720" width="1000" height="720"></svg>
+    </div>
+
+    <div id="details">
+      <div class="title">Click a node to explore its interactions</div>
+      <div id="detail-content" style="color:#9a92b5; font-size:12.5px;">Hover or click nodes for precise rules from the update() switch.</div>
+    </div>
+
+    <div class="legend" style="margin-top:10px; padding:0 4px;">
+      <div class="item"><span class="swatch" style="background:#ff8c4a"></span> Energy / Reactive</div>
+      <div class="item"><span class="swatch" style="background:#5aa7e8"></span> Liquids</div>
+      <div class="item"><span class="swatch" style="background:#5fbf6e"></span> Life / Growth</div>
+      <div class="item"><span class="swatch" style="background:#a09cab"></span> Solids &amp; Powders</div>
+      <div class="item"><span class="swatch" style="background:#c3a6ff"></span> Special / Volatile</div>
+      <div class="item"><span class="swatch" style="background:#8a8a9a"></span> Structures</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Complete Rule Reference Table</h2>
+  <div class="filters">
+    <input id="filter-input" placeholder="Filter source, target, or action..." />
+    <select id="filter-cat">
+      <option value="">All categories</option>
+      <option value="energy">Energy / Reactive</option>
+      <option value="liquid">Liquids</option>
+      <option value="life">Life / Growth</option>
+      <option value="solid">Solids &amp; Powders</option>
+      <option value="special">Special / Volatile</option>
+      <option value="wall">Structures</option>
+    </select>
+    <button class="gbtn" onclick="clearFilters()" style="margin-left:auto">Clear filters</button>
+  </div>
+
+  <table id="rule-table">
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>Action / Effect</th>
+        <th>Target</th>
+        <th style="width:42%">Note / Probability / Code Location</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="note" style="margin-top:8px">
+    Most checks happen in the <strong>updating particle's</strong> <code>update()</code> case (NB4 or NB8 neighbors). 
+    Many are probabilistic. "Movement interactions" (density swaps, powder/liquid flow) are implicit via shared helpers.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Core Simulation &amp; Movement Interactions</h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(310px,1fr)); gap:14px;">
+    <div class="mini-diagram">
+      <div class="mini-title">Shared Physics Helpers</div>
+      <div style="font-size:12.5px; line-height:1.45; color:#c8bfd9;">
+        <strong>powder(x,y,i, slip, speedUp)</strong><br>
+        • Used by: SPARKLE, SHADOW, CRYSTAL, SALT, SEED, ASH, ICE, (VOID lazy)<br>
+        • Down + optional diagonal slip. Density swap vs lower-density liquids.<br>
+        • <span style="color:#ff8c4a">nearMud()</span> check: 55% chance to refuse move when next to MUD.<br>
+        • Falls off edges → deleted (void).<br><br>
+
+        <strong>liquid(x,y,i, disperse, moveChance)</strong><br>
+        • Used by: WATER, MUD, HONEY, LAVA, SALTWATER<br>
+        • Down first, then sideways spread + horizontal flooding.<br>
+        • moveChance varies (HONEY uses neighbor count for stickiness).<br>
+        • Edges = deletion.
+      </div>
+    </div>
+
+    <div class="mini-diagram">
+      <div class="mini-title">Special Movement (not using powder/liquid)</div>
+      <div style="font-size:12.5px; line-height:1.45; color:#c8bfd9;">
+        • <strong>STONE</strong>: only straight down or swap with liquids below (no slip).<br>
+        • <strong>DREAM</strong>: biased drift + phase-swap through almost everything.<br>
+        • <strong>LIGHTNING</strong>: 4-step downward "zip" with random side jolts + glow.<br>
+        • <strong>BOUNCE</strong>: internal velocity (life=vy, shade=vx), multi-cell sweeps, restitution bounce.<br>
+        • <strong>BIRD</strong>: 8-dir state machine in shade, perching (life timer) on WOOD/BRICK/PLANT/VINE.<br>
+        • <strong>FISH</strong>: must stay adjacent to WATER or SALTWATER or sinks/flops/suffocates.<br>
+        • <strong>CLOUD</strong>: prefers rising, produces WATER below.<br>
+        • <strong>VINE</strong>: support-aware hanging + single-tendril growth (avoids clumping).
+      </div>
+    </div>
+
+    <div class="mini-diagram">
+      <div class="mini-title">Key Emergent Loops &amp; Hubs</div>
+      <div style="font-size:12.5px; line-height:1.5; color:#c8bfd9;">
+        <span class="hub">FIRE</span> + <span class="hub">LAVA</span> are the biggest hubs (ignite plants/wood/honey, bake mud, melt ice/stone, fuse sparkle).<br><br>
+        <strong>Water cycle</strong>: Cloud rains → pools → salt dissolves → brine evaporates near heat → salt crystals.<br>
+        <strong>Life cycle</strong>: Seed + water/mud → Plant/Vine → can burn or frost back to seed/ash.<br>
+        <strong>Lightning</strong> turns water into more lightning (chain) then plants on fire.<br>
+        <strong>Void</strong> eats matter then "gives birth" to dream motes when it expires.<br>
+        <strong>Lava ↔ Stone</strong>: Lava can melt stone into more lava; water can quench lava into stone.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>UI → State → Simulation Flow</h2>
+  <div class="card" style="font-size:13px; padding:16px 18px; line-height:1.5;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div>
+        <strong style="color:#ffd97a">Input Layer</strong><br>
+        • Canvas pointer events (down/move/up/leave + capture)<br>
+        • Brush slider + [ ] keys<br>
+        • Rotary time dial (drag + wheel) → exponential 0.1×–3.0× mapped to simSpeed<br>
+        • Palette clicks + number keys (and special letters) → current material<br>
+        • Space = pause, C = clear
+      </div>
+      <div>
+        <strong style="color:#ffd97a">Painting</strong><br>
+        • Only writes into EMPTY cells (eraser always clears)<br>
+        • Disk brush with per-material fill probability (liquids dense, dream/void/bird/fish sparse, fire medium)<br>
+        • Special initial life[] / shade[] for FIRE, LIGHTNING, LAVA, BOUNCE<br>
+        • paintStroke() does grid-space Bresenham interpolation
+      </div>
+      <div>
+        <strong style="color:#ffd97a">Tick &amp; Render</strong><br>
+        • rAF tick() accumulates simSpeed into stepAcc<br>
+        • 0–6 simulation steps per visual frame (capped)<br>
+        • step() marks + updates bottom-up with row parity<br>
+        • Global fade on glow[] and trailA[] every frame<br>
+        • Render: offscreen 1:1 → upscale + additive puffs + overlay frame + cursor
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Data Structures (how elements "talk")</h2>
+  <div class="note">
+    All communication is direct array mutation inside the single <code>update()</code> pass.<br>
+    <strong>cells[]</strong> (Uint8) — type<br>
+    <strong>shade[]</strong> (Uint8) — color variation + overloaded (BIRD/FISH direction, BOUNCE vx, LIGHTNING "was water")<br>
+    <strong>life[]</strong> (Int16) — countdown / growth energy / velocity / perch timer<br>
+    <strong>glow[]</strong> (Float32) — light, written by many, read in render + some reactions (shadow swallows it)<br>
+    <strong>trailA/H[]</strong> — DREAM only (color trails that linger after the mote moves)<br>
+    <strong>parts[]</strong> — independent cosmetic puff particles (position/vel/life/hue). Emitted from 20+ reaction sites.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Boundaries &amp; World Rules</h2>
+  <div class="note">
+    The grid has <strong>no walls</strong> — anything that moves off any edge is deleted (falls into the void).<br>
+    The seeded brick enclosure (BRICK walls + floor) is the only thing that normally contains the simulation.<br>
+    Clear (C) removes walls too. Painting or destroying walls lets matter drain.
+  </div>
+</div>
+
+<footer style="margin-top:40px; font-size:11px; color:#655d7d; text-align:center;">
+  Generated from static analysis of index.html (update switch + helpers + painting + UI wiring). 
+  All probabilities and neighbor checks (NB4/NB8) are taken directly from the source.
+</footer>
+
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const NODES = [
+  {id:"SPARKLE",   cat:"energy",  x:160, y:280, color:"#ffd97a", desc:"Twinkles and spreads glow. Banishes shadow."},
+  {id:"WATER",     cat:"liquid",  x:280, y:420, color:"#5aa7e8", desc:"Flows, extinguishes fire, feeds plants."},
+  {id:"FIRE",      cat:"energy",  x:420, y:220, color:"#ff8c4a", desc:"Major hub. Burns plants/wood/honey, bakes mud."},
+  {id:"PLANT",     cat:"life",    x:720, y:320, color:"#5fbf6e", desc:"Grows when fed water/honey. Burns easily."},
+  {id:"SHADOW",    cat:"special", x:220, y:180, color:"#6f6590", desc:"Swallows light. Slippery fast powder."},
+  {id:"STONE",     cat:"solid",   x:540, y:480, color:"#a09cab", desc:"Dense. Falls straight or displaces liquids."},
+  {id:"DREAM",     cat:"special", x:620, y:130, color:"#c3a6ff", desc:"Phases through solids. Leaves color trails."},
+  {id:"CRYSTAL",   cat:"solid",   x:680, y:480, color:"#8ee4ff", desc:"Heavy solid shard. Falls & stacks."},
+  {id:"MUD",       cat:"liquid",  x:360, y:520, color:"#a07a52", desc:"Viscous. Drinks water to thicken."},
+  {id:"LIGHTNING", cat:"energy",  x:300, y:160, color:"#f6f29b", desc:"Electrifies water pools, ignites plants, flash-freezes ice."},
+  {id:"HONEY",     cat:"liquid",  x:480, y:560, color:"#e8a23d", desc:"Sticky. Barely moves when clumped."},
+  {id:"VOID",      cat:"energy",  x:480, y:340, color:"#9a5cf0", desc:"Eats almost everything. Eventually births dreams."},
+  {id:"ICE",       cat:"solid",   x:580, y:380, color:"#bfe8ff", desc:"Creeps across water. Melts near heat. Frosts plants."},
+  {id:"LAVA",      cat:"energy",  x:380, y:340, color:"#ff6b3d", desc:"Huge destructive hub. Melts stone, boils water, bakes mud."},
+  {id:"SEED",      cat:"life",    x:780, y:420, color:"#d9b36c", desc:"Pops in fire. Roots in water/mud → plant."},
+  {id:"ASH",       cat:"solid",   x:820, y:520, color:"#a8a3ad", desc:"Left by dying fire. Turns to mud with water."},
+  {id:"WOOD",      cat:"wall",    x:860, y:260, color:"#8a8a9a", desc:"Structure. Burns slowly. Supports birds/vines."},
+  {id:"CLOUD",     cat:"special", x:140, y:120, color:"#a8c5e0", desc:"Drifts upward. Rains infinite water below."},
+  {id:"BOUNCE",    cat:"special", x:180, y:520, color:"#ffcc66", desc:"Physics ball. Bounces with restitution off solids."},
+  {id:"BIRD",      cat:"special", x:780, y:160, color:"#6b8e23", desc:"Flies 8 directions. Perches on wood/brick/plant/vine."},
+  {id:"VINE",      cat:"life",    x:860, y:360, color:"#2e8b57", desc:"Clings & hangs. Drinks to grow tendrils."},
+  {id:"BRICK",     cat:"wall",    x:920, y:200, color:"#c0392b", desc:"Indestructible enclosure walls. Supports perching."},
+  {id:"SALT",      cat:"solid",   x:220, y:360, color:"#eef1f6", desc:"Dissolves in fresh water → brine."},
+  {id:"SALTWATER", cat:"liquid",  x:260, y:480, color:"#5fa8bc", desc:"Brine. Evaporates near heat leaving salt."},
+  {id:"FISH",      cat:"special", x:320, y:580, color:"#ff8a4c", desc:"Must stay in/near water or sinks & suffocates."}
+];
+
+const EDGES = [
+  // Major / common
+  {from:"WATER", to:"FIRE", action:"extinguishes", note:"60% NB4 scan in WATER update. Self → steam puffs.", major:true},
+  {from:"FIRE", to:"PLANT", action:"ignites", note:"30% chance. Spreads blaze.", major:true},
+  {from:"FIRE", to:"WOOD", action:"ignites (slow)", note:"4.5% per step — burns long once lit.", major:true},
+  {from:"LAVA", to:"WATER", action:"boils", note:"Deletes water + puffs. 35% chance lava quenches to STONE.", major:true},
+  {from:"LAVA", to:"STONE", action:"melts to LAVA", note:"6% — dangerous chain reaction. Lava gains life.", major:true},
+  {from:"LIGHTNING", to:"WATER", action:"electrifies", note:"Converts water → more LIGHTNING (chain, inherits life).", major:true},
+  {from:"LIGHTNING", to:"PLANT", action:"ignites", note:"Strike sets plant on fire.", major:true},
+  {from:"ICE", to:"WATER", action:"freezes", note:"2% creep across pools.", major:true},
+  {from:"SALT", to:"WATER", action:"dissolves", note:"30% converts water → SALTWATER, self clears.", major:true},
+  {from:"SEED", to:"WATER", action:"roots", note:"8% becomes PLANT (life 6). Consumes water.", major:true},
+  {from:"SEED", to:"MUD", action:"roots", note:"8% becomes PLANT. Mud is also fertile.", major:true},
+  {from:"VOID", to:"*", action:"consumes", note:"9% per NB8 neighbor (except STONE/VOID/EMPTY). Increases own life.", major:true},
+  {from:"CLOUD", to:"(below)", action:"rains", note:"12% creates WATER below it (infinite source).", major:true},
+
+  // Important but slightly rarer / specific
+  {from:"SPARKLE", to:"SHADOW", action:"banishes", note:"5% neighbor scan, 50% success.", major:true},
+  {from:"FIRE", to:"MUD", action:"kiln-bakes", note:"1.5% → STONE.", major:false},
+  {from:"FIRE", to:"HONEY", action:"caramelizes", note:"0.8% → FIRE.", major:false},
+  {from:"LAVA", to:"ICE", action:"carves", note:"90% — 50% delete / 50% WATER.", major:true},
+  {from:"LAVA", to:"SPARKLE", action:"fuses to crystal", note:"2% → CRYSTAL.", major:false},
+  {from:"LAVA", to:"CRYSTAL", action:"shatters", note:"15%.", major:false},
+  {from:"LAVA", to:"MUD", action:"kiln-bakes", note:"8% → STONE.", major:false},
+  {from:"LAVA", to:"SHADOW", action:"banishes", note:"5%. Molten light.", major:false},
+  {from:"LIGHTNING", to:"ICE", action:"flash-freezes", note:"15% → CRYSTAL.", major:true},
+  {from:"LIGHTNING", to:"SPARKLE", action:"fuses", note:"8% → CRYSTAL + glow.", major:false},
+  {from:"LIGHTNING", to:"CRYSTAL", action:"charges", note:"Glows crystal, 20% feeds extra life to bolt.", major:false},
+  {from:"ICE", to:"PLANT", action:"frostbite", note:"0.8% → SEED.", major:false},
+  {from:"ICE", to:"HONEY", action:"candies", note:"0.4% → CRYSTAL (amber).", major:false},
+  {from:"ICE", to:"LAVA", action:"melts self", note:"50% — self becomes WATER + puff, cools lava.", major:true},
+  {from:"ICE", to:"FIRE", action:"cools & melts", note:"25% — dims fire, self → WATER.", major:false},
+  {from:"SALTWATER", to:"FIRE", action:"evaporates", note:"Precipitates SALT or fully clears.", major:false},
+  {from:"SALTWATER", to:"LAVA", action:"evaporates", note:"Same as above.", major:false},
+  {from:"SEED", to:"FIRE", action:"pops", note:"→ SPARKLE + 3 puffs + shatter sfx.", major:true},
+  {from:"SEED", to:"LAVA", action:"pops", note:"Same as fire.", major:true},
+  {from:"ASH", to:"WATER", action:"hydrates", note:"5% self → MUD, consumes water.", major:false},
+  {from:"MUD", to:"WATER", action:"drinks", note:"If life<5, 3% per adjacent water → life++ (thicker).", major:false},
+  {from:"PLANT", to:"WATER", action:"drinks", note:"25% consumes water, +life (max 8).", major:true},
+  {from:"PLANT", to:"HONEY", action:"feeds", note:"3% stronger growth (max life 12).", major:false},
+  {from:"VINE", to:"WATER", action:"drinks", note:"20% growth boost.", major:false},
+  {from:"VINE", to:"HONEY", action:"feeds", note:"5% growth boost.", major:false},
+  {from:"VINE", to:"FIRE", action:"burns", note:"50% → FIRE.", major:false},
+  {from:"VINE", to:"LAVA", action:"burns", note:"50% → FIRE.", major:false},
+  {from:"BIRD", to:"WOOD", action:"perches", note:"If below is WOOD/BRICK/PLANT/VINE, 15% chance to perch (life timer).", major:false},
+  {from:"BIRD", to:"BRICK", action:"perches", note:"", major:false},
+  {from:"BIRD", to:"PLANT", action:"perches", note:"", major:false},
+  {from:"BIRD", to:"VINE", action:"perches", note:"", major:false},
+  {from:"VOID", to:"(death)", action:"births DREAM", note:"When life>22, clears self and plants DREAM in ~35% of nearby EMPTY cells.", major:true},
+  {from:"DREAM", to:"STONE", action:"phases + glow", note:"Swap + glow boost on collision.", major:false},
+  {from:"DREAM", to:"PLANT", action:"phases + glow", note:"", major:false},
+  {from:"DREAM", to:"CRYSTAL", action:"phases + glow", note:"", major:false},
+];
+
+// Full rule list for the table (more exhaustive)
+const ALL_RULES = [
+  ["WATER","extinguishes + steam","FIRE","60% in NB4 scan; water deletes itself"],
+  ["FIRE","ignites (fast)","PLANT","30%"],
+  ["FIRE","ignites (slow)","WOOD","4.5%"],
+  ["FIRE","ignites","HONEY","0.8%"],
+  ["FIRE","kiln bakes","MUD","1.5% → STONE"],
+  ["PLANT","consumes for growth","WATER","25% chance, life +=5 (max 8)"],
+  ["PLANT","lush growth spurt","HONEY","3%, life +=9 (max 12)"],
+  ["LIGHTNING","converts to more lightning","WATER","50% if life>2, spreads charge"],
+  ["LIGHTNING","ignites","PLANT","→ FIRE (life 60)"],
+  ["LIGHTNING","flash freezes","ICE","15% → CRYSTAL"],
+  ["LIGHTNING","fuses","SPARKLE","8% → CRYSTAL"],
+  ["LIGHTNING","charges","CRYSTAL","glow + 20% chance life++ on bolt"],
+  ["LAVA","boils + possible quench","WATER","35% self becomes STONE"],
+  ["LAVA","melts","STONE","6% — turns target into LAVA, lava gains life"],
+  ["LAVA","fuses","SPARKLE","2% → CRYSTAL"],
+  ["LAVA","shatters","CRYSTAL","15%"],
+  ["LAVA","bakes","MUD","8% → STONE"],
+  ["LAVA","ignites","PLANT","40%"],
+  ["LAVA","ignites","HONEY","40%"],
+  ["LAVA","ignites","WOOD","25% (long burn)"],
+  ["LAVA","carves/melts","ICE","90%"],
+  ["LAVA","banishes","SHADOW","5%"],
+  ["ICE","creeps","WATER","2%"],
+  ["ICE","melts self","LAVA","50% self→WATER + puff"],
+  ["ICE","melts self + cools","FIRE","25%"],
+  ["ICE","frostbite","PLANT","0.8% → SEED"],
+  ["ICE","candies","HONEY","0.4% → CRYSTAL"],
+  ["SALT","dissolves","WATER","30% — water becomes SALTWATER, salt clears"],
+  ["SALT","dissolves further","SALTWATER","5%"],
+  ["SALTWATER","evaporates","FIRE","→ SALT (55%) or clear"],
+  ["SALTWATER","evaporates","LAVA","same"],
+  ["SEED","pops like popcorn","FIRE","→ SPARKLE + 3 puffs"],
+  ["SEED","pops like popcorn","LAVA","same"],
+  ["SEED","takes root","WATER","8% → PLANT (consumes water)"],
+  ["SEED","takes root","MUD","8% → PLANT"],
+  ["ASH","hydrates to mud","WATER","5%"],
+  ["MUD","drinks water","WATER","if life<5, 3% per adjacent → life++"],
+  ["VOID","eats matter","* (most)","9% per NB8, life++ on void, ignores stone"],
+  ["VOID (death)","births dreams","nearby EMPTY","35% when life>22"],
+  ["SPARKLE","banishes","SHADOW","5% neighbor, 50% success"],
+  ["SPARKLE","glow spread","any non-empty","occasional small glow boost"],
+  ["PLANT","settles + grows","EMPTY","energetic or very rare growth into adjacent empty"],
+  ["VINE","drinks & grows","WATER / HONEY","support-aware tendril growth"],
+  ["VINE","burns","FIRE / LAVA","50%"],
+  ["CLOUD","rains","below EMPTY","12% chance creates water (or deeper)"],
+  ["BIRD","perches","WOOD / BRICK / PLANT / VINE","15% chance when above them"],
+  ["FISH","requires water","WATER or SALTWATER","else sinks, flops, or suffocates (2%)"],
+  ["DREAM","phases through","most (not DREAM/VOID)","leaves trails, sometimes glow"],
+  ["STONE","displaces","any LIQUID","swaps when falling"],
+  ["HONEY","sticks to self","HONEY","neighbor count controls moveChance (very low when clumped)"],
+  ["BRICK / WOOD","anchor","(many)","used for support checks, perching, vine clinging (never move themselves)"],
+];
+
+const CAT_COLORS = {
+  energy: "#ff8c4a",
+  liquid: "#5aa7e8",
+  life: "#5fbf6e",
+  solid: "#a09cab",
+  special: "#c3a6ff",
+  wall: "#8a8a9a"
+};
+
+// ============================================================
+// GRAPH RENDERING (SVG + vanilla interactivity)
+// ============================================================
+let svg, selectedId = null;
+
+function buildGraph(showMajorOnly = true) {
+  svg = document.getElementById("graph-svg");
+  svg.innerHTML = "";
+
+  // defs for arrow
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  defs.innerHTML = `
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L7,3 z" fill="#5a516f"/>
+    </marker>
+    <marker id="arrow-hi" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L7,3 z" fill="#ffd97a"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  // edges first (so nodes are on top)
+  const edgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  edgeGroup.id = "edges";
+
+  const nodeById = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+  EDGES.forEach((e, idx) => {
+    if (showMajorOnly && !e.major) return;
+    const a = nodeById[e.from];
+    const b = nodeById[e.to === "*" ? "VOID" : e.to]; // * edges point at void visually for now
+    if (!a || !b) return;
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const mx = (a.x + b.x) / 2 + (a.y - b.y) * 0.08; // gentle curve
+    const my = (a.y + b.y) / 2 + (b.x - a.x) * 0.08;
+    line.setAttribute("d", `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`);
+    line.setAttribute("class", "edge");
+    line.dataset.from = e.from;
+    line.dataset.to = e.to;
+    line.dataset.action = e.action;
+    edgeGroup.appendChild(line);
+  });
+  svg.appendChild(edgeGroup);
+
+  // nodes
+  const nodeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  NODES.forEach(n => {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.classList.add("node");
+    g.dataset.id = n.id;
+
+    const r = n.cat === "energy" || n.id === "LAVA" || n.id === "FIRE" || n.id === "VOID" ? 19 : 16.5;
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", n.x);
+    circle.setAttribute("cy", n.y);
+    circle.setAttribute("r", r);
+    circle.setAttribute("fill", n.color);
+    circle.setAttribute("stroke", "#2e2840");
+    circle.setAttribute("stroke-width", "2.5");
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", n.x);
+    label.setAttribute("y", n.y);
+    label.setAttribute("class", "node-label");
+    label.textContent = n.id;
+
+    g.appendChild(circle);
+    g.appendChild(label);
+
+    g.addEventListener("click", () => selectNode(n.id, g));
+    g.addEventListener("mouseenter", () => highlightEdges(n.id, true));
+    g.addEventListener("mouseleave", () => highlightEdges(n.id, false));
+
+    nodeGroup.appendChild(g);
+  });
+  svg.appendChild(nodeGroup);
+
+  // initial major edges visible
+}
+
+function highlightEdges(nodeId, on) {
+  if (!svg) return;
+  const edges = svg.querySelectorAll(".edge");
+  edges.forEach(e => {
+    const match = e.dataset.from === nodeId || e.dataset.to === nodeId;
+    if (on && match) e.classList.add("highlight");
+    else if (!on) e.classList.remove("highlight");
+  });
+}
+
+function selectNode(id, el) {
+  // clear previous
+  document.querySelectorAll("#graph-svg .node").forEach(n => n.classList.remove("selected"));
+  if (selectedId === id) {
+    selectedId = null;
+    document.getElementById("detail-content").innerHTML = "Click any node to see its specific reactions from the source.";
+    return;
+  }
+  selectedId = id;
+  if (el) el.classList.add("selected");
+
+  const node = NODES.find(n => n.id === id);
+  const outgoing = EDGES.filter(e => e.from === id);
+  const incoming = EDGES.filter(e => e.to === id || e.to === "*");
+
+  let html = `<div style="margin-bottom:4px"><span style="color:${node.color}; font-weight:700">${id}</span> <span style="color:#6f6590">— ${node.desc}</span></div>`;
+
+  if (outgoing.length) {
+    html += `<div style="margin:6px 0 2px; font-size:11px; color:#ffd97a; font-weight:600">OUTGOING</div>`;
+    outgoing.forEach(r => {
+      const tgt = r.to === "*" ? "many" : r.to;
+      html += `<div class="rule"><span class="from">${id}</span> <span class="arrow">→</span> <span class="to">${tgt}</span> <span style="color:#d9b36c">${r.action}</span> <span class="meta">${r.note}</span></div>`;
+    });
+  }
+  if (incoming.length) {
+    html += `<div style="margin:8px 0 2px; font-size:11px; color:#8ee4ff; font-weight:600">INCOMING (reacts with this)</div>`;
+    incoming.forEach(r => {
+      html += `<div class="rule"><span class="from">${r.from}</span> <span class="arrow">→</span> <span class="to">${id}</span> <span style="color:#d9b36c">${r.action}</span> <span class="meta">${r.note}</span></div>`;
+    });
+  }
+  if (!outgoing.length && !incoming.length) {
+    html += `<div style="color:#6f6590; font-size:12px">This element participates mostly through movement physics (powder/liquid) or as a passive surface (perching/support).</div>`;
+  }
+
+  document.getElementById("detail-content").innerHTML = html;
+}
+
+function clearSelection() {
+  document.querySelectorAll("#graph-svg .node").forEach(n => n.classList.remove("selected"));
+  selectedId = null;
+  document.getElementById("detail-content").innerHTML = "Click any node to see its specific reactions from the source.";
+  if (svg) svg.querySelectorAll(".edge").forEach(e => e.classList.remove("highlight"));
+}
+
+// controls
+function initGraphControls() {
+  const btnMajor = document.getElementById("btn-major");
+  const btnAll = document.getElementById("btn-all");
+  const btnClear = document.getElementById("btn-clear");
+
+  btnMajor.onclick = () => {
+    buildGraph(true);
+    btnMajor.classList.add("active");
+    btnAll.classList.remove("active");
+    clearSelection();
+  };
+  btnAll.onclick = () => {
+    buildGraph(false);
+    btnAll.classList.add("active");
+    btnMajor.classList.remove("active");
+    clearSelection();
+  };
+  btnClear.onclick = () => {
+    clearSelection();
+  };
+
+  // keyboard escape clears
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") clearSelection();
+  });
+}
+
+// ============================================================
+// RULE TABLE
+// ============================================================
+function populateTable(filterText = "", catFilter = "") {
+  const tbody = document.querySelector("#rule-table tbody");
+  tbody.innerHTML = "";
+
+  const srcCat = {};
+  NODES.forEach(n => srcCat[n.id] = n.cat);
+
+  ALL_RULES.forEach(([src, action, tgt, note]) => {
+    const srcC = srcCat[src] || "solid";
+    if (catFilter && srcC !== catFilter) return;
+
+    const hay = (src + " " + action + " " + tgt + " " + note).toLowerCase();
+    if (filterText && !hay.includes(filterText.toLowerCase())) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="src">${src}</td>
+      <td class="act">${action}</td>
+      <td class="tgt">${tgt}</td>
+      <td class="meta-col">${note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function initFilters() {
+  const input = document.getElementById("filter-input");
+  const sel = document.getElementById("filter-cat");
+
+  function apply() {
+    populateTable(input.value, sel.value);
+  }
+  input.addEventListener("input", apply);
+  sel.addEventListener("change", apply);
+
+  // initial
+  populateTable();
+}
+
+function clearFilters() {
+  document.getElementById("filter-input").value = "";
+  document.getElementById("filter-cat").value = "";
+  populateTable();
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+function boot() {
+  buildGraph(true);           // start with major only (cleaner)
+  initGraphControls();
+  initFilters();
+
+  // nice default selection
+  setTimeout(() => {
+    const fireNode = document.querySelector('#graph-svg .node[data-id="FIRE"]');
+    if (fireNode) {
+      // auto-select fire as a great starting hub
+      const nodeData = NODES.find(n => n.id === "FIRE");
+      selectNode("FIRE", fireNode);
+      fireNode.classList.add("selected");
+    }
+  }, 420);
+
+  // click anywhere on svg background clears
+  const container = document.getElementById("graph-container");
+  container.addEventListener("click", (ev) => {
+    if (ev.target.id === "graph-svg" || ev.target.tagName === "svg") {
+      clearSelection();
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

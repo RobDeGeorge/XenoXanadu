@@ -1,6 +1,7 @@
+# Dependencies for the optional local AI servers (e.g. sand-falling) — not deployed.
 node_modules/
-build/
-.svelte-kit/
+
+# Local env
 .env
 .env.*
 !.env.example

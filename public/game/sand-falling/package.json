@@ -1,0 +1,14 @@
+{
+  "name": "sand-garden-ai-bridge",
+  "version": "1.0.0",
+  "description": "Bridge server that lets a local Ollama model play Sand Garden live",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "ws": "^8.18.0"
+  }
+}

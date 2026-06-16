@@ -1,5 +1,8 @@
 name: Deploy to GitHub Pages
 
+# Pure static site — no build step. The contents of public/ are published as-is.
+# public/CNAME (xenoxanadu.com) and public/.nojekyll are part of the artifact.
+
 on:
   push:
     branches: [main]
@@ -15,26 +18,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: build
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
       - id: deployment
         uses: actions/deploy-pages@v4
