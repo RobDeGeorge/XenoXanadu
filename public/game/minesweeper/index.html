@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minesweeper // XenoXanadu</title>
+<meta name="description" content="Neon Minesweeper — classic three-difficulty sweeping with first-click safety, chording, a built-in logic solver for hints, and an optional local LLM that explains every deduction out loud." />
+<!-- hide BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>MINESWEEPER</h1>
+    <p class="tagline">Clear every square that isn't a mine. One slip and it's over.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Difficulty</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn active" data-diff="beginner">Beginner</button>
+          <button type="button" class="seg-btn" data-diff="intermediate">Intermediate</button>
+          <button type="button" class="seg-btn" data-diff="expert">Expert</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New game</button>
+    </div>
+
+    <!-- ============ HUD ============ -->
+    <div class="hud">
+      <div class="hud-readout" id="mineCount" title="Mines left (mines minus flags)">💣 010</div>
+      <button type="button" class="face" id="face" title="New game">🙂</button>
+      <div class="hud-readout" id="timer" title="Elapsed time">⏱ 000</div>
+    </div>
+
+    <!-- ============ BOARD ============ -->
+    <div class="board-scroll">
+      <div class="board" id="board" oncontextmenu="return false"></div>
+    </div>
+
+    <!-- ============ ASSISTANT (solver — works offline too) ============ -->
+    <div class="assist">
+      <div class="assist-btns">
+        <button type="button" class="assist-btn" id="hintBtn" title="Find one provably-safe square (pure logic — no model needed)">💡 Hint</button>
+        <button type="button" class="assist-btn" id="autoBtn" title="Let the logic solver play every certain move until it gets stuck">🤖 Auto-solve</button>
+        <button type="button" class="assist-btn flag-toggle" id="flagToggle" title="Toggle flag mode — handy on touchscreens (or right-click a square)">🚩 Flag: off</button>
+      </div>
+      <div class="assist-msg" id="assistMsg">Left-click to reveal · right-click to flag · click a number to chord.</div>
+    </div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <label class="ai-explain">
+        <input type="checkbox" id="explainChk" /> Have my model explain each hint out loud
+      </label>
+      <div class="ai-think" id="aiThink">The model's reasoning streams here when you ask for a hint. The <em>square</em> it points at always comes from the built-in logic solver, so the model can never steer you onto a mine — it just narrates the deduction.</div>
+      <div class="ai-hint">
+        Hints &amp; auto-solve are pure logic and work without any model. Connecting a local model only adds the
+        plain-English explanations. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

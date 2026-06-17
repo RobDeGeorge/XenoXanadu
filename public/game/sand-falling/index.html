@@ -116,6 +116,19 @@
   }
   .brand svg { width: 18px; height: 18px; color: var(--accent); }
 
+  /* back-to-arcade link — mounted in the controls bar (full-screen layout,
+     so the shared floating pill would sit on top of the brand) */
+  .ctrl-home {
+    display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+    padding: 6px 12px 6px 10px; border: 1px solid var(--panel-edge); border-radius: 999px;
+    color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.3px; white-space: nowrap; background: rgba(0,0,0,0.18);
+    transition: color .15s, background .15s, border-color .15s, transform .08s;
+  }
+  .ctrl-home .xa { font-size: 14px; line-height: 1; }
+  .ctrl-home:hover { color: #0b140d; background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  .ctrl-home:active { transform: translateY(0); }
+
 
   .inkicon { display:inline-block; background:currentColor;
     -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
@@ -336,6 +349,7 @@
     <!-- mounted controls strip at the very top of the play canvas frame -->
     <div id="controls">
       <div class="ctrl-left">
+        <a class="ctrl-home" href="../../index.html" title="Back to the XenoXanadu arcade" aria-label="Back to the arcade"><span class="xa" aria-hidden="true">←</span>Arcade</a>
         <div class="brand">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19c4 0 5.5-6 9-6 2.6 0 3.6 2.6 5.2 4.2 1.1 1.1 2.8 1.8 5.8 1.8"/><path d="M17.5 4.5c.5 1.6 1.4 2.5 3 3-1.6.5-2.5 1.4-3 3-.5-1.6-1.4-2.5-3-3 1.6-.5 2.5-1.4 3-3Z" fill="currentColor" stroke="none"/></svg>
         </div>

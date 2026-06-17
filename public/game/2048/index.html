@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>2048</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<style>
+  html.hosted .ai-only { display: none !important; }
+  /* ---- sharpened neon arcade · signature hue: indigo ---- */
+  :root {
+    --bg: #0a0816;
+    --bg-2: #100c22;
+    --panel: #140f2a;
+    --grid: #2b2552;
+    --board: #170f2e;
+    --slot: #251b48;
+    --text: #ece9ff;
+    --muted: #8f87c0;
+    --accent: #6e7bff;       /* neon indigo */
+    --on-accent: #0a0816;
+    --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --cell: clamp(58px, 17.5vw, 92px);
+    --gap: 12px;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font-family: var(--mono);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 30px 16px 60px; touch-action: manipulation;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+    mix-blend-mode: multiply;
+  }
+
+  h1 {
+    text-align: center; margin: 0 0 6px; font-weight: 800;
+    letter-spacing: 6px; text-transform: uppercase; font-size: clamp(30px, 7vw, 54px);
+    color: var(--accent);
+    text-shadow: 0 0 6px rgba(110,123,255,0.6), 3px 3px 0 #ff2e88, 6px 6px 0 #2bf0e0;
+  }
+  .subtitle { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+
+  .wrap { width: calc(var(--cell) * 4 + var(--gap) * 5); max-width: 100%; }
+
+  .hud { display: flex; align-items: stretch; gap: 10px; margin-bottom: 16px; }
+  .scorebox {
+    flex: 1; background: var(--panel); border: 2px solid var(--grid); padding: 8px 12px; text-align: center;
+  }
+  .scorebox .lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
+  .scorebox .val { font-size: 22px; font-weight: 800; line-height: 1.2; }
+  .btns { display: flex; flex-direction: column; gap: 6px; }
+  button.act {
+    background: transparent; color: var(--accent); border: 2px solid var(--accent);
+    padding: 7px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: var(--mono); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s, transform .06s; white-space: nowrap;
+  }
+  button.act:hover { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act:active { transform: translateY(2px); }
+  button.act.sm { padding: 6px 10px; font-size: 10px; }
+  button.act.secondary { color: var(--muted); border-color: var(--grid); }
+  button.act.secondary:hover { background: var(--grid); color: var(--text); box-shadow: none; }
+  button.act.on { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act:disabled { opacity: .35; cursor: default; }
+  button.act:disabled:hover { background: transparent; color: var(--muted); box-shadow: none; }
+
+  /* ---- board ---- */
+  .board {
+    position: relative; width: calc(var(--cell) * 4 + var(--gap) * 5); height: calc(var(--cell) * 4 + var(--gap) * 5);
+    padding: var(--gap); background: var(--board); border: 2px solid var(--grid);
+    box-shadow: 0 0 0 1px #0006, 0 12px 36px #0008, inset 0 0 30px #0004; touch-action: none;
+  }
+  .grid-bg { position: absolute; inset: var(--gap); display: grid; grid-template-columns: repeat(4, var(--cell)); grid-template-rows: repeat(4, var(--cell)); gap: var(--gap); }
+  .grid-bg .slot { background: var(--slot); }
+  .tiles { position: absolute; inset: var(--gap); }
+
+  .tile {
+    position: absolute; top: 0; left: 0; width: var(--cell); height: var(--cell);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: calc(var(--cell) * 0.4); color: #fff;
+    transition: transform .1s ease; will-change: transform;
+  }
+  .tile.new { animation: pop .14s ease; }
+  .tile.merged { animation: pop2 .16s ease; }
+  @keyframes pop  { 0% { transform: var(--xy) scale(0); } 100% { transform: var(--xy) scale(1); } }
+  @keyframes pop2 { 0% { transform: var(--xy) scale(1); } 50% { transform: var(--xy) scale(1.18); } 100% { transform: var(--xy) scale(1); } }
+
+  .tile.t2    { background: #efe7d8; color: #2a2440; }
+  .tile.t4    { background: #ece0c2; color: #2a2440; }
+  .tile.t8    { background: #f2b179; }
+  .tile.t16   { background: #f59563; }
+  .tile.t32   { background: #f67c5f; }
+  .tile.t64   { background: #f65e3b; }
+  .tile.t128  { background: #edcf72; font-size: calc(var(--cell) * 0.34); }
+  .tile.t256  { background: #edcc61; font-size: calc(var(--cell) * 0.34); }
+  .tile.t512  { background: #edc850; font-size: calc(var(--cell) * 0.34); }
+  .tile.t1024 { background: #edc53f; font-size: calc(var(--cell) * 0.27); }
+  .tile.t2048 { background: #edc22e; font-size: calc(var(--cell) * 0.27); box-shadow: 0 0 18px rgba(237,194,46,0.7); }
+  .tile.tbig  { background: var(--accent); font-size: calc(var(--cell) * 0.25); box-shadow: 0 0 18px var(--accent); }
+
+  /* ---- overlay ---- */
+  .overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; text-align: center; background: rgba(10,8,22,0.86); z-index: 5;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { margin: 0; font-size: clamp(26px, 7vw, 40px); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px var(--accent); }
+  .overlay.win h2 { color: #edc22e; text-shadow: 0 0 16px rgba(237,194,46,0.8); }
+  .overlay p { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+  .overlay .row { display: flex; gap: 10px; }
+
+  .help { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin-top: 16px; line-height: 1.7; }
+
+  /* ---- AI panel (local only) ---- */
+  #aiBox { width: calc(var(--cell) * 4 + var(--gap) * 5); max-width: 100%; margin: 18px auto 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--grid); display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+  #aiBox .ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #aiBox .ai-label { width: 60px; flex: none; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  #aiBox label.chk { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
+  #aiBox label.chk input { accent-color: var(--accent); }
+  #aiBox select, #aiBox input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); padding: 5px 8px; font-size: 12px; font-family: var(--mono); }
+  #aiBox .ai-refresh { flex: none; background: var(--bg-2); color: var(--accent); border: 1px solid var(--grid); padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
+  #aiBox .ai-refresh:hover { background: var(--accent); color: var(--on-accent); }
+  #aiBox .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  #aiBox .ai-dot { width: 9px; height: 9px; background: #555; flex: none; }
+  #aiBox .ai-dot.on { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+  #aiBox .ai-dot.err { background: #ff2e88; box-shadow: 0 0 7px #ff2e88; }
+  #aiBox .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  #aiBox .ai-hint a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <h1>2048</h1>
+  <div class="subtitle">Merge the tiles · reach 2048</div>
+
+  <div class="wrap">
+    <div class="hud">
+      <div class="scorebox"><div class="lbl">Score</div><div class="val" id="score">0</div></div>
+      <div class="scorebox"><div class="lbl">Best</div><div class="val" id="best">0</div></div>
+      <div class="btns">
+        <button class="act sm" id="newBtn">New</button>
+        <button class="act sm secondary" id="undoBtn">Undo</button>
+        <button class="act sm secondary ai-only" id="autoBtn">Auto ▸</button>
+      </div>
+    </div>
+
+    <div class="board" id="board">
+      <div class="grid-bg" id="gridBg"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">Game Over</h2>
+        <p id="ovText"></p>
+        <div class="row" id="ovRow"></div>
+      </div>
+    </div>
+
+    <div class="help">Arrow keys / WASD · swipe on touch · merge equal tiles</div>
+
+    <!-- Autoplay brain (local only) -->
+    <div id="aiBox" class="ai-only">
+      <label class="chk"><input type="checkbox" id="useModel"> Let a local model drive Autoplay</label>
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">↻</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" id="endpoint" value="http://localhost:11434">
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Built-in autoplay ready.</span></div>
+      <div class="ai-hint">
+        <b>Auto ▸</b> plays for you. By default a built-in heuristic picks the moves; tick the box to let a
+        model on <em>your</em> machine play instead · <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   2048 — single file. 4x4, slide+merge, sliding-tile animation.
+   Tiles keep identity across moves so they slide; the value grid
+   is mirrored for the AI / autoplay heuristic.
+   ============================================================ */
+
+const SIZE = 4;
+const ANIM = 100;             // ms — must match .tile transition
+const BEST_KEY = "xeno.2048.best";
+
+const tilesEl = document.getElementById("tiles");
+const boardEl = document.getElementById("board");
+const $ = id => document.getElementById(id);
+
+let cells;                    // 4x4 of tile object | null
+let score, best, busy, over, won, keepPlaying;
+let history = [];             // [{vals, score}] for undo
+let tileSeq = 0;
+let autoplay = false, autoTimer = null;
+
+best = +(localStorage.getItem(BEST_KEY) || 0);
+$("best").textContent = best;
+
+function emptyGrid() { return Array.from({ length: SIZE }, () => Array(SIZE).fill(null)); }
+function values() { return cells.map(row => row.map(t => (t ? t.val : 0))); }
+
+/* ---- tile DOM ---- */
+function xy(r, c) { return "translate(calc((var(--cell) + var(--gap)) * " + c + "), calc((var(--cell) + var(--gap)) * " + r + "))"; }
+function classFor(v) { return v > 2048 ? "tbig" : "t" + v; }
+function makeTile(r, c, val, isNew) {
+  const el = document.createElement("div");
+  el.className = "tile " + classFor(val) + (isNew ? " new" : "");
+  el.textContent = val;
+  el.style.setProperty("--xy", xy(r, c));
+  el.style.transform = xy(r, c);
+  tilesEl.appendChild(el);
+  return { id: ++tileSeq, val, r, c, el };
+}
+function placeTile(t, r, c) { t.r = r; t.c = c; t.el.style.setProperty("--xy", xy(r, c)); t.el.style.transform = xy(r, c); }
+function refreshTile(t) { t.el.className = "tile " + classFor(t.val); t.el.textContent = t.val; }
+
+/* ---- grid background ---- */
+(function buildBg() {
+  const bg = $("gridBg");
+  for (let i = 0; i < SIZE * SIZE; i++) { const d = document.createElement("div"); d.className = "slot"; bg.appendChild(d); }
+})();
+
+/* ---- new game ---- */
+function newGame() {
+  stopAuto();
+  tilesEl.innerHTML = "";
+  cells = emptyGrid();
+  score = 0; over = false; won = false; keepPlaying = false; busy = false; history = [];
+  hideOverlay();
+  updateScore();
+  spawn(); spawn();
+}
+function spawn() {
+  const empty = [];
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!cells[r][c]) empty.push([r, c]);
+  if (!empty.length) return;
+  const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+  cells[r][c] = makeTile(r, c, Math.random() < 0.9 ? 2 : 4, true);
+}
+
+/* ---- line coordinates per direction (from the destination edge inward) ---- */
+function lineCoords(dir) {
+  const lines = [];
+  for (let i = 0; i < SIZE; i++) {
+    const line = [];
+    for (let j = 0; j < SIZE; j++) {
+      if (dir === "l") line.push([i, j]);
+      else if (dir === "r") line.push([i, SIZE - 1 - j]);
+      else if (dir === "u") line.push([j, i]);
+      else line.push([SIZE - 1 - j, i]);   // 'd'
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+/* ---- a move with animation ---- */
+function move(dir) {
+  if (busy || over) return false;
+  const slides = [], merges = [], newCells = emptyGrid();
+  let moved = false, gained = 0;
+
+  for (const line of lineCoords(dir)) {
+    const tiles = line.map(([r, c]) => cells[r][c]).filter(Boolean);
+    let pos = 0, i = 0;
+    while (i < tiles.length) {
+      const [tr, tc] = line[pos];
+      if (i + 1 < tiles.length && tiles[i].val === tiles[i + 1].val) {
+        const val = tiles[i].val * 2;
+        merges.push({ keep: tiles[i], gone: tiles[i + 1], r: tr, c: tc, val });
+        newCells[tr][tc] = tiles[i];
+        gained += val; moved = true; i += 2; pos++;
+      } else {
+        const t = tiles[i];
+        if (t.r !== tr || t.c !== tc) moved = true;
+        slides.push({ t, r: tr, c: tc });
+        newCells[tr][tc] = t; i++; pos++;
+      }
+    }
+  }
+  if (!moved) return false;
+
+  history.push({ vals: values(), score });
+  if (history.length > 20) history.shift();
+  busy = true;
+
+  for (const s of slides) placeTile(s.t, s.r, s.c);
+  for (const m of merges) { placeTile(m.keep, m.r, m.c); placeTile(m.gone, m.r, m.c); }
+  cells = newCells;
+
+  setTimeout(() => {
+    for (const m of merges) {
+      m.gone.el.remove();
+      m.keep.val = m.val; refreshTile(m.keep); m.keep.el.classList.add("merged");
+      if (m.val >= 2048) won = true;
+    }
+    score += gained;
+    setTimeout(() => tilesEl.querySelectorAll(".tile.merged,.tile.new").forEach(e => e.classList.remove("merged", "new")), 160);
+    spawn();
+    busy = false;
+    updateScore();   // after busy clears, so Undo re-enables correctly
+    if (won && !keepPlaying) return showWin();
+    if (!canMove()) return showOver();
+    if (autoplay) scheduleAuto();
+  }, ANIM);
+  return true;
+}
+
+function canMove() {
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    if (!cells[r][c]) return true;
+    const v = cells[r][c].val;
+    if (c + 1 < SIZE && cells[r][c + 1] && cells[r][c + 1].val === v) return true;
+    if (r + 1 < SIZE && cells[r + 1][c] && cells[r + 1][c].val === v) return true;
+  }
+  return false;
+}
+
+function updateScore() {
+  $("score").textContent = score;
+  if (score > best) { best = score; localStorage.setItem(BEST_KEY, best); $("best").textContent = best; }
+  $("undoBtn").disabled = history.length === 0 || busy;
+}
+
+/* ---- overlays ---- */
+function hideOverlay() { $("overlay").className = "overlay"; }
+function showOver() {
+  stopAuto();
+  $("overlay").className = "overlay show";
+  $("ovTitle").textContent = "Game Over"; $("ovTitle").parentElement.classList.remove("win");
+  $("ovText").textContent = "No moves left — final score " + score + ".";
+  $("ovRow").innerHTML = ""; addOvBtn("New Game", newGame);
+  over = true;
+}
+function showWin() {
+  $("overlay").className = "overlay show win";
+  $("ovTitle").textContent = "You win!"; $("ovTitle").parentElement.classList.add("win");
+  $("ovText").textContent = "You reached 2048. Keep going for a higher score?";
+  $("ovRow").innerHTML = "";
+  addOvBtn("Keep going", () => { keepPlaying = true; hideOverlay(); if (autoplay) scheduleAuto(); });
+  addOvBtn("New Game", newGame);
+}
+function addOvBtn(label, fn) { const b = document.createElement("button"); b.className = "act"; b.textContent = label; b.onclick = fn; $("ovRow").appendChild(b); }
+
+/* ---- undo ---- */
+function undo() {
+  if (!history.length || busy) return;
+  stopAuto();
+  const snap = history.pop();
+  tilesEl.innerHTML = "";
+  cells = emptyGrid();
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++)
+    if (snap.vals[r][c]) cells[r][c] = makeTile(r, c, snap.vals[r][c], false);
+  score = snap.score; over = false; hideOverlay(); updateScore();
+}
+
+/* ---- pure simulation + heuristic (built-in autoplay) ---- */
+function simulate(vals, dir) {
+  const lines = lineCoords(dir);
+  const out = vals.map(row => row.slice());
+  let moved = false, gained = 0;
+  for (const line of lines) {
+    const nums = line.map(([r, c]) => vals[r][c]).filter(v => v);
+    const res = [];
+    let i = 0;
+    while (i < nums.length) {
+      if (i + 1 < nums.length && nums[i] === nums[i + 1]) { res.push(nums[i] * 2); gained += nums[i] * 2; i += 2; }
+      else { res.push(nums[i]); i++; }
+    }
+    for (let j = 0; j < SIZE; j++) {
+      const [r, c] = line[j]; const nv = j < res.length ? res[j] : 0;
+      if (out[r][c] !== nv) moved = true;
+      out[r][c] = nv;
+    }
+  }
+  return { grid: out, moved, gained };
+}
+function evalGrid(g) {
+  let empties = 0, mono = 0, smooth = 0, maxV = 0, maxCorner = 0;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const v = g[r][c]; if (!v) { empties++; continue; }
+    maxV = Math.max(maxV, v);
+    if (c + 1 < SIZE && g[r][c + 1]) smooth -= Math.abs(Math.log2(v) - Math.log2(g[r][c + 1]));
+    if (r + 1 < SIZE && g[r + 1][c]) smooth -= Math.abs(Math.log2(v) - Math.log2(g[r + 1][c]));
+  }
+  for (const [r, c] of [[0,0],[0,3],[3,0],[3,3]]) maxCorner = Math.max(maxCorner, g[r][c]);
+  // reward monotonic rows/cols (snake toward a corner)
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE - 1; c++) {
+    if (g[r][c] && g[r][c + 1]) mono += (g[r][c] >= g[r][c + 1] ? 1 : -1);
+  }
+  return empties * 2.7 + smooth * 0.4 + mono * 0.3 + (maxCorner === maxV ? 2.0 : 0);
+}
+function bestDir() {
+  const vals = values();
+  let best = null, bestScore = -Infinity;
+  for (const dir of ["d", "l", "r", "u"]) {
+    const s = simulate(vals, dir);
+    if (!s.moved) continue;
+    const sc = evalGrid(s.grid) + s.gained * 0.02;
+    if (sc > bestScore) { bestScore = sc; best = dir; }
+  }
+  return best;
+}
+
+/* ---- autoplay ---- */
+function toggleAuto() {
+  autoplay = !autoplay;
+  $("autoBtn").classList.toggle("on", autoplay);
+  $("autoBtn").textContent = autoplay ? "Stop ▪" : "Auto ▸";
+  if (autoplay) { if (over) newGame(); scheduleAuto(); } else stopAuto();
+}
+function stopAuto() { autoplay = false; if (autoTimer) clearTimeout(autoTimer); autoTimer = null; $("autoBtn").classList.remove("on"); $("autoBtn").textContent = "Auto ▸"; }
+function scheduleAuto() { if (autoTimer) clearTimeout(autoTimer); autoTimer = setTimeout(autoStep, 130); }
+async function autoStep() {
+  if (!autoplay || busy || over) return;
+  let dir = null;
+  if (modelActive()) { try { dir = await modelDir(); } catch (e) { /* fall back */ } }
+  if (!dir) dir = bestDir();
+  if (!dir) { stopAuto(); return; }
+  move(dir);
+}
+
+/* ---- input ---- */
+const KEYMAP = { ArrowLeft: "l", ArrowRight: "r", ArrowUp: "u", ArrowDown: "d", a: "l", d: "r", w: "u", s: "d", A: "l", D: "r", W: "u", S: "d" };
+window.addEventListener("keydown", e => {
+  const dir = KEYMAP[e.key];
+  if (!dir) return;
+  e.preventDefault();
+  if (autoplay) return;       // hands off while autoplaying
+  move(dir);
+});
+// swipe
+let tsx = 0, tsy = 0;
+boardEl.addEventListener("touchstart", e => { const t = e.touches[0]; tsx = t.clientX; tsy = t.clientY; }, { passive: true });
+boardEl.addEventListener("touchend", e => {
+  if (autoplay) return;
+  const t = e.changedTouches[0]; const dx = t.clientX - tsx, dy = t.clientY - tsy;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : (dy > 0 ? "d" : "u"));
+}, { passive: true });
+
+$("newBtn").addEventListener("click", newGame);
+$("undoBtn").addEventListener("click", undo);
+$("autoBtn").addEventListener("click", toggleAuto);
+
+/* ---- local model (shared BYOM) ---- */
+const useModel = $("useModel"), modelSel = $("modelSel"), endpointEl = $("endpoint");
+const aiStatusEl = $("aiStatus"), aiDot = $("aiDot");
+let aiController = null;
+function modelActive() { return typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal() && useModel.checked && modelSel.value && !modelSel.disabled; }
+function endpointBase() { return (endpointEl.value || "http://localhost:11434").replace(/\/$/, ""); }
+function setAiStatus(t, s) { aiStatusEl.textContent = t; aiDot.className = "ai-dot" + (s ? " " + s : ""); }
+
+async function modelDir() {
+  const vals = values();
+  const legal = ["u", "d", "l", "r"].filter(d => simulate(vals, d).moved);
+  if (!legal.length) return null;
+  const NAME = { u: "UP", d: "DOWN", l: "LEFT", r: "RIGHT" };
+  const grid = vals.map(row => row.map(v => (v || ".")).join("\t")).join("\n");
+  const system =
+`You are playing 2048 on a 4x4 grid. Slide all tiles one direction; equal tiles that collide merge. Keep your biggest tile in a corner and the board organized. Choose ONE direction from the legal list.
+Reply with at most one short sentence, then a final line exactly:
+MOVE: <UP|DOWN|LEFT|RIGHT>`;
+  const user = `Board ('.' = empty):\n${grid}\n\nLegal moves: ${legal.map(d => NAME[d]).join(", ")}\nPick the best move.`;
+  aiController = new AbortController();
+  const killer = setTimeout(() => { try { aiController.abort(); } catch (e) {} }, 30000);
+  let reply = "";
+  try {
+    reply = await XenoBYOM.chat({
+      endpoint: endpointBase(), model: modelSel.value,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      temperature: 0.3, maxTokens: 300, signal: aiController.signal,
+    });
+  } finally { clearTimeout(killer); aiController = null; }
+  const up = reply.toUpperCase();
+  const m = up.match(/MOVE:\s*(UP|DOWN|LEFT|RIGHT)/) || up.match(/\b(UP|DOWN|LEFT|RIGHT)\b/);
+  if (m) { const d = { UP: "u", DOWN: "d", LEFT: "l", RIGHT: "r" }[m[1]]; if (legal.includes(d)) { setAiStatus("Model · " + m[1], "on"); return d; } }
+  return null;
+}
+
+async function loadModels() {
+  if (typeof XenoBYOM === "undefined" || !XenoBYOM.isLocal()) return;
+  XenoBYOM.saveConfig({ endpoint: endpointBase() });
+  modelSel.disabled = true; modelSel.innerHTML = "<option>loading…</option>";
+  const saved = XenoBYOM.loadConfig().model;
+  const res = await XenoBYOM.test({ endpoint: endpointBase() });
+  if (!res.ok) { modelSel.innerHTML = '<option value="">— not reachable —</option>'; setAiStatus(res.error.message + " — built-in autoplay will run instead.", "err"); return; }
+  modelSel.innerHTML = res.models.map(n => `<option value="${n}">${n}</option>`).join("");
+  modelSel.disabled = false;
+  const fav = res.models.indexOf(saved) >= 0 ? saved : (res.models.find(n => /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(n)) || res.models[0]);
+  modelSel.value = fav; XenoBYOM.saveConfig({ model: fav });
+  setAiStatus("Model ready — " + res.models.length + " via " + res.provider + ".", "on");
+}
+modelSel.addEventListener("change", () => XenoBYOM.saveConfig({ model: modelSel.value }));
+$("refresh").addEventListener("click", loadModels);
+endpointEl.addEventListener("change", loadModels);
+
+/* ---- boot ---- */
+newGame();
+if (typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal()) {
+  endpointEl.value = XenoBYOM.loadConfig().endpoint || "http://localhost:11434";
+  loadModels();
+}
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Texas Hold'em // XenoXanadu</title>
+<meta name="description" content="No-limit Texas Hold'em tournament against AI personalities powered by your own local model. Play a seat or watch the bots battle." />
+<!-- hide the BYO-model bits on the public site (local model only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>♠ Texas <span class="suit-r">Hold'em</span> ♥</h1>
+    <p class="tagline">No-limit tournament &middot; rising blinds &middot; a table full of AI characters</p>
+
+    <!-- ============ SETUP ============ -->
+    <div class="setup" id="setup">
+      <h2>Sit Down</h2>
+      <div class="setrow">
+        <div class="field">
+          <label>You</label>
+          <div class="seg" id="modeSeg">
+            <button type="button" class="active" data-mode="play">Take a seat</button>
+            <button type="button" data-mode="spectate">Spectate (all-AI)</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Players at table</label>
+          <div class="seg" id="seatSeg">
+            <button type="button" data-seats="4">4</button>
+            <button type="button" class="active" data-seats="6">6</button>
+            <button type="button" data-seats="8">8</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Starting stack</label>
+          <select id="stackSel">
+            <option value="2500">2,500 (faster)</option>
+            <option value="5000" selected>5,000</option>
+            <option value="10000">10,000 (longer)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Speed</label>
+          <div class="seg" id="speedSeg">
+            <button type="button" data-speed="1100">Relaxed</button>
+            <button type="button" class="active" data-speed="650">Normal</button>
+            <button type="button" data-speed="300">Fast</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI connection (local only) -->
+      <div class="ai-conn ai-only">
+        <div class="setrow">
+          <div class="field">
+            <label>Model (fills every AI seat)</label>
+            <select id="modelSel"><option>loading…</option></select>
+          </div>
+          <div class="field">
+            <label>Endpoint</label>
+            <input type="text" id="endpoint" value="http://localhost:11434" />
+          </div>
+          <button type="button" class="refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+          <button type="button" class="btn-ghost" id="perSeatToggle">Per-seat models ▾</button>
+        </div>
+        <div class="seat-models" id="seatModels"></div>
+        <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+        <div class="ai-hint">
+          One model can run the whole table — each AI seat gets a random <em>personality</em> baked into its prompt,
+          so a single small model produces a table full of distinct characters. Want different brains?
+          Open <strong>Per-seat models</strong> to assign a different model name to any seat (same endpoint).
+          The game only ever offers the model its <em>legal</em> actions, so it can't make an illegal bet.
+          New here? <a href="../../ai-setup.html">connect a model ▸</a>
+        </div>
+      </div>
+      <div class="controls-foot" style="justify-content:flex-start;margin-top:18px">
+        <button type="button" class="btn-primary" id="startBtn">Deal me in ▸</button>
+      </div>
+
+      <!-- the cast of characters that fill the AI seats -->
+      <div class="roster-block">
+        <h2>The Cast <span class="roster-count" id="rosterCount"></span></h2>
+        <p class="roster-intro">Every AI seat is dealt one of these characters at random — each plays the way its
+          name promises. Here's who you could be sitting across from.</p>
+        <div class="roster" id="roster"></div>
+      </div>
+    </div>
+
+    <!-- ============ TABLE ============ -->
+    <div class="table-stage" id="stage">
+      <div class="hud">
+        <span class="pill blinds">Blinds <b id="hudBlinds">—</b></span>
+        <span class="pill">Level <b id="hudLevel">1</b></span>
+        <span class="pill">Hand <b id="hudHand">1</b></span>
+        <span class="pill">Players left <b id="hudAlive">—</b></span>
+      </div>
+
+      <div class="felt-wrap">
+        <div class="felt" id="felt">
+          <div class="center">
+            <div class="pot" id="potLabel">Pot: <b>0</b></div>
+            <div class="board" id="board"></div>
+          </div>
+          <!-- seats injected here -->
+          <div class="overlay" id="overlay">
+            <div class="card-box">
+              <h2 id="ovTitle"></h2>
+              <p id="ovBody"></p>
+              <div class="controls-foot" id="ovControls"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- human action bar -->
+      <div class="actionbar" id="actionbar">
+        <div class="act-btns">
+          <button type="button" class="act-btn fold" id="btnFold">Fold</button>
+          <button type="button" class="act-btn check" id="btnCheck">Check</button>
+          <button type="button" class="act-btn raise" id="btnRaise">Raise</button>
+        </div>
+        <div class="raise-row" id="raiseRow">
+          <input type="range" id="raiseSlider" />
+          <span class="raise-amt" id="raiseAmt">0</span>
+        </div>
+        <div class="quick-bets" id="quickBets"></div>
+      </div>
+
+      <div class="panels">
+        <div class="panel ai-only">
+          <h3 id="thinkTitle">AI table-talk</h3>
+          <div class="ai-think" id="aiThink">The thinking of whichever AI is on the action streams here…</div>
+        </div>
+        <div class="panel">
+          <h3>Hand log</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <div class="controls-foot">
+        <button type="button" class="btn-ghost" id="newTable">Leave table / new setup</button>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="engine.js"></script>
+<script src="personalities.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

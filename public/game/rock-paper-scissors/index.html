@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rock Paper Scissors // XenoXanadu</title>
+<meta name="description" content="Neon Rock Paper Scissors (with optional Lizard-Spock) — face a bot that learns your patterns, or a local LLM that predicts your next throw and trash-talks its reasoning. You're less random than you think." />
+<!-- hide BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>ROCK · PAPER · SCISSORS</h1>
+    <p class="tagline">You think you throw at random. The machine disagrees.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Variant</label>
+        <div class="seg" id="variantSeg">
+          <button type="button" class="seg-btn active" data-variant="classic">Classic</button>
+          <button type="button" class="seg-btn" data-variant="lsp">+ Lizard·Spock</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Opponent</label>
+        <div class="seg" id="oppSeg">
+          <button type="button" class="seg-btn active" data-opp="bot">Predictor bot</button>
+          <button type="button" class="seg-btn ai-only" data-opp="model">Your model</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">Reset scores</button>
+    </div>
+
+    <!-- ============ SCOREBOARD ============ -->
+    <div class="scoreboard">
+      <div class="score-card you"><div class="name">😎 You</div><div class="score" id="scoreYou">0</div></div>
+      <div class="score-card draw"><div class="name">🤝 Draws</div><div class="score" id="scoreDraw">0</div></div>
+      <div class="score-card cpu"><div class="name">🤖 CPU</div><div class="score" id="scoreCpu">0</div></div>
+    </div>
+
+    <!-- ============ ARENA ============ -->
+    <div class="arena">
+      <div class="hand-wrap">
+        <div class="hand mine" id="youHand">✊</div>
+        <div class="hand-label">You</div>
+      </div>
+      <div class="versus" id="versus">VS</div>
+      <div class="hand-wrap">
+        <div class="hand theirs" id="cpuHand">✊</div>
+        <div class="hand-label" id="cpuLabel">CPU</div>
+      </div>
+    </div>
+
+    <div class="result" id="result">Make your throw ▾</div>
+    <div class="streak" id="streak"></div>
+
+    <!-- ============ THROW BUTTONS ============ -->
+    <div class="throws" id="throws"></div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <div class="ai-think" id="aiThink">Pick “Your model” as the opponent and its prediction — “you keep leaning on rock, so…” — streams here each round. It only ever sees your <em>past</em> throws, never the one you're making, so it's genuinely guessing.</div>
+      <div class="ai-hint">
+        The predictor bot needs no model and works anywhere. A local model just makes a smarter, chattier
+        rival. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

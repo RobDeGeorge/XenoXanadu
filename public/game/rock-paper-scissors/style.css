@@ -1,0 +1,97 @@
+/* ============================================================================
+ *  XenoXanadu — Rock Paper Scissors — palette + arena styling.
+ *  Structural chrome (controls bar, segmented toggle, scoreboard, AI panel)
+ *  comes from the shared lib/arcade.css; this file carries RPS's own identity:
+ *  the two-hand arena, the shake/reveal, the throw pad, and result colours.
+ * ========================================================================== */
+:root {
+  --bg:        #0b0810;
+  --bg-2:      #15101d;
+  --panel:     #181221;
+  --panel-2:   #221830;
+  --grid:      #322543;
+  --line:      #322543;
+  --text:      #efe9f5;
+  --muted:     #9b8bb0;
+  --accent:    #e94bff;          /* electric magenta */
+  --on-accent: #190520;
+  --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --wrap-max: 720px;
+
+  --win:  #4ade80;
+  --lose: #ff4d6d;
+  --tie:  #ffcf33;
+}
+
+body { background:
+  radial-gradient(1100px 600px at 50% -10%, #1c1330 0%, var(--bg) 60%) fixed; }
+
+h1 {
+  text-align: center; margin: 4px 0 6px; font-size: clamp(24px, 5.2vw, 40px);
+  font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--accent);
+  text-shadow: 0 0 9px rgba(233,75,255,.55), 3px 3px 0 #2bf0e0, 6px 6px 0 #ffcf33;
+}
+.tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 24px; }
+
+/* scoreboard accents per card */
+.score-card.you  { border-color: #2a5c3a; }
+.score-card.cpu  { border-color: #5c2a3a; }
+.score-card.you  .score { color: var(--win); }
+.score-card.draw .score { color: var(--tie); }
+.score-card.cpu  .score { color: var(--lose); }
+
+/* ---------- arena ---------- */
+.arena {
+  display: flex; align-items: center; justify-content: center; gap: clamp(14px, 5vw, 48px);
+  margin: 8px auto 14px; max-width: 600px;
+}
+.hand-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.hand {
+  font-size: clamp(60px, 16vw, 104px); line-height: 1; width: 1.4em; height: 1.4em;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--panel); border: 2px solid var(--grid); border-radius: 18px;
+  box-shadow: inset 0 0 24px #0007, 0 10px 26px #0008;
+}
+.hand.mine   { transform: scaleX(-1); }                 /* face the two hands at each other */
+.hand.shake  { animation: shake .22s ease-in-out infinite; }
+.hand.win    { border-color: var(--win);  box-shadow: 0 0 22px var(--win),  inset 0 0 24px #0007; }
+.hand.lose   { border-color: var(--lose); box-shadow: 0 0 22px var(--lose), inset 0 0 24px #0007; opacity: .7; }
+.hand.tie    { border-color: var(--tie);  box-shadow: 0 0 18px var(--tie),  inset 0 0 24px #0007; }
+@keyframes shake { 0%,100% { transform: translateY(-9%) rotate(-3deg); } 50% { transform: translateY(9%) rotate(3deg); } }
+.hand.mine.shake { animation: shakeM .22s ease-in-out infinite; }
+@keyframes shakeM { 0%,100% { transform: scaleX(-1) translateY(-9%) rotate(-3deg); } 50% { transform: scaleX(-1) translateY(9%) rotate(3deg); } }
+
+.hand-label { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.versus {
+  font-weight: 800; font-size: 18px; letter-spacing: 2px; color: var(--accent);
+  text-shadow: 0 0 10px var(--accent); flex: none;
+}
+
+.result {
+  text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; min-height: 30px; margin: 4px 0 4px; color: var(--text);
+}
+.result.win  { color: var(--win);  text-shadow: 0 0 12px var(--win); }
+.result.lose { color: var(--lose); text-shadow: 0 0 12px var(--lose); }
+.result.tie  { color: var(--tie);  text-shadow: 0 0 12px var(--tie); }
+.streak { text-align: center; font-size: 12px; letter-spacing: 1px; color: var(--muted);
+  text-transform: uppercase; min-height: 18px; margin-bottom: 18px; }
+
+/* ---------- throw pad ---------- */
+.throws { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
+.throw {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; background: var(--panel-2); border: 2px solid var(--grid); border-radius: 14px;
+  padding: 12px 16px 9px; min-width: 92px;
+  transition: transform .07s ease, border-color .12s, box-shadow .12s, background .12s;
+}
+.throw .em { font-size: 38px; line-height: 1; }
+.throw .nm { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.throw:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(233,75,255,.45); transform: translateY(-2px); }
+.throw:hover .nm { color: var(--accent); }
+.throw:active { transform: translateY(0); }
+.throws.busy .throw { opacity: .5; pointer-events: none; }
+
+/* ---------- AI panel (rest comes from arcade.css .xeno-ai) ---------- */
+.xeno-ai { max-width: 620px; }

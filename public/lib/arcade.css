@@ -1,0 +1,150 @@
+/* XenoXanadu — shared "neon arcade" chrome.
+ *
+ * Drop into any game page, in <head> BEFORE the game's own <style> block:
+ *     <link rel="stylesheet" href="../../lib/arcade.css" />
+ *
+ * This is the structural styling every game shares — the CRT scanline overlay,
+ * the control bar, segmented toggles, name fields, scoreboard frame, status line,
+ * and the whole Bring-Your-Own-Model AI panel (see lib/board-ai.js). It is driven
+ * entirely by CSS custom properties, so each game keeps ONLY its own palette and
+ * board-specific rules in a small inline <style>:
+ *
+ *   :root {
+ *     --bg / --bg-2 / --panel / --panel-2 / --grid / --line   (surfaces)
+ *     --text / --muted / --accent / --mono                    (type + accent)
+ *     --on-accent      text colour on an --accent fill        (default #14110f)
+ *     --seg-bg / --seg-active-bg   segmented-toggle fills      (default --bg-2 / --panel-2)
+ *     --ai-on / --ai-err           AI status dot colours       (default --accent / #ff2e88)
+ *     --wrap-max       page content width                      (default 720px)
+ *   }
+ *
+ * Games still define their own h1, subtitle, board and disc/mark styling — that's
+ * the part that gives each game its identity.
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+}
+
+/* Hide every Bring-Your-Own-Model affordance on the hosted site (set by the
+ * inline pre-paint snippet in each page's <head>). AI only works run locally. */
+html.hosted .ai-only { display: none !important; }
+
+/* CRT scanline overlay */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+  mix-blend-mode: multiply; z-index: 9999;
+}
+
+.wrap { max-width: var(--wrap-max, 720px); margin: 0 auto; padding: 30px 20px 70px; }
+
+/* ---------- control bar ---------- */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-end; justify-content: center;
+  background: var(--panel); border: 2px solid var(--grid); border-radius: 4px;
+  box-shadow: 0 0 0 1px #0006, 0 10px 30px #0007, inset 0 0 30px #0003;
+  padding: 20px; margin-bottom: 20px;
+}
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field > label { font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+
+/* segmented toggle */
+.seg { display: flex; gap: 6px; }
+.seg-btn {
+  padding: 9px 15px; border: 2px solid var(--grid); background: var(--seg-bg, var(--bg-2)); color: var(--muted);
+  font-family: var(--mono); font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; border-radius: 3px; font-size: 13px;
+  transition: color .12s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.seg-btn:hover { color: var(--text); border-color: var(--muted); }
+.seg-btn.active { border-color: var(--accent); color: var(--accent); background: var(--seg-active-bg, var(--panel-2)); box-shadow: 0 0 8px var(--accent); }
+
+/* primary action button (games keep id="newGame" for their JS) */
+#newGame {
+  cursor: pointer; border: 2px solid var(--accent); border-radius: 3px; padding: 11px 22px;
+  font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono); color: var(--accent); background: transparent;
+  transition: transform .06s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+#newGame:hover { background: var(--accent); color: var(--on-accent, #14110f); box-shadow: 0 0 14px var(--accent); }
+#newGame:active { transform: translateY(2px); }
+
+/* ---------- player name fields ---------- */
+.names { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 22px; }
+.name-field {
+  display: flex; align-items: center; gap: 9px; background: var(--panel);
+  border: 2px solid var(--grid); border-radius: 3px; padding: 8px 12px; transition: border-color .12s ease;
+}
+.name-field:focus-within { border-color: var(--accent); }
+.name-field input {
+  background: transparent; border: none; color: var(--text);
+  font-family: var(--mono); font-size: 14px; width: 114px;
+}
+.name-field input:focus { outline: none; }
+
+/* ---------- scoreboard ---------- */
+.scoreboard { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+.score-card {
+  flex: 1 1 130px; max-width: 200px; background: var(--panel); border: 2px solid var(--grid);
+  border-radius: 4px; padding: 12px 14px; text-align: center;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.score-card .name {
+  font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.score-card .score { font-size: 38px; font-weight: 800; line-height: 1.2; }
+
+/* ---------- status + winner ---------- */
+.status {
+  text-align: center; min-height: 26px; font-size: 15px; letter-spacing: 1px;
+  margin-bottom: 18px; color: var(--muted); text-transform: uppercase;
+}
+.status b { color: var(--text); }
+
+.winner-banner {
+  text-align: center; margin-top: 20px; font-size: 24px; font-weight: 800;
+  letter-spacing: 2px; min-height: 30px; text-transform: uppercase;
+}
+
+/* ---------- Bring-Your-Own-Model AI panel (local only) ---------- */
+/* Markup is injected by lib/board-ai.js into a <div class="xeno-ai ai-only">. */
+.xeno-ai {
+  max-width: 560px; margin: 4px auto 22px; padding: 14px 16px;
+  background: var(--panel); border: 1px solid var(--grid); border-radius: 12px;
+  display: flex; flex-direction: column; gap: 10px; font-family: var(--mono);
+}
+.xeno-ai .ai-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.xeno-ai .ai-label {
+  width: 70px; flex: none; color: var(--muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.xeno-ai select, .xeno-ai input[type=text] {
+  flex: 1; min-width: 0; background: var(--bg-2); color: var(--text);
+  border: 1px solid var(--grid); border-radius: 6px; padding: 5px 8px;
+  font-size: 12px; font-family: var(--mono);
+}
+.xeno-ai .ai-refresh {
+  flex: none; background: var(--panel-2); color: var(--ai-on, var(--accent));
+  border: 1px solid var(--grid); border-radius: 6px; padding: 5px 9px; cursor: pointer;
+}
+.xeno-ai .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.xeno-ai .ai-dot { width: 9px; height: 9px; border-radius: 2px; background: #5a5a5a; flex: none; }
+.xeno-ai .ai-dot.on { background: var(--ai-on, var(--accent)); box-shadow: 0 0 7px var(--ai-on, var(--accent)); }
+.xeno-ai .ai-dot.err { background: var(--ai-err, #ff2e88); box-shadow: 0 0 7px var(--ai-err, #ff2e88); }
+.xeno-ai .ai-think {
+  max-height: 120px; overflow: auto; background: var(--bg-2);
+  border: 1px solid var(--grid); border-radius: 7px; padding: 9px; color: var(--text);
+  white-space: pre-wrap; font-size: 12px; line-height: 1.45;
+}
+.xeno-ai .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.45; }
+.xeno-ai .ai-hint a { color: var(--accent); }
+.xeno-ai.hide-seat .ai-seat-row { display: none; }

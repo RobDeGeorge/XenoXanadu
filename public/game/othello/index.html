@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OTHELLO // RETRO</title>
+<meta name="description" content="Othello (Reversi) rebuilt by hand in neon — flank and flip, claim the board. Play a friend or take on a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #0a1a14;
+    --bg-2: #0f261c;
+    --panel: #112a20;
+    --panel-2: #163a2c;
+    --grid: #2f5e49;
+    --felt: #0d3325;
+    --felt-2: #0a2a1e;
+    --line: #1f7a55;
+    --text: #ecfff5;
+    --muted: #8fc7ad;
+    --dark: #14110f;          /* the "black" disc */
+    --dark-edge: #ff2e88;     /* neon magenta rim */
+    --dark-soft: #ff2e8826;
+    --light: #f3fff8;         /* the "white" disc */
+    --light-edge: #2bf0e0;    /* neon cyan rim */
+    --light-soft: #2bf0e026;
+    --accent: #ffd23f;        /* arcade amber */
+    --hint: #6bffb0;          /* legal-move glow */
+    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 720px;
+    --on-accent: #10241a;
+    --seg-bg: #0a1f17;
+    --seg-active-bg: #122c20;
+    --ai-on: var(--light-edge);
+    --ai-err: var(--dark-edge);
+  }
+
+  html, body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(900px 600px at 80% -15%, #1a4a36 0%, rgba(26,74,54,0) 55%),
+      radial-gradient(900px 600px at 0% 110%, #103826 0%, rgba(16,56,38,0) 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 6px;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: 0 0 6px rgba(255,210,63,0.6), 3px 3px 0 var(--dark-edge), 6px 6px 0 var(--light-edge);
+  }
+  .subtitle {
+    text-align: center; color: var(--muted);
+    margin: 10px 0 26px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* name swatch is a round disc chip */
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 50%; flex: none; border: 2px solid; }
+  .name-field input { width: 118px; }
+
+  /* slightly larger scoreboard cards, each with a round disc marker */
+  .scoreboard { gap: 14px; }
+  .score-card { flex: 1 1 150px; max-width: 230px; padding: 12px 16px; }
+  .score-card .name { font-size: 14px; }
+  .score-card .disc-marker { width: 15px; height: 15px; border-radius: 50%; flex: none; border: 2px solid; }
+  .score-card .score { font-size: 42px; line-height: 1.15; }
+
+  /* ---------- the board ---------- */
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    position: relative; background: #08231a; border: 2px solid var(--grid); border-radius: 8px;
+    padding: 16px; box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0005;
+  }
+  .board {
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
+    width: min(78vw, 520px); height: min(78vw, 520px);
+    background: var(--line); padding: 3px; border-radius: 4px;
+    touch-action: manipulation;
+  }
+  .cell {
+    position: relative; background:
+      linear-gradient(135deg, var(--felt) 0%, var(--felt-2) 100%);
+    display: flex; align-items: center; justify-content: center; cursor: default;
+    transition: background .12s ease;
+  }
+  .cell.playable { cursor: pointer; }
+  .cell.playable:hover { background: linear-gradient(135deg, #114231 0%, #0c3526 100%); }
+
+  /* legal-move hint dot */
+  .hint {
+    position: absolute; width: 26%; height: 26%; border-radius: 50%;
+    background: var(--hint); opacity: 0.28;
+    box-shadow: 0 0 10px var(--hint); pointer-events: none;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .cell.playable:hover .hint { opacity: 0.6; }
+  @keyframes pulse { 0%,100% { transform: scale(0.85); opacity:.22; } 50% { transform: scale(1.05); opacity:.5; } }
+
+  /* discs */
+  .disc {
+    width: 80%; height: 80%; border-radius: 50%;
+    transition: transform .28s ease, box-shadow .28s ease;
+    transform: scale(0); transform-origin: center;
+  }
+  .disc.show { transform: scale(1); }
+  .disc.dark {
+    background: radial-gradient(circle at 35% 30%, #3a3330 0%, var(--dark) 60%);
+    border: 2px solid var(--dark-edge);
+    box-shadow: 0 0 10px var(--dark-soft), inset 0 0 8px #000;
+  }
+  .disc.light {
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--light) 65%);
+    border: 2px solid var(--light-edge);
+    box-shadow: 0 0 10px var(--light-soft), inset 0 -4px 8px #b9d8cd;
+  }
+  .disc.flip { animation: flip .42s ease; }
+  @keyframes flip { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.05); } 100% { transform: scaleX(1); } }
+  .disc.lastmove { outline: 2px dashed var(--accent); outline-offset: 2px; }
+
+  /* coordinate labels */
+  .coords-x, .coords-y { position: absolute; display: grid; color: var(--muted); font-size: 11px; pointer-events: none; }
+  .coords-x { left: 16px; right: 16px; bottom: 1px; grid-template-columns: repeat(8, 1fr); text-align: center; }
+  .coords-y { top: 16px; bottom: 16px; left: 2px; grid-template-rows: repeat(8, 1fr); align-items: center; }
+
+  .rules { max-width: 560px; margin: 26px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+
+  @media (max-width: 520px) {
+    .name-field input { width: 100px; }
+    .coords-x, .coords-y { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>OTHELLO</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Flank &amp; Flip &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="otOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Move Hints</label>
+        <div class="seg" id="hintSeg">
+          <button type="button" class="seg-btn active" data-hints="1">On</button>
+          <button type="button" class="seg-btn" data-hints="0">Off</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="background:var(--dark);border-color:var(--dark-edge)"></span><input id="name0" value="Dark" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="background:var(--light);border-color:var(--light-edge)"></span><input id="name1" value="Light" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="otAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <div class="board" id="board"></div>
+        <div class="coords-x" id="coordsX"></div>
+        <div class="coords-y" id="coordsY"></div>
+      </div>
+    </div>
+
+    <div class="winner-banner" id="winner"></div>
+
+    <p class="rules">
+      Place a disc so it traps a straight line of your opponent's discs between the new disc and
+      another of yours &mdash; every trapped disc flips to your colour. You must flip at least one.
+      No legal move? Your turn is skipped. When the board fills (or neither side can move),
+      the most discs wins.
+    </p>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const N = 8;
+  const DARK = 0, LIGHT = 1;
+  const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
+  // positional weights — corners are gold, the squares next to them are traps.
+  const WEIGHTS = [
+    [120,-20, 20,  5,  5, 20,-20,120],
+    [-20,-40, -5, -5, -5, -5,-40,-20],
+    [ 20, -5, 15,  3,  3, 15, -5, 20],
+    [  5, -5,  3,  3,  3,  3, -5,  5],
+    [  5, -5,  3,  3,  3,  3, -5,  5],
+    [ 20, -5, 15,  3,  3, 15, -5, 20],
+    [-20,-40, -5, -5, -5, -5,-40,-20],
+    [120,-20, 20,  5,  5, 20,-20,120],
+  ];
+
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+
+  // ---- game state ----
+  let board, current, cells, gameOver, lastMove;
+  let showHints = true;
+
+  const colLabel = (c) => "abcdefgh"[c];
+  const coordOf = (r, c) => colLabel(c) + (r + 1);      // e.g. (3,3) -> "d4"
+  const inBounds = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+  const discColor = (p) => (p === DARK ? "dark" : "light");
+
+  function names() {
+    return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === 0 ? "Dark" : "Light"));
+  }
+
+  // ---- core rules ----
+  // Discs that would flip if `player` plays (r,c). [] means illegal.
+  function flipsFor(r, c, player, b) {
+    b = b || board;
+    if (b[r][c] !== -1) return [];
+    const opp = 1 - player;
+    const out = [];
+    for (const [dr, dc] of DIRS) {
+      const line = [];
+      let rr = r + dr, cc = c + dc;
+      while (inBounds(rr, cc) && b[rr][cc] === opp) { line.push([rr, cc]); rr += dr; cc += dc; }
+      if (line.length && inBounds(rr, cc) && b[rr][cc] === player) out.push(...line);
+    }
+    return out;
+  }
+
+  function legalMoves(player, b) {
+    b = b || board;
+    const moves = [];
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        const f = flipsFor(r, c, player, b);
+        if (f.length) moves.push({ r, c, flips: f });
+      }
+    return moves;
+  }
+
+  function counts(b) {
+    b = b || board;
+    let d = 0, l = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] === DARK) d++; else if (b[r][c] === LIGHT) l++;
+    }
+    return [d, l];
+  }
+
+  // ---- rendering ----
+  function buildBoard() {
+    boardEl.innerHTML = "";
+    cells = [];
+    for (let r = 0; r < N; r++) {
+      const row = [];
+      for (let c = 0; c < N; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.r = r; cell.dataset.c = c;
+        cell.addEventListener("click", () => onCellClick(r, c));
+        boardEl.appendChild(cell);
+        row.push(cell);
+      }
+      cells.push(row);
+    }
+    const cx = document.getElementById("coordsX");
+    const cy = document.getElementById("coordsY");
+    cx.innerHTML = ""; cy.innerHTML = "";
+    for (let c = 0; c < N; c++) { const s = document.createElement("span"); s.textContent = colLabel(c); cx.appendChild(s); }
+    for (let r = 0; r < N; r++) { const s = document.createElement("span"); s.textContent = r + 1; cy.appendChild(s); }
+  }
+
+  // Render one cell from the board model. `flipping` = animate a colour change.
+  function paintCell(r, c, opts) {
+    opts = opts || {};
+    const cell = cells[r][c];
+    const v = board[r][c];
+    cell.classList.remove("playable");
+    // existing disc element (if any)
+    let disc = cell.querySelector(".disc");
+    let hint = cell.querySelector(".hint");
+    if (hint) hint.remove();
+
+    if (v === -1) {
+      if (disc) disc.remove();
+      return cell;
+    }
+    if (!disc) {
+      disc = document.createElement("div");
+      disc.className = "disc";
+      cell.appendChild(disc);
+      // force reflow so the scale-in transition plays for freshly placed discs
+      void disc.offsetWidth;
+    }
+    disc.classList.remove("dark", "light", "lastmove");
+    disc.classList.add("show", discColor(v));
+    if (opts.flip) { disc.classList.remove("flip"); void disc.offsetWidth; disc.classList.add("flip"); }
+    if (opts.last) disc.classList.add("lastmove");
+    return cell;
+  }
+
+  function render(opts) {
+    opts = opts || {};
+    const flipSet = new Set((opts.flips || []).map(([r, c]) => r + "," + c));
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        const isLast = lastMove && lastMove.r === r && lastMove.c === c;
+        paintCell(r, c, { flip: flipSet.has(r + "," + c), last: isLast });
+      }
+    // legal-move hints for the side to move (skip while AI is on the clock)
+    if (!gameOver && showHints && !isAITurn()) {
+      for (const m of legalMoves(current)) {
+        const cell = cells[m.r][m.c];
+        cell.classList.add("playable");
+        const h = document.createElement("div");
+        h.className = "hint";
+        cell.appendChild(h);
+      }
+    }
+    updateScoreboard();
+  }
+
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML = "";
+    [DARK, LIGHT].forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + p;
+      const edge = p === DARK ? "--dark-edge" : "--light-edge";
+      const fill = p === DARK ? "--dark" : "--light";
+      card.innerHTML =
+        '<div class="name"><span class="disc-marker" style="background:var(' + fill + ');border-color:var(' + edge + ')"></span>' +
+        '<span id="label' + p + '"></span></div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + edge + ')">0</div>';
+      sb.appendChild(card);
+      document.getElementById("label" + p).textContent = nm[p];
+    });
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    const [d, l] = counts();
+    const sc = [d, l];
+    [DARK, LIGHT].forEach((p) => {
+      document.getElementById("label" + p).textContent = nm[p];
+      document.getElementById("score" + p).textContent = sc[p];
+      const card = document.getElementById("card" + p);
+      const edge = p === DARK ? "--dark-edge" : "--light-edge";
+      const soft = p === DARK ? "--dark-soft" : "--light-soft";
+      const active = !gameOver && current === p;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + edge + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "0 0 16px var(" + soft + "), 0 0 6px var(" + edge + ")"
+        : "inset 0 -3px 0 var(" + edge + ")";
+    });
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    statusEl.innerHTML = msg || `<b style="color:var(${current === DARK ? "--dark-edge" : "--light-edge"})">${nm[current]}</b>'s move`;
+  }
+
+  // ---- turn flow ----
+  function onCellClick(r, c) {
+    if (gameOver || isAITurn()) return;   // isAITurn() also covers the AI's thinking window
+    const flips = flipsFor(r, c, current);
+    if (!flips.length) return;
+    placeMove(r, c, false);
+  }
+
+  function placeMove(r, c, byAI) {
+    const flips = flipsFor(r, c, current);
+    if (!flips.length) return false;
+    board[r][c] = current;
+    for (const [fr, fc] of flips) board[fr][fc] = current;
+    lastMove = { r, c };
+    render({ flips });
+    advanceTurn();
+    return true;
+  }
+
+  // Move to the next player, handling forced passes and game end.
+  function advanceTurn() {
+    const nm = names();
+    const next = 1 - current;
+    if (legalMoves(next).length) {
+      current = next;
+      updateStatus();
+      maybeAIMove();
+      return;
+    }
+    // next player must pass — does the same player get to continue?
+    if (legalMoves(current).length) {
+      updateStatus(`<b>${nm[next]}</b> has no move &mdash; <b style="color:var(${current === DARK ? "--dark-edge" : "--light-edge"})">${nm[current]}</b> plays again`);
+      maybeAIMove();
+      return;
+    }
+    endGame();
+  }
+
+  function endGame() {
+    gameOver = true;
+    render();
+    const nm = names();
+    const [d, l] = counts();
+    let text, color;
+    if (d === l) { text = "&#9878; Tie &mdash; " + d + " each"; color = "var(--accent)"; }
+    else {
+      const w = d > l ? DARK : LIGHT;
+      const edge = w === DARK ? "--dark-edge" : "--light-edge";
+      text = "&#9733; " + nm[w] + " wins " + Math.max(d, l) + "&ndash;" + Math.min(d, l) + " &#9733;";
+      color = "var(" + edge + ")";
+    }
+    winnerEl.innerHTML = text;
+    winnerEl.style.color = color;
+    statusEl.innerHTML = "Game over &mdash; press <b>New Game</b> to play again.";
+  }
+
+  function startGame() {
+    board = [];
+    for (let r = 0; r < N; r++) board.push(new Array(N).fill(-1));
+    // standard opening
+    board[3][3] = LIGHT; board[3][4] = DARK;
+    board[4][3] = DARK;  board[4][4] = LIGHT;
+    current = DARK; gameOver = false; lastMove = null;
+    winnerEl.textContent = "";
+    buildScoreboard();
+    buildBoard();
+    render();
+    updateStatus();
+    if (typeof otOnNewGame === "function") otOnNewGame();
+  }
+
+  // ---- control panel ----
+  function wireSegment(id, attr, onPick) {
+    const container = document.getElementById(id);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn"); if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(btn.getAttribute(attr));
+    });
+  }
+  wireSegment("hintSeg", "data-hints", (v) => { showHints = v === "1"; if (!gameOver) render(); });
+  document.getElementById("newGame").addEventListener("click", startGame);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) updateScoreboard(); }));
+
+  /* ============================================================
+   *  AI opponent — Bring Your Own Model (local only)
+   *  Shared controller in lib/board-ai.js owns the panel, model list and
+   *  observe→ask→move loop. We supply only the Othello rules hooks: the
+   *  engine lists every legal square (tagged with flip count and position)
+   *  and the model picks one by number. A bad reply falls back to the
+   *  highest-ranked legal move, so it can never play illegally.
+   * ============================================================ */
+
+  // tag a move so the model (and our fallback) can judge it
+  const isCorner = (r, c) => (r === 0 || r === N - 1) && (c === 0 || c === N - 1);
+  const isEdge   = (r, c) => r === 0 || r === N - 1 || c === 0 || c === N - 1;
+  // Precompute, for each corner, its adjacent danger squares (the X/C squares).
+  const CORNER_NEIGHBORS = (() => {
+    const corners = [[0,0],[0,N-1],[N-1,0],[N-1,N-1]];
+    const out = [];
+    for (const [cr, cc] of corners)
+      for (const [dr, dc] of DIRS) {
+        const nr = cr + dr, nc = cc + dc;
+        if (inBounds(nr, nc)) out.push([cr, cc, nr, nc]);
+      }
+    return out;
+  })();
+  // A square is dangerous if it sits next to a corner that's still empty.
+  function nearEmptyCorner(r, c) {
+    return CORNER_NEIGHBORS.some(([cr, cc, nr, nc]) => board[cr][cc] === -1 && r === nr && c === nc);
+  }
+
+  function rankedMoves() {
+    return legalMoves(aiCtl.seat).map((m) => {
+      const corner = isCorner(m.r, m.c);
+      const danger = !corner && nearEmptyCorner(m.r, m.c);
+      let score = WEIGHTS[m.r][m.c] + m.flips.length;
+      return Object.assign({}, m, { corner, danger, edge: isEdge(m.r, m.c), score });
+    }).sort((a, b) => b.score - a.score);
+  }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const [d, l] = counts();
+    const lines = ranked.map((m, i) => {
+      const tags = [];
+      if (m.corner) tags.push("CORNER — permanent, grab it");
+      else if (m.danger) tags.push("DANGER — next to an open corner, may hand it over");
+      else if (m.edge) tags.push("edge");
+      tags.push(`flips ${m.flips.length}`);
+      return `${i + 1}. ${coordOf(m.r, m.c)}  [${tags.join(", ")}]`;
+    }).join("\n");
+    const system =
+`You are a strong Othello (Reversi) player ("${me}"). On your turn you place ONE disc on an empty square so it flanks a straight line of the opponent's discs between your new disc and another of yours; every flanked disc flips to you.
+Strategy, in priority order: (1) ALWAYS take a corner when offered — corners can never be flipped; (2) avoid the DANGER squares next to an empty corner, they usually let the opponent take that corner; (3) prefer stable edge squares; (4) early on, flipping FEWER discs and keeping your options open often beats grabbing the most discs. Mobility and corners matter more than raw disc count until the endgame.
+You get a numbered list of every legal move, each tagged. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`Discs — ${nm[DARK]} (dark): ${d}, ${nm[LIGHT]} (light): ${l}. You are ${me}; opponent is ${opp}.
+Squares are named column+row, columns a–h left to right, rows 1–8 top to bottom.
+Your legal moves:
+${lines}
+
+Pick the best move and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked };
+  }
+
+  function parseMove(reply, ranked) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    const cm = seg.match(/\b([a-h])\s*([1-8])\b/i);          // model gave a coordinate directly
+    if (cm) {
+      const c = "abcdefgh".indexOf(cm[1].toLowerCase()), r = +cm[2] - 1;
+      const hit = ranked.find((m) => m.r === r && m.c === c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("otAi"),
+    oppSeg: document.getElementById("otOppSeg"),
+    defaultSeat: LIGHT,        // AI plays Light by default (human is Dark, moves first)
+    temperature: 0.4,
+    maxTokens: 600,
+    thinkPlaceholder: "The AI's reasoning streams here as it picks a square…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      "It only ever picks from the game's list of <em>legal</em> squares (each tagged with how many " +
+      'discs it flips and whether it grabs a corner), so it always plays by the rules.',
+    seats: () => { const nm = names(); return [DARK, LIGHT].map((p) => ({ value: p, label: nm[p] + (p === DARK ? " (first)" : "") })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    applyMove: (m) => placeMove(m.r, m.c, true),
+    moveLabel: (m) => coordOf(m.r, m.c),
+    describeMove: (m) => "played " + coordOf(m.r, m.c) + " — flipped " + m.flips.length + (m.corner ? " (corner!)" : ""),
+    repaint: () => render(),
+  });
+
+  // thin shims so the core game code keeps its old call sites
+  function isAITurn() { return aiCtl.isAITurn(); }
+  function maybeAIMove() { aiCtl.notify(); }
+  function otOnNewGame() { aiCtl.newGame(); }
+  function rebuildSeats() { aiCtl.rebuildSeats(); }
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

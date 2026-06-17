@@ -1,0 +1,159 @@
+/* ============================================================================
+ *  XenoXanadu — Minesweeper — palette + board-specific styling.
+ *  Structural chrome (controls bar, segmented toggle, AI panel) comes from the
+ *  shared lib/arcade.css; this file only carries Minesweeper's own identity:
+ *  the LED HUD, the bevelled tile grid, the classic number colours, and the
+ *  hint/auto highlight pulses.
+ * ========================================================================== */
+:root {
+  --bg:        #0a0c10;
+  --bg-2:      #11151b;
+  --panel:     #121821;
+  --panel-2:   #1a2330;
+  --grid:      #28323f;
+  --line:      #28323f;
+  --text:      #e9edf2;
+  --muted:     #8694a6;
+  --accent:    #ff3860;          /* mine red — the danger hue */
+  --on-accent: #120608;
+  --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --wrap-max: 860px;
+
+  /* covered-tile bevel */
+  --tile:      #1d2735;
+  --tile-2:    #141c27;
+  --tile-hi:   #33425a;          /* top/left light edge */
+  --tile-lo:   #0a0f16;          /* bottom/right shadow edge */
+  --revealed:  #0d1219;          /* opened square */
+}
+
+body { background:
+  radial-gradient(1200px 600px at 50% -10%, #121a26 0%, var(--bg) 60%) fixed; }
+
+h1 {
+  text-align: center; margin: 4px 0 6px; font-size: clamp(30px, 6vw, 46px);
+  font-weight: 800; letter-spacing: 5px; text-transform: uppercase; color: var(--accent);
+  text-shadow: 0 0 8px rgba(255,56,96,.55), 3px 3px 0 #2bf0e0, 6px 6px 0 #ffd23f;
+}
+.tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 24px; }
+
+/* ---------- LED HUD ---------- */
+.hud {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin: 0 auto 16px; max-width: 360px;
+}
+.hud-readout {
+  font-weight: 800; font-size: 20px; letter-spacing: 2px; color: #ff5a4d;
+  background: #07080a; border: 2px solid var(--grid); border-radius: 5px;
+  padding: 7px 12px; min-width: 96px; text-align: center;
+  text-shadow: 0 0 8px rgba(255,90,77,.7); box-shadow: inset 0 0 14px #0009;
+}
+#timer { color: #6ad1ff; text-shadow: 0 0 8px rgba(106,209,255,.7); }
+.face {
+  font-size: 26px; line-height: 1; cursor: pointer; background: var(--panel-2);
+  border: 2px solid var(--grid); border-radius: 7px; padding: 4px 10px;
+  transition: transform .06s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.face:hover { border-color: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.face:active { transform: translateY(2px); }
+
+/* ---------- board ---------- */
+.board-scroll { overflow: auto; padding: 6px; margin: 0 -6px 18px; }
+.board {
+  --cell: 32px;
+  display: grid; gap: 0; width: max-content; margin: 0 auto;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  border: 3px solid var(--grid); border-radius: 4px;
+  background: var(--tile-lo); box-shadow: 0 14px 36px #000a, inset 0 0 0 1px #0008;
+  user-select: none; touch-action: manipulation;
+}
+.board.intermediate { --cell: 30px; }
+.board.expert { --cell: 27px; }
+
+.cell {
+  width: var(--cell); height: var(--cell);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: calc(var(--cell) * 0.52); line-height: 1;
+  cursor: pointer; box-sizing: border-box; position: relative;
+  border: 1px solid #0c1118;
+}
+/* covered: raised bevel */
+.cell.hidden {
+  background: linear-gradient(135deg, var(--tile) 0%, var(--tile-2) 100%);
+  border-top: 2px solid var(--tile-hi); border-left: 2px solid var(--tile-hi);
+  border-right: 2px solid var(--tile-lo); border-bottom: 2px solid var(--tile-lo);
+}
+.cell.hidden:hover { filter: brightness(1.25); }
+.cell.flag { color: #ff4d4d; }
+.cell.flag.bad { color: var(--muted); }            /* wrong flag, shown on loss */
+.cell.flag.bad::after {
+  content: "✕"; position: absolute; font-size: calc(var(--cell) * 0.62);
+  color: #ff3860; opacity: .9;
+}
+/* opened: recessed flat */
+.cell.open {
+  background: var(--revealed); cursor: default;
+  border: 1px solid #070a0e;
+  box-shadow: inset 1px 1px 0 #00000060;
+}
+.cell.open:hover { filter: none; }
+.cell.mine { background: radial-gradient(circle at 50% 45%, #ff5a4d 0%, #7a1018 70%); }
+.cell.mine.boom { background: radial-gradient(circle at 50% 45%, #fff 0%, #ff3860 40%, #7a1018 80%);
+  animation: boom .4s ease; }
+@keyframes boom { 0% { transform: scale(.5); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+/* classic neon number colours */
+.cell[data-n="1"] { color: #4aa3ff; }
+.cell[data-n="2"] { color: #4ade80; }
+.cell[data-n="3"] { color: #ff5470; }
+.cell[data-n="4"] { color: #b388ff; }
+.cell[data-n="5"] { color: #ffb74d; }
+.cell[data-n="6"] { color: #2dd4bf; }
+.cell[data-n="7"] { color: #e9edf2; }
+.cell[data-n="8"] { color: #93a1b3; }
+
+/* solver / hint highlights */
+.cell.hint-safe  { animation: pulseSafe 1s ease-in-out infinite; z-index: 2; }
+.cell.hint-mine  { animation: pulseMine 1s ease-in-out infinite; z-index: 2; }
+.cell.hint-guess { animation: pulseGuess 1s ease-in-out infinite; z-index: 2; }
+.cell.hint-src   { box-shadow: inset 0 0 0 2px #ffd23f, 0 0 9px #ffd23f; z-index: 1; }
+@keyframes pulseSafe  { 0%,100% { box-shadow: inset 0 0 0 2px #4ade80; } 50% { box-shadow: inset 0 0 0 3px #4ade80, 0 0 14px #4ade80; } }
+@keyframes pulseMine  { 0%,100% { box-shadow: inset 0 0 0 2px #ff3860; } 50% { box-shadow: inset 0 0 0 3px #ff3860, 0 0 14px #ff3860; } }
+@keyframes pulseGuess { 0%,100% { box-shadow: inset 0 0 0 2px #ffb74d; } 50% { box-shadow: inset 0 0 0 3px #ffb74d, 0 0 14px #ffb74d; } }
+
+/* win / lose wash over the whole board */
+.board.lost  { animation: flashLose .5s ease; }
+.board.won   { box-shadow: 0 0 0 2px #4ade80, 0 14px 36px #000a; }
+@keyframes flashLose { 0%,100% { } 30% { box-shadow: 0 0 0 3px #ff3860, 0 0 30px #ff3860; } }
+
+/* ---------- assistant bar (solver — visible even on the hosted site) ---------- */
+.assist {
+  max-width: 620px; margin: 0 auto 14px; display: flex; flex-direction: column;
+  gap: 10px; align-items: center;
+}
+.assist-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.assist-btn {
+  cursor: pointer; border: 2px solid var(--grid); border-radius: 6px; padding: 8px 14px;
+  font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text); background: var(--panel-2);
+  transition: color .12s, border-color .12s, box-shadow .12s, background .12s;
+}
+.assist-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(255,56,96,.45); }
+.assist-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.assist-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.flag-toggle.on { background: #ff4d4d; border-color: #ff4d4d; color: #190606; }
+.assist-msg {
+  text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5;
+  min-height: 20px; max-width: 600px;
+}
+.assist-msg b { color: var(--text); }
+.assist-msg.safe b { color: #4ade80; }
+.assist-msg.mine b { color: #ff5470; }
+.assist-msg.win  { color: #4ade80; }
+.assist-msg.lose { color: #ff5470; }
+
+/* ---------- AI panel extras (rest comes from arcade.css .xeno-ai) ---------- */
+.xeno-ai { max-width: 620px; }
+.ai-explain { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); cursor: pointer; }
+.ai-explain input { accent-color: var(--accent); }

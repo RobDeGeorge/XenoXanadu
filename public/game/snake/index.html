@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Snake</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<style>
+  html.hosted .ai-only { display: none !important; }
+  /* ---- sharpened neon arcade · signature hue: emerald ---- */
+  :root {
+    --bg: #05110b;
+    --bg-2: #0a1a11;
+    --panel: #0b1c12;
+    --grid: #1f4030;
+    --board: #07160e;
+    --line: #102015;
+    --text: #e6f5ec;
+    --muted: #7fae93;
+    --accent: #19e57a;       /* neon emerald */
+    --on-accent: #05110b;
+    --food: #ff4d6d;
+    --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font-family: var(--mono);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 30px 16px 60px; touch-action: manipulation;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+    mix-blend-mode: multiply;
+  }
+  h1 {
+    text-align: center; margin: 0 0 6px; font-weight: 800;
+    letter-spacing: 6px; text-transform: uppercase; font-size: clamp(30px, 7vw, 54px);
+    color: var(--accent);
+    text-shadow: 0 0 6px rgba(25,229,122,0.6), 3px 3px 0 #ff2e88, 6px 6px 0 #2bf0e0;
+  }
+  .subtitle { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
+
+  .wrap { width: min(440px, 100%); }
+
+  .hud { display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .scorebox { flex: 1; background: var(--panel); border: 2px solid var(--grid); padding: 7px 12px; text-align: center; }
+  .scorebox .lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
+  .scorebox .val { font-size: 22px; font-weight: 800; line-height: 1.2; }
+  .btns { display: flex; flex-direction: column; gap: 6px; }
+  button.act {
+    background: transparent; color: var(--accent); border: 2px solid var(--accent);
+    padding: 6px 11px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: var(--mono); cursor: pointer; white-space: nowrap; transition: background .15s, color .15s, box-shadow .15s, transform .06s;
+  }
+  button.act:hover { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act:active { transform: translateY(2px); }
+  button.act.secondary { color: var(--muted); border-color: var(--grid); }
+  button.act.secondary:hover { background: var(--grid); color: var(--text); box-shadow: none; }
+  button.act.on { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act:disabled { opacity: .35; cursor: default; }
+
+  .opts { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .opt { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+  .opt > label { font-size: 9px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  .seg { display: flex; gap: 5px; }
+  .seg-btn {
+    padding: 6px 10px; border: 2px solid var(--grid); background: var(--bg-2); color: var(--muted);
+    font-family: var(--mono); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-size: 10px;
+    transition: color .12s, border-color .12s, box-shadow .12s, background .12s;
+  }
+  .seg-btn:hover { color: var(--text); border-color: var(--muted); }
+  .seg-btn.active { border-color: var(--accent); color: var(--accent); background: var(--bg); box-shadow: 0 0 8px var(--accent); }
+
+  .board-wrap { position: relative; width: 100%; }
+  canvas { display: block; width: 100%; height: auto; border: 2px solid var(--grid); background: var(--board); box-shadow: 0 0 0 1px #0006, 0 12px 36px #0008, inset 0 0 30px #0004; image-rendering: pixelated; }
+
+  .overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; background: rgba(5,17,11,0.85); padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { margin: 0; font-size: clamp(22px, 6vw, 34px); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px var(--accent); }
+  .overlay.dead h2 { color: var(--food); text-shadow: 0 0 14px var(--food); }
+  .overlay p { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; line-height: 1.6; }
+  .overlay .row { display: flex; gap: 10px; }
+
+  .dpad { display: none; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; justify-content: center; margin-top: 14px; }
+  .dpad button { background: var(--panel); border: 2px solid var(--grid); color: var(--accent); font-size: 20px; cursor: pointer; }
+  .dpad button:active { background: var(--accent); color: var(--on-accent); }
+  .dpad .up { grid-area: 1 / 2; } .dpad .left { grid-area: 2 / 1; } .dpad .right { grid-area: 2 / 3; } .dpad .down { grid-area: 3 / 2; }
+  @media (hover: none) and (pointer: coarse) { .dpad { display: grid; } }
+
+  .help { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin-top: 14px; line-height: 1.7; }
+
+  /* ---- AI panel (local only) ---- */
+  #aiBox { width: min(440px, 100%); margin: 18px auto 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--grid); display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+  #aiBox .ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #aiBox .ai-label { width: 60px; flex: none; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  #aiBox label.chk { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
+  #aiBox label.chk input { accent-color: var(--accent); }
+  #aiBox select, #aiBox input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); padding: 5px 8px; font-size: 12px; font-family: var(--mono); }
+  #aiBox .ai-refresh { flex: none; background: var(--bg-2); color: var(--accent); border: 1px solid var(--grid); padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
+  #aiBox .ai-refresh:hover { background: var(--accent); color: var(--on-accent); }
+  #aiBox .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  #aiBox .ai-dot { width: 9px; height: 9px; background: #555; flex: none; }
+  #aiBox .ai-dot.on { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+  #aiBox .ai-dot.err { background: var(--food); box-shadow: 0 0 7px var(--food); }
+  #aiBox .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  #aiBox .ai-hint a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <h1>Snake</h1>
+  <div class="subtitle">Eat · grow · don't bite yourself</div>
+
+  <div class="wrap">
+    <div class="hud">
+      <div class="scorebox"><div class="lbl">Score</div><div class="val" id="score">0</div></div>
+      <div class="scorebox"><div class="lbl">Best</div><div class="val" id="best">0</div></div>
+      <div class="btns">
+        <button class="act secondary" id="pauseBtn">Pause</button>
+        <button class="act secondary ai-only" id="autoBtn">Auto ▸</button>
+      </div>
+    </div>
+
+    <div class="opts">
+      <div class="opt">
+        <label>Speed</label>
+        <div class="seg" id="speedSeg">
+          <button class="seg-btn" data-s="140">Slow</button>
+          <button class="seg-btn active" data-s="95">Normal</button>
+          <button class="seg-btn" data-s="62">Fast</button>
+        </div>
+      </div>
+      <div class="opt">
+        <label>Walls</label>
+        <div class="seg" id="wallSeg">
+          <button class="seg-btn active" data-w="0">Deadly</button>
+          <button class="seg-btn" data-w="1">Wrap</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="cv"></canvas>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">Snake</h2>
+        <p id="ovText"></p>
+        <div class="row" id="ovRow"></div>
+      </div>
+    </div>
+
+    <div class="dpad">
+      <button class="up" data-d="u">▲</button>
+      <button class="left" data-d="l">◀</button>
+      <button class="right" data-d="r">▶</button>
+      <button class="down" data-d="d">▼</button>
+    </div>
+
+    <div class="help">Arrow keys / WASD · space to pause · swipe on touch</div>
+
+    <!-- Autopilot brain (local only) -->
+    <div id="aiBox" class="ai-only">
+      <label class="chk"><input type="checkbox" id="useModel"> Let a local model drive Auto (model-paced)</label>
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">↻</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" id="endpoint" value="http://localhost:11434">
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Built-in autopilot ready.</span></div>
+      <div class="ai-hint">
+        <b>Auto ▸</b> plays itself. By default a built-in path-finder steers; tick the box to let a model on
+        <em>your</em> machine steer instead (one step per reply) · <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   Snake — canvas, real-time. Built-in path-finding autopilot
+   (BFS to food + flood-fill survival) and an optional local
+   model that steers one step per reply.
+   ============================================================ */
+
+const COLS = 17, ROWS = 17, CELL = 24;
+const BEST_KEY = "xeno.snake.best";
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+const $ = id => document.getElementById(id);
+
+let snake, curDir, nextDir, food, score, best;
+let state = "ready";          // 'ready' | 'playing' | 'paused' | 'over'
+let stepMs = 95, wrap = false;
+let autoMode = "off";         // 'off' | 'builtin' | 'model'
+let acc = 0, last = 0;
+
+best = +(localStorage.getItem(BEST_KEY) || 0);
+$("best").textContent = best;
+
+/* ---- canvas sizing (crisp via devicePixelRatio) ---- */
+function setupCanvas() {
+  const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  cv.width = COLS * CELL * dpr; cv.height = ROWS * CELL * dpr;
+  cv.style.aspectRatio = COLS + " / " + ROWS;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+setupCanvas();
+
+/* ---- helpers ---- */
+const key = (x, y) => y * COLS + x;
+function cellFree(x, y, set) { return x >= 0 && x < COLS && y >= 0 && y < ROWS && !set.has(key(x, y)); }
+function step(cell, d) {
+  let x = cell.x + d.x, y = cell.y + d.y;
+  if (wrap) { x = (x + COLS) % COLS; y = (y + ROWS) % ROWS; return { x, y }; }
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+  return { x, y };
+}
+const DIRS = { u: { x: 0, y: -1 }, d: { x: 0, y: 1 }, l: { x: -1, y: 0 }, r: { x: 1, y: 0 } };
+
+/* ---- new game ---- */
+function newGame(autoStart) {
+  const cy = Math.floor(ROWS / 2);
+  snake = [{ x: 8, y: cy }, { x: 7, y: cy }, { x: 6, y: cy }];
+  curDir = DIRS.r; nextDir = null;
+  score = 0; updateScore();
+  spawnFood();
+  if (autoStart) { state = "playing"; hideOverlay(); }
+  else { state = "ready"; showOverlay("Snake", "Press an arrow / WASD to start", false, [["New Game", () => newGame(true)]]); }
+  draw();
+}
+function spawnFood() {
+  const occ = new Set(snake.map(s => key(s.x, s.y)));
+  const free = [];
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (!occ.has(key(x, y))) free.push({ x, y });
+  if (!free.length) { food = null; return; }
+  food = free[Math.floor(Math.random() * free.length)];
+}
+
+/* ---- a single step ---- */
+function stepOnce() {
+  if (nextDir && !(snake.length > 1 && nextDir.x === -curDir.x && nextDir.y === -curDir.y)) curDir = nextDir;
+  nextDir = null;
+  const nh = step(snake[0], curDir);
+  if (!nh) return die();
+  const willGrow = food && nh.x === food.x && nh.y === food.y;
+  const body = willGrow ? snake : snake.slice(0, -1);
+  if (body.some(s => s.x === nh.x && s.y === nh.y)) return die();
+  snake.unshift(nh);
+  if (willGrow) { score++; updateScore(); spawnFood(); if (!food) return win(); }
+  else snake.pop();
+}
+function updateScore() {
+  $("score").textContent = score;
+  if (score > best) { best = score; localStorage.setItem(BEST_KEY, best); $("best").textContent = best; }
+}
+function die() {
+  state = "over"; stopAuto();
+  showOverlay("Game Over", "You scored " + score + ". Best " + best + ".", true, [["New Game", () => newGame(true)]]);
+  draw();
+}
+function win() {
+  state = "over"; stopAuto();
+  showOverlay("You filled the board!", "Perfect game — score " + score + ".", false, [["New Game", () => newGame(true)]]);
+  draw();
+}
+
+/* ---- main loop (human + built-in auto) ---- */
+function frame(ts) {
+  if (!last) last = ts;
+  acc += ts - last; last = ts;
+  if (state === "playing" && autoMode !== "model") {
+    let guard = 0;
+    while (acc >= stepMs && guard++ < 8) {
+      acc -= stepMs;
+      if (autoMode === "builtin") { const d = builtinDir(); if (d) curDir = d; }
+      stepOnce();
+      if (state !== "playing") break;
+    }
+  } else acc = 0;
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---- render ---- */
+function draw() {
+  ctx.clearRect(0, 0, COLS * CELL, ROWS * CELL);
+  // subtle grid
+  ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = 1;
+  for (let i = 1; i < COLS; i++) { ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, ROWS * CELL); ctx.stroke(); }
+  for (let i = 1; i < ROWS; i++) { ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(COLS * CELL, i * CELL); ctx.stroke(); }
+  // food
+  if (food) {
+    ctx.save();
+    ctx.shadowColor = "#ff4d6d"; ctx.shadowBlur = 12; ctx.fillStyle = "#ff4d6d";
+    ctx.beginPath(); ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL * 0.33, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  // snake
+  for (let i = snake.length - 1; i >= 0; i--) {
+    const s = snake[i];
+    const t = i / Math.max(1, snake.length - 1);          // 0 head .. 1 tail
+    if (i === 0) { ctx.fillStyle = "#5dffa6"; ctx.shadowColor = "#19e57a"; ctx.shadowBlur = 10; }
+    else { ctx.fillStyle = "rgb(" + Math.round(21 + (1 - t) * 40) + "," + Math.round(160 + (1 - t) * 70) + "," + Math.round(110 + (1 - t) * 50) + ")"; ctx.shadowBlur = 0; }
+    const pad = 2;
+    ctx.fillRect(s.x * CELL + pad, s.y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
+  }
+  ctx.shadowBlur = 0;
+  // eyes on head
+  if (snake) {
+    const h = snake[0]; const cxp = h.x * CELL, cyp = h.y * CELL;
+    ctx.fillStyle = "#05110b";
+    const ex = curDir.x, ey = curDir.y;
+    const e1 = { x: 0.32 + ex * 0.12 + (ey ? 0.22 : 0) * 0, y: 0.32 + ey * 0.12 };
+    // two eyes offset perpendicular to direction
+    const px = ey, py = ex;  // perpendicular
+    const base = { x: 0.5 + ex * 0.16, y: 0.5 + ey * 0.16 };
+    for (const sgn of [-1, 1]) {
+      const exx = base.x + px * sgn * 0.18, eyy = base.y + py * sgn * 0.18;
+      ctx.beginPath(); ctx.arc(cxp + exx * CELL, cyp + eyy * CELL, CELL * 0.07, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+/* ---- built-in autopilot ---- */
+function bodySet(excludeTail) {
+  const set = new Set();
+  const n = snake.length - (excludeTail ? 1 : 0);
+  for (let i = 0; i < n; i++) set.add(key(snake[i].x, snake[i].y));
+  return set;
+}
+function bfsFirstStep() {
+  if (!food) return null;
+  const blocked = bodySet(true);           // tail will move, treat as free
+  const prev = new Map();
+  const q = [snake[0]];
+  const seen = new Set([key(snake[0].x, snake[0].y)]);
+  let found = false;
+  while (q.length) {
+    const cur = q.shift();
+    if (cur.x === food.x && cur.y === food.y) { found = true; break; }
+    for (const d of Object.values(DIRS)) {
+      const n = step(cur, d); if (!n) continue;
+      const k = key(n.x, n.y);
+      if (seen.has(k) || blocked.has(k)) continue;
+      seen.add(k); prev.set(k, { from: cur, dir: d }); q.push(n);
+    }
+  }
+  if (!found) return null;
+  // walk back from food to the first step
+  let cur = food, firstDir = null;
+  while (true) {
+    const p = prev.get(key(cur.x, cur.y)); if (!p) break;
+    firstDir = p.dir; cur = p.from;
+    if (cur.x === snake[0].x && cur.y === snake[0].y) break;
+  }
+  return firstDir;
+}
+function floodSize(start, blocked) {
+  const q = [start]; const seen = new Set([key(start.x, start.y)]); let n = 0;
+  while (q.length && n < COLS * ROWS) {
+    const cur = q.shift(); n++;
+    for (const d of Object.values(DIRS)) {
+      const nx = step(cur, d); if (!nx) continue;
+      const k = key(nx.x, nx.y);
+      if (seen.has(k) || blocked.has(k)) continue;
+      seen.add(k); q.push(nx);
+    }
+  }
+  return n;
+}
+function builtinDir() {
+  const noReverse = d => !(snake.length > 1 && d.x === -curDir.x && d.y === -curDir.y);
+  const path = bfsFirstStep();
+  if (path && noReverse(path)) {
+    // sanity: don't walk into a dead pocket — make sure some space remains
+    const nh = step(snake[0], path);
+    if (nh) { const blk = bodySet(true); blk.delete(key(snake[snake.length - 1].x, snake[snake.length - 1].y)); if (!blk.has(key(nh.x, nh.y)) && floodSize(nh, bodySet(true)) >= 2) return path; }
+  }
+  // survival: pick the safe neighbour with the most open space
+  let best = null, bestSpace = -1;
+  for (const d of Object.values(DIRS)) {
+    if (!noReverse(d)) continue;
+    const n = step(snake[0], d); if (!n) continue;
+    const blk = bodySet(true);
+    if (blk.has(key(n.x, n.y))) continue;
+    const sp = floodSize(n, blk);
+    if (sp > bestSpace) { bestSpace = sp; best = d; }
+  }
+  return best;
+}
+
+/* ---- autopilot toggle ---- */
+function toggleAuto() {
+  if (autoMode === "off") {
+    if (state === "over") newGame(true);
+    if (state === "ready") { state = "playing"; hideOverlay(); }
+    nextDir = null;
+    autoMode = modelActive() ? "model" : "builtin";
+    $("autoBtn").classList.add("on"); $("autoBtn").textContent = "Stop ▪";
+    if (autoMode === "model") modelLoop();
+  } else stopAuto();
+}
+function stopAuto() {
+  autoMode = "off";
+  $("autoBtn").classList.remove("on"); $("autoBtn").textContent = "Auto ▸";
+}
+async function modelLoop() {
+  while (autoMode === "model" && state !== "over") {
+    if (state === "paused") { await sleep(120); continue; }
+    if (state === "ready") { state = "playing"; hideOverlay(); }
+    let dir = null;
+    if (modelActive()) { try { dir = await modelDir(); } catch (e) {} }
+    if (!dir) dir = builtinDir();
+    if (dir) curDir = dir;
+    stepOnce(); draw();
+    await sleep(75);
+  }
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---- overlays ---- */
+function showOverlay(title, text, dead, buttons) {
+  $("overlay").className = "overlay show" + (dead ? " dead" : "");
+  $("ovTitle").textContent = title; $("ovText").textContent = text;
+  $("ovRow").innerHTML = "";
+  for (const [label, fn] of buttons) { const b = document.createElement("button"); b.className = "act"; b.textContent = label; b.onclick = fn; $("ovRow").appendChild(b); }
+}
+function hideOverlay() { $("overlay").className = "overlay"; }
+
+/* ---- input ---- */
+function setDir(d) {
+  if (autoMode !== "off") return;
+  if (state === "over") return;
+  if (snake.length > 1 && d.x === -curDir.x && d.y === -curDir.y) return;
+  nextDir = d;
+  if (state === "ready") { state = "playing"; hideOverlay(); }
+}
+function togglePause() {
+  if (state === "playing") { state = "paused"; showOverlay("Paused", "Press space / Pause to resume", false, [["Resume", togglePause]]); }
+  else if (state === "paused") { state = "playing"; hideOverlay(); last = 0; acc = 0; }
+}
+const KEYMAP = { ArrowLeft: "l", ArrowRight: "r", ArrowUp: "u", ArrowDown: "d", a: "l", d: "r", w: "u", s: "d", A: "l", D: "r", W: "u", S: "d" };
+window.addEventListener("keydown", e => {
+  if (e.key === " ") { e.preventDefault(); togglePause(); return; }
+  const k = KEYMAP[e.key]; if (!k) return; e.preventDefault(); setDir(DIRS[k]);
+});
+let tsx = 0, tsy = 0;
+cv.addEventListener("touchstart", e => { const t = e.touches[0]; tsx = t.clientX; tsy = t.clientY; }, { passive: true });
+cv.addEventListener("touchend", e => {
+  const t = e.changedTouches[0]; const dx = t.clientX - tsx, dy = t.clientY - tsy;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+  setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIRS.r : DIRS.l) : (dy > 0 ? DIRS.d : DIRS.u));
+}, { passive: true });
+document.querySelectorAll(".dpad button").forEach(b => b.addEventListener("click", () => setDir(DIRS[b.dataset.d])));
+
+$("pauseBtn").addEventListener("click", togglePause);
+$("autoBtn").addEventListener("click", toggleAuto);
+$("speedSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; stepMs = +b.dataset.s; [...e.currentTarget.children].forEach(x => x.classList.toggle("active", x === b)); });
+$("wallSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; wrap = b.dataset.w === "1"; [...e.currentTarget.children].forEach(x => x.classList.toggle("active", x === b)); });
+
+/* ---- local model (shared BYOM) ---- */
+const useModel = $("useModel"), modelSel = $("modelSel"), endpointEl = $("endpoint");
+const aiStatusEl = $("aiStatus"), aiDot = $("aiDot");
+let aiController = null;
+function modelActive() { return typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal() && useModel.checked && modelSel.value && !modelSel.disabled; }
+function endpointBase() { return (endpointEl.value || "http://localhost:11434").replace(/\/$/, ""); }
+function setAiStatus(t, s) { aiStatusEl.textContent = t; aiDot.className = "ai-dot" + (s ? " " + s : ""); }
+
+async function modelDir() {
+  const NAME = { u: "UP", d: "DOWN", l: "LEFT", r: "RIGHT" };
+  const legal = Object.keys(DIRS).filter(k => {
+    const d = DIRS[k]; if (snake.length > 1 && d.x === -curDir.x && d.y === -curDir.y) return false;
+    const n = step(snake[0], d); if (!n) return false;
+    return !bodySet(true).has(key(n.x, n.y));
+  });
+  if (!legal.length) return null;
+  const head = snake[0];
+  const system =
+`You steer a snake on a ${COLS}x${ROWS} grid (x: 0..${COLS-1} left→right, y: 0..${ROWS-1} top→bottom). Move toward the food and never hit a wall${wrap ? " (walls wrap around)" : ""} or your own body. Choose ONE direction from the legal list.
+Reply with at most one short sentence, then a final line exactly:
+MOVE: <UP|DOWN|LEFT|RIGHT>`;
+  const user = `Head: (${head.x},${head.y})\nFood: ${food ? "(" + food.x + "," + food.y + ")" : "none"}\nBody: ${snake.slice(1).map(s => "(" + s.x + "," + s.y + ")").join(" ")}\nLegal: ${legal.map(k => NAME[k]).join(", ")}`;
+  aiController = new AbortController();
+  const killer = setTimeout(() => { try { aiController.abort(); } catch (e) {} }, 20000);
+  let reply = "";
+  try {
+    reply = await XenoBYOM.chat({
+      endpoint: endpointBase(), model: modelSel.value,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      temperature: 0.3, maxTokens: 200, signal: aiController.signal,
+    });
+  } finally { clearTimeout(killer); aiController = null; }
+  const up = reply.toUpperCase();
+  const m = up.match(/MOVE:\s*(UP|DOWN|LEFT|RIGHT)/) || up.match(/\b(UP|DOWN|LEFT|RIGHT)\b/);
+  if (m) { const k = { UP: "u", DOWN: "d", LEFT: "l", RIGHT: "r" }[m[1]]; if (legal.includes(k)) { setAiStatus("Model · " + m[1], "on"); return DIRS[k]; } }
+  return null;
+}
+async function loadModels() {
+  if (typeof XenoBYOM === "undefined" || !XenoBYOM.isLocal()) return;
+  XenoBYOM.saveConfig({ endpoint: endpointBase() });
+  modelSel.disabled = true; modelSel.innerHTML = "<option>loading…</option>";
+  const saved = XenoBYOM.loadConfig().model;
+  const res = await XenoBYOM.test({ endpoint: endpointBase() });
+  if (!res.ok) { modelSel.innerHTML = '<option value="">— not reachable —</option>'; setAiStatus(res.error.message + " — built-in autopilot will run instead.", "err"); return; }
+  modelSel.innerHTML = res.models.map(n => `<option value="${n}">${n}</option>`).join("");
+  modelSel.disabled = false;
+  const fav = res.models.indexOf(saved) >= 0 ? saved : (res.models.find(n => /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(n)) || res.models[0]);
+  modelSel.value = fav; XenoBYOM.saveConfig({ model: fav });
+  setAiStatus("Model ready — " + res.models.length + " via " + res.provider + ".", "on");
+}
+modelSel.addEventListener("change", () => XenoBYOM.saveConfig({ model: modelSel.value }));
+$("refresh").addEventListener("click", loadModels);
+endpointEl.addEventListener("change", loadModels);
+
+/* ---- boot ---- */
+newGame(false);
+if (typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal()) {
+  endpointEl.value = XenoBYOM.loadConfig().endpoint || "http://localhost:11434";
+  loadModels();
+}
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

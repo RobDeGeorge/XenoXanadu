@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Tetris</title>
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<style>
+  html.hosted .ai-only { display: none !important; }
+  /* ---- sharpened neon arcade · signature hue: cyan ---- */
+  :root {
+    --bg: #050a10;
+    --bg-2: #0a131d;
+    --panel: #0c1622;
+    --grid: #1d3142;
+    --board: #060d15;
+    --slot: #0e1c2a;
+    --text: #e9f4ff;
+    --muted: #7d96ad;
+    --accent: #2de2ff;        /* neon cyan */
+    --on-accent: #050a10;
+    --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font-family: var(--mono);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 26px 14px 50px; touch-action: manipulation;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+    mix-blend-mode: multiply;
+  }
+
+  h1 {
+    text-align: center; margin: 0 0 6px; font-weight: 800;
+    letter-spacing: 8px; text-transform: uppercase; font-size: clamp(28px, 7vw, 52px);
+    color: var(--accent);
+    text-shadow: 0 0 6px rgba(45,226,255,0.6), 3px 3px 0 #ff2e88, 6px 6px 0 #ffd23f;
+  }
+  .subtitle { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
+
+  .game { display: flex; gap: 16px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  .col.side { width: 132px; }
+
+  .panel {
+    background: var(--panel); border: 2px solid var(--grid); padding: 10px 12px;
+    box-shadow: inset 0 0 24px #0004;
+  }
+  .panel .lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .panel .val { font-size: 24px; font-weight: 800; line-height: 1.15; }
+  .mini { display: block; width: 100%; image-rendering: pixelated; }
+  .nextlist { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ---- board ---- */
+  .boardwrap {
+    position: relative; padding: 8px; background: var(--board); border: 2px solid var(--grid);
+    box-shadow: 0 0 0 1px #0006, 0 14px 40px #0009, inset 0 0 34px #0005;
+  }
+  #board { display: block; image-rendering: pixelated; }
+
+  .overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; background: rgba(5,10,16,0.88); z-index: 5;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { margin: 0; font-size: clamp(24px, 6vw, 38px); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px var(--accent); }
+  .overlay.over h2 { color: #ff2e88; text-shadow: 0 0 16px rgba(255,46,136,0.8); }
+  .overlay p { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; line-height: 1.6; }
+
+  /* ---- buttons ---- */
+  .btns { display: flex; flex-direction: column; gap: 8px; }
+  button.act {
+    background: transparent; color: var(--accent); border: 2px solid var(--accent);
+    padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: var(--mono); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s, transform .06s; white-space: nowrap;
+  }
+  button.act:hover { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act:active { transform: translateY(2px); }
+  button.act.secondary { color: var(--muted); border-color: var(--grid); }
+  button.act.secondary:hover { background: var(--grid); color: var(--text); box-shadow: none; }
+  button.act.on { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+
+  .help { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin-top: 18px; line-height: 1.8; max-width: 520px; }
+  .help b { color: var(--text); }
+
+  /* ---- touch d-pad (mobile) ---- */
+  .touchpad { display: none; gap: 8px; margin-top: 16px; }
+  .touchpad button {
+    width: 58px; height: 50px; font-size: 20px; background: var(--panel);
+    color: var(--accent); border: 2px solid var(--grid); font-family: var(--mono);
+  }
+  .touchpad button:active { background: var(--accent); color: var(--on-accent); }
+  @media (pointer: coarse) { .touchpad { display: flex; } }
+
+  /* ---- AI panel (local only) ---- */
+  #aiBox { width: 100%; max-width: 520px; margin: 18px auto 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--grid); display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+  #aiBox .ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #aiBox .ai-label { width: 64px; flex: none; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  #aiBox label.chk { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
+  #aiBox label.chk input { accent-color: var(--accent); }
+  #aiBox select, #aiBox input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); padding: 5px 8px; font-size: 12px; font-family: var(--mono); }
+  #aiBox .ai-refresh { flex: none; background: var(--bg-2); color: var(--accent); border: 1px solid var(--grid); padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
+  #aiBox .ai-refresh:hover { background: var(--accent); color: var(--on-accent); }
+  #aiBox .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  #aiBox .ai-dot { width: 9px; height: 9px; background: #555; flex: none; }
+  #aiBox .ai-dot.on { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+  #aiBox .ai-dot.err { background: #ff2e88; box-shadow: 0 0 7px #ff2e88; }
+  #aiBox .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  #aiBox .ai-hint a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <h1>Tetris</h1>
+  <div class="subtitle">Stack · clear · survive</div>
+
+  <div class="game">
+    <!-- left: hold + score -->
+    <div class="col side">
+      <div class="panel">
+        <div class="lbl">Hold</div>
+        <canvas id="hold" class="mini"></canvas>
+      </div>
+      <div class="panel"><div class="lbl">Score</div><div class="val" id="score">0</div></div>
+      <div class="panel"><div class="lbl">Best</div><div class="val" id="best">0</div></div>
+    </div>
+
+    <!-- center: board -->
+    <div class="boardwrap">
+      <canvas id="board"></canvas>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">Paused</h2>
+        <p id="ovText"></p>
+      </div>
+    </div>
+
+    <!-- right: next + stats + buttons -->
+    <div class="col side">
+      <div class="panel">
+        <div class="lbl">Next</div>
+        <div class="nextlist" id="nextlist"></div>
+      </div>
+      <div class="panel"><div class="lbl">Level</div><div class="val" id="level">1</div></div>
+      <div class="panel"><div class="lbl">Lines</div><div class="val" id="lines">0</div></div>
+      <div class="btns">
+        <button class="act" id="newBtn">New</button>
+        <button class="act secondary" id="pauseBtn">Pause</button>
+        <button class="act secondary" id="autoBtn">Auto ▸</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="touchpad">
+    <button id="tLeft">◀</button>
+    <button id="tRot">⟳</button>
+    <button id="tRight">▶</button>
+    <button id="tDown">▼</button>
+    <button id="tDrop">⤓</button>
+    <button id="tHold">⇄</button>
+  </div>
+
+  <div class="help">
+    <b>←</b>/<b>→</b> move · <b>↑</b> / <b>X</b> rotate · <b>Z</b> rotate ccw · <b>↓</b> soft drop ·
+    <b>Space</b> hard drop · <b>C</b>/<b>Shift</b> hold · <b>P</b> pause
+  </div>
+
+  <!-- Autoplay brain (local only) -->
+  <div id="aiBox" class="ai-only">
+    <label class="chk"><input type="checkbox" id="useModel"> Let a local model drive Autoplay</label>
+    <div class="ai-row">
+      <span class="ai-label">Model</span>
+      <select id="modelSel"><option>loading…</option></select>
+      <button class="ai-refresh" id="refresh" title="Re-scan for installed models">↻</button>
+    </div>
+    <div class="ai-row">
+      <span class="ai-label">Endpoint</span>
+      <input type="text" id="endpoint" value="http://localhost:11434">
+    </div>
+    <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Built-in autoplay ready.</span></div>
+    <div class="ai-hint">
+      <b>Auto ▸</b> plays for you. By default a built-in heuristic picks each drop; tick the box to let a
+      model on <em>your</em> machine choose where every piece lands · <a href="../../ai-setup.html">connect a model ▸</a>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   Tetris — single file, canvas, guideline-flavoured.
+   10x20 well · 7-bag randomizer · SRS rotation + wall kicks ·
+   hold piece · ghost · next queue · lock delay · soft/hard drop.
+   Plus a built-in autoplay heuristic (pure JS, no model).
+   ============================================================ */
+
+const COLS = 10, ROWS = 20;
+const BEST_KEY = "xeno.tetris.best";
+const $ = id => document.getElementById(id);
+
+/* ---- tetromino data ----
+   Each piece: filled cells per rotation state (0,R,2,L) inside a box,
+   a colour, and its bounding-box size. Coordinates are [row, col]. */
+const PIECES = {
+  I: { color: "#2de2ff", box: 4, cells: [
+        [[1,0],[1,1],[1,2],[1,3]],
+        [[0,2],[1,2],[2,2],[3,2]],
+        [[2,0],[2,1],[2,2],[2,3]],
+        [[0,1],[1,1],[2,1],[3,1]] ] },
+  O: { color: "#ffd23f", box: 2, cells: [
+        [[0,0],[0,1],[1,0],[1,1]],
+        [[0,0],[0,1],[1,0],[1,1]],
+        [[0,0],[0,1],[1,0],[1,1]],
+        [[0,0],[0,1],[1,0],[1,1]] ] },
+  T: { color: "#c46bff", box: 3, cells: [
+        [[0,1],[1,0],[1,1],[1,2]],
+        [[0,1],[1,1],[1,2],[2,1]],
+        [[1,0],[1,1],[1,2],[2,1]],
+        [[0,1],[1,0],[1,1],[2,1]] ] },
+  S: { color: "#5dff8f", box: 3, cells: [
+        [[0,1],[0,2],[1,0],[1,1]],
+        [[0,1],[1,1],[1,2],[2,2]],
+        [[1,1],[1,2],[2,0],[2,1]],
+        [[0,0],[1,0],[1,1],[2,1]] ] },
+  Z: { color: "#ff4d6d", box: 3, cells: [
+        [[0,0],[0,1],[1,1],[1,2]],
+        [[0,2],[1,1],[1,2],[2,1]],
+        [[1,0],[1,1],[2,1],[2,2]],
+        [[0,1],[1,0],[1,1],[2,0]] ] },
+  J: { color: "#3a7bff", box: 3, cells: [
+        [[0,0],[1,0],[1,1],[1,2]],
+        [[0,1],[0,2],[1,1],[2,1]],
+        [[1,0],[1,1],[1,2],[2,2]],
+        [[0,1],[1,1],[2,0],[2,1]] ] },
+  L: { color: "#ff9f1c", box: 3, cells: [
+        [[0,2],[1,0],[1,1],[1,2]],
+        [[0,1],[1,1],[2,1],[2,2]],
+        [[1,0],[1,1],[1,2],[2,0]],
+        [[0,0],[0,1],[1,1],[2,1]] ] },
+};
+const TYPES = ["I","O","T","S","Z","J","L"];
+
+/* ---- SRS wall-kick tables. Offsets are [x(col), y(up)]. ---- */
+const KICKS = {
+  JLSTZ: {
+    "0>1": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    "1>0": [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    "1>2": [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    "2>1": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    "2>3": [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+    "3>2": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    "3>0": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    "0>3": [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  },
+  I: {
+    "0>1": [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    "1>0": [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+    "1>2": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+    "2>1": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+    "2>3": [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+    "3>2": [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    "3>0": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+    "0>3": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+  },
+};
+
+/* gravity (ms per cell) by level */
+const GRAVITY = [0,800,720,630,550,470,380,300,220,130,100,80,80,70,70,70,50,50,50,30,30,20];
+function gravityMs() { return GRAVITY[Math.min(level, GRAVITY.length - 1)] || 20; }
+const LOCK_DELAY = 500;
+const SOFT_FACTOR = 12;   // soft drop is this many times faster than gravity
+
+/* ---- canvas ---- */
+const canvas = $("board"), ctx = canvas.getContext("2d");
+const holdCv = $("hold"), holdCtx = holdCv.getContext("2d");
+let CELL = 28, DPR = 1;
+
+/* ---- state ---- */
+let board;                 // ROWS x COLS, "" or color
+let cur;                   // {type, state, row, col}
+let bag = [];
+let nextQueue = [];
+let holdType = null, holdUsed = false;
+let score = 0, level = 1, lines = 0, best = 0;
+let running = false, paused = false, over = false;
+let dropTimer = 0, lockTimer = 0, grounded = false;
+let softDrop = false;
+let lastT = 0, rafId = null;
+let auto = false, autoPlan = null, autoTimer = 0;
+let planPending = false, aiController = null;
+
+best = +(localStorage.getItem(BEST_KEY) || 0);
+$("best").textContent = best;
+
+/* ---- sizing ---- */
+function sizeBoard() {
+  DPR = window.devicePixelRatio || 1;
+  const maxH = (window.innerHeight - 200);
+  const maxW = (window.innerWidth - (window.innerWidth < 560 ? 40 : 320));
+  CELL = Math.max(14, Math.floor(Math.min(32, maxH / ROWS, maxW / COLS)));
+  canvas.style.width = COLS * CELL + "px";
+  canvas.style.height = ROWS * CELL + "px";
+  canvas.width = COLS * CELL * DPR;
+  canvas.height = ROWS * CELL * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const hc = Math.floor(CELL * 0.7);
+  holdCv.style.height = (4 * hc) + "px";
+  holdCv.width = holdCv.clientWidth * DPR;
+  holdCv.height = 4 * hc * DPR;
+  holdCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  draw();
+  drawHold();
+  drawNext();
+}
+window.addEventListener("resize", sizeBoard);
+
+/* ---- 7-bag randomizer ---- */
+function refillBag() {
+  bag = TYPES.slice();
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+function pullType() { if (!bag.length) refillBag(); return bag.pop(); }
+function ensureQueue() { while (nextQueue.length < 5) nextQueue.push(pullType()); }
+
+/* ---- piece helpers ---- */
+function spawnRow(type) { return type === "I" ? -1 : -2; }
+function spawnCol(type) { return type === "O" ? 4 : 3; }
+function cellsOf(type, state) { return PIECES[type].cells[state]; }
+function absCells(p) { return cellsOf(p.type, p.state).map(([r, c]) => [p.row + r, p.col + c]); }
+
+function collides(type, state, row, col) {
+  for (const [r, c] of cellsOf(type, state)) {
+    const rr = row + r, cc = col + c;
+    if (cc < 0 || cc >= COLS || rr >= ROWS) return true;
+    if (rr >= 0 && board[rr][cc]) return true;
+  }
+  return false;
+}
+
+function newPiece(type) {
+  ensureQueue();
+  if (!type) type = nextQueue.shift();
+  ensureQueue();
+  cur = { type, state: 0, row: spawnRow(type), col: spawnCol(type) };
+  holdUsed = false;
+  grounded = false; lockTimer = 0; dropTimer = 0;
+  autoPlan = null;
+  if (collides(cur.type, cur.state, cur.row, cur.col)) { gameOver(); return; }
+  drawNext();
+}
+
+/* ---- movement ---- */
+function tryMove(dr, dc) {
+  if (collides(cur.type, cur.state, cur.row + dr, cur.col + dc)) return false;
+  cur.row += dr; cur.col += dc;
+  return true;
+}
+
+function tryRotate(dir) {
+  if (cur.type === "O") return false;
+  const from = cur.state, to = (from + dir + 4) % 4;
+  const table = (cur.type === "I" ? KICKS.I : KICKS.JLSTZ)[from + ">" + to];
+  for (const [kx, ky] of table) {
+    const nr = cur.row - ky, nc = cur.col + kx;     // y is up-positive → row -= y
+    if (!collides(cur.type, to, nr, nc)) {
+      cur.state = to; cur.row = nr; cur.col = nc;
+      return true;
+    }
+  }
+  return false;
+}
+
+function ghostRow() {
+  let r = cur.row;
+  while (!collides(cur.type, cur.state, r + 1, cur.col)) r++;
+  return r;
+}
+
+function lockPiece() {
+  for (const [r, c] of absCells(cur)) {
+    if (r < 0) { gameOver(); return; }   // locked above the well → top out
+    board[r][c] = PIECES[cur.type].color;
+  }
+  clearLines();
+  newPiece();
+  draw();
+}
+
+function clearLines() {
+  let cleared = 0;
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r].every(Boolean)) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(""));
+      cleared++; r++;   // re-check the row that shifted down
+    }
+  }
+  if (!cleared) return;
+  lines += cleared;
+  const table = [0, 100, 300, 500, 800];
+  score += table[cleared] * level;
+  const newLevel = Math.floor(lines / 10) + 1;
+  if (newLevel !== level) level = newLevel;
+  updateHud();
+}
+
+function softStep() {
+  if (tryMove(1, 0)) { score += 1; dropTimer = 0; updateHud(); }
+}
+function hardDrop() {
+  let dist = 0;
+  while (tryMove(1, 0)) dist++;
+  score += dist * 2;
+  updateHud();
+  lockPiece();
+}
+
+function hold() {
+  if (holdUsed) return;
+  const prev = holdType;
+  holdType = cur.type;
+  // swap in the held piece (or the next one if the hold slot was empty)
+  const type = prev || nextQueue.shift();
+  ensureQueue();
+  cur = { type, state: 0, row: spawnRow(type), col: spawnCol(type) };
+  grounded = false; lockTimer = 0; dropTimer = 0; autoPlan = null;
+  holdUsed = true;   // can't hold again until the next piece locks
+  drawHold(); drawNext();
+  if (collides(cur.type, cur.state, cur.row, cur.col)) { gameOver(); return; }
+}
+
+/* ---- HUD ---- */
+function updateHud() {
+  $("score").textContent = score;
+  $("level").textContent = level;
+  $("lines").textContent = lines;
+  if (score > best) { best = score; localStorage.setItem(BEST_KEY, best); $("best").textContent = best; }
+}
+
+/* ---- drawing ---- */
+function roundedCell(c, x, y, s, color) {
+  c.fillStyle = color;
+  c.fillRect(x + 1, y + 1, s - 2, s - 2);
+  // bevel
+  c.fillStyle = "rgba(255,255,255,0.22)";
+  c.fillRect(x + 1, y + 1, s - 2, Math.max(2, s * 0.14));
+  c.fillStyle = "rgba(0,0,0,0.28)";
+  c.fillRect(x + 1, y + s - Math.max(2, s * 0.14) - 1, s - 2, Math.max(2, s * 0.14));
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // grid
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    ctx.fillStyle = "#0e1c2a";
+    ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+    ctx.strokeStyle = "rgba(29,49,66,0.5)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(c * CELL + 0.5, r * CELL + 0.5, CELL - 1, CELL - 1);
+  }
+  // settled blocks
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+    if (board[r][c]) roundedCell(ctx, c * CELL, r * CELL, CELL, board[r][c]);
+
+  if (!cur || over) return;
+  // ghost
+  const gr = ghostRow();
+  for (const [r, c] of cellsOf(cur.type, cur.state)) {
+    const rr = gr + r, cc = cur.col + c;
+    if (rr < 0) continue;
+    ctx.strokeStyle = PIECES[cur.type].color;
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cc * CELL + 2, rr * CELL + 2, CELL - 4, CELL - 4);
+    ctx.globalAlpha = 1;
+  }
+  // current piece
+  for (const [r, c] of absCells(cur)) {
+    if (r < 0) continue;
+    roundedCell(ctx, c * CELL, r * CELL, CELL, PIECES[cur.type].color);
+  }
+}
+
+function drawMini(c, type, w, h) {
+  c.clearRect(0, 0, w, h);
+  if (!type) return;
+  const p = PIECES[type], box = p.box;
+  const cells = p.cells[0];
+  let minR = 9, maxR = -9, minC = 9, maxC = -9;
+  for (const [r, cc] of cells) { minR = Math.min(minR, r); maxR = Math.max(maxR, r); minC = Math.min(minC, cc); maxC = Math.max(maxC, cc); }
+  const pw = maxC - minC + 1, ph = maxR - minR + 1;
+  const s = Math.floor(Math.min((w - 8) / 4, (h - 8) / 4));
+  const ox = (w - pw * s) / 2, oy = (h - ph * s) / 2;
+  for (const [r, cc] of cells)
+    roundedCell(c, ox + (cc - minC) * s, oy + (r - minR) * s, s, p.color);
+}
+function drawHold() {
+  const w = holdCv.clientWidth, h = holdCv.clientHeight;
+  drawMini(holdCtx, holdType, w, h);
+}
+function drawNext() {
+  const list = $("nextlist");
+  ensureQueue();
+  const show = nextQueue.slice(0, 4);
+  // (re)build canvases
+  if (list.children.length !== show.length) {
+    list.innerHTML = "";
+    for (let i = 0; i < show.length; i++) {
+      const cv = document.createElement("canvas");
+      cv.className = "mini";
+      list.appendChild(cv);
+    }
+  }
+  const hc = Math.floor(CELL * 0.62);
+  for (let i = 0; i < show.length; i++) {
+    const cv = list.children[i];
+    cv.style.height = (3 * hc) + "px";
+    cv.width = cv.clientWidth * DPR;
+    cv.height = 3 * hc * DPR;
+    const cc = cv.getContext("2d");
+    cc.setTransform(DPR, 0, 0, DPR, 0, 0);
+    drawMini(cc, show[i], cv.clientWidth, 3 * hc);
+  }
+}
+
+/* ---- game loop ---- */
+function tick(t) {
+  rafId = requestAnimationFrame(tick);
+  if (!running || paused || over) { lastT = t; return; }
+  const dt = t - lastT; lastT = t;
+
+  if (auto) {
+    autoTimer += dt;
+    if (autoTimer >= 70) { autoTimer = 0; autoStep(); }
+  }
+
+  // freeze gravity while the model is deciding where the piece goes
+  if (auto && (planPending || (modelActive() && !autoPlan))) { draw(); return; }
+
+  const g = softDrop ? Math.max(15, gravityMs() / SOFT_FACTOR) : gravityMs();
+  dropTimer += dt;
+
+  const canDown = !collides(cur.type, cur.state, cur.row + 1, cur.col);
+  if (canDown) {
+    grounded = false; lockTimer = 0;
+    if (dropTimer >= g) {
+      dropTimer = 0;
+      if (tryMove(1, 0) && softDrop) { score += 1; updateHud(); }
+    }
+  } else {
+    grounded = true;
+    lockTimer += dt;
+    if (lockTimer >= LOCK_DELAY || softDrop) { lockTimer = 0; lockPiece(); }
+  }
+  draw();
+}
+
+/* ---- autoplay heuristic (El-Tetris style weights) ---- */
+const W = { height: -0.510066, lines: 0.760666, holes: -0.35663, bump: -0.184483 };
+
+function dropColumnFor(grid, type, state, col) {
+  let row = -2;
+  while (!collidesGrid(grid, type, state, row + 1, col)) row++;
+  return row;
+}
+function collidesGrid(grid, type, state, row, col) {
+  for (const [r, c] of cellsOf(type, state)) {
+    const rr = row + r, cc = col + c;
+    if (cc < 0 || cc >= COLS || rr >= ROWS) return true;
+    if (rr >= 0 && grid[rr][cc]) return true;
+  }
+  return false;
+}
+function evalGrid(grid) {
+  const heights = new Array(COLS).fill(0);
+  let holes = 0;
+  for (let c = 0; c < COLS; c++) {
+    let seen = false;
+    for (let r = 0; r < ROWS; r++) {
+      if (grid[r][c]) { if (!seen) { seen = true; heights[c] = ROWS - r; } }
+      else if (seen) holes++;
+    }
+  }
+  let agg = 0, bump = 0, maxH = 0;
+  for (let c = 0; c < COLS; c++) { agg += heights[c]; maxH = Math.max(maxH, heights[c]); if (c < COLS - 1) bump += Math.abs(heights[c] - heights[c + 1]); }
+  return { agg, holes, bump, maxH };
+}
+/* Every legal final resting place for the current piece (rotation + column),
+   each scored + annotated. Shared by the heuristic and the model. */
+function enumeratePlacements() {
+  const out = [], seen = new Set();
+  const states = cur.type === "O" ? [0] : [0, 1, 2, 3];
+  for (const st of states) {
+    for (let col = -3; col < COLS; col++) {
+      // horizontal fit
+      let ok = true;
+      for (const [r, c] of cellsOf(cur.type, st)) { const cc = col + c; if (cc < 0 || cc >= COLS) { ok = false; break; } }
+      if (!ok) continue;
+      const row = dropColumnFor(board, cur.type, st, col);
+      if (collidesGrid(board, cur.type, st, row, col)) continue;
+      // simulate the landing
+      const grid = board.map(r => r.slice());
+      let above = false, key = "";
+      for (const [r, c] of cellsOf(cur.type, st)) {
+        const rr = row + r; if (rr < 0) { above = true; break; }
+        grid[rr][col + c] = "X"; key += rr + ":" + (col + c) + ";";
+      }
+      if (above || seen.has(key)) continue;   // skip unreachable + symmetric duplicates
+      seen.add(key);
+      let clears = 0;
+      for (let r = ROWS - 1; r >= 0; r--) if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(COLS).fill("")); clears++; r++; }
+      const f = evalGrid(grid);
+      const score = W.height * f.agg + W.lines * clears + W.holes * f.holes + W.bump * f.bump;
+      out.push({ state: st, col, clears, holes: f.holes, maxH: f.maxH, score });
+    }
+  }
+  return out;
+}
+function bestPlacement() {
+  let best = null, bestScore = -Infinity;
+  for (const p of enumeratePlacements()) if (p.score > bestScore) { bestScore = p.score; best = p; }
+  return best;
+}
+function autoStep() {
+  if (planPending) return;                 // waiting on the model
+  if (!autoPlan) {
+    if (modelActive()) { requestModelPlan(); return; }   // resolves autoPlan async
+    autoPlan = bestPlacement();
+    if (!autoPlan) { hardDrop(); return; }
+  }
+  if (cur.state !== autoPlan.state) { if (!tryRotate(1)) autoPlan = null; return; }
+  if (cur.col < autoPlan.col) { if (!tryMove(0, 1)) hardDrop(); return; }
+  if (cur.col > autoPlan.col) { if (!tryMove(0, -1)) hardDrop(); return; }
+  hardDrop();
+}
+function toggleAuto() {
+  auto = !auto;
+  $("autoBtn").classList.toggle("on", auto);
+  $("autoBtn").textContent = auto ? "Stop ▪" : "Auto ▸";
+  if (!auto) { planPending = false; if (aiController) { try { aiController.abort(); } catch (e) {} } }
+  if (auto && (over || !running)) newGame();
+  if (auto) { paused = false; setOverlay(false); }
+}
+
+/* ============================================================
+   Local model (shared BYOM) — the model picks where each piece
+   lands from the numbered list of legal placements.
+   ============================================================ */
+function modelActive() {
+  return typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal()
+    && $("useModel") && $("useModel").checked
+    && $("modelSel").value && !$("modelSel").disabled;
+}
+function endpointBase() { return ($("endpoint").value || "http://localhost:11434").replace(/\/$/, ""); }
+function setAiStatus(t, s) { if ($("aiStatus")) { $("aiStatus").textContent = t; $("aiDot").className = "ai-dot" + (s ? " " + s : ""); } }
+
+const ROT_NAME = ["spawn", "right", "180", "left"];
+function boardAscii() {
+  return board.map(row => row.map(c => (c ? "#" : ".")).join("")).join("\n");
+}
+async function requestModelPlan() {
+  const places = enumeratePlacements();
+  if (!places.length) { hardDrop(); return; }
+  planPending = true;
+  setAiStatus("Model is thinking…", "on");
+  const lines = places.map((p, i) =>
+    `${i}: rotate ${ROT_NAME[p.state]}, cols ${p.col + leftOffset(p.state)}-${p.col + rightOffset(p.state)} → clears ${p.clears}, holes ${p.holes}, top ${p.maxH}`
+  ).join("\n");
+  const system =
+`You are an expert Tetris player. Pick where to drop the current piece by choosing one option number.
+Good play: clear lines, keep the stack low and flat, and avoid creating holes (covered empty cells).
+Reply with at most one short sentence, then a final line exactly:
+PLACE: <number>`;
+  const user =
+`Well (10 wide, 20 tall, top row first; '#'=filled, '.'=empty):
+${boardAscii()}
+
+Current piece: ${cur.type}
+Options:
+${lines}
+
+Choose the best option number.`;
+  aiController = new AbortController();
+  const killer = setTimeout(() => { try { aiController.abort(); } catch (e) {} }, 30000);
+  let reply = "";
+  try {
+    reply = await XenoBYOM.chat({
+      endpoint: endpointBase(), model: $("modelSel").value,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      temperature: 0.4, maxTokens: 300, signal: aiController.signal,
+    });
+  } catch (e) {
+    // model unreachable / aborted → fall back to the heuristic for this piece
+  } finally { clearTimeout(killer); aiController = null; }
+
+  if (!auto) { planPending = false; return; }   // user stopped autoplay mid-think
+  const m = reply.match(/PLACE:\s*(\d+)/i) || reply.match(/\b(\d+)\b/);
+  const idx = m ? parseInt(m[1], 10) : NaN;
+  if (Number.isInteger(idx) && places[idx]) {
+    autoPlan = places[idx];
+    setAiStatus(`Model chose option ${idx} (${cur.type}).`, "on");
+  } else {
+    autoPlan = bestPlacement();
+    setAiStatus("Unclear reply — used built-in pick for that piece.", "err");
+  }
+  planPending = false;
+}
+function leftOffset(st) { let m = COLS; for (const [, c] of cellsOf(cur.type, st)) m = Math.min(m, c); return m; }
+function rightOffset(st) { let m = 0; for (const [, c] of cellsOf(cur.type, st)) m = Math.max(m, c); return m; }
+
+async function loadModels() {
+  if (typeof XenoBYOM === "undefined" || !XenoBYOM.isLocal()) return;
+  XenoBYOM.saveConfig({ endpoint: endpointBase() });
+  const sel = $("modelSel");
+  sel.disabled = true; sel.innerHTML = "<option>loading…</option>";
+  const saved = XenoBYOM.loadConfig().model;
+  const res = await XenoBYOM.test({ endpoint: endpointBase() });
+  if (!res.ok) { sel.innerHTML = '<option value="">— not reachable —</option>'; setAiStatus(res.error.message + " — built-in autoplay will run instead.", "err"); return; }
+  sel.innerHTML = res.models.map(n => `<option value="${n}">${n}</option>`).join("");
+  sel.disabled = false;
+  const fav = res.models.indexOf(saved) >= 0 ? saved : (res.models.find(n => /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(n)) || res.models[0]);
+  sel.value = fav; XenoBYOM.saveConfig({ model: fav });
+  setAiStatus("Model ready — " + res.models.length + " via " + res.provider + ". Tick the box, then Auto ▸.", "on");
+}
+
+/* ---- overlay / flow ---- */
+function setOverlay(show, title, text, cls) {
+  const ov = $("overlay");
+  ov.className = "overlay" + (show ? " show" : "") + (cls ? " " + cls : "");
+  if (title) $("ovTitle").textContent = title;
+  $("ovText").textContent = text || "";
+}
+function gameOver() {
+  over = true; running = false; auto = false;
+  $("autoBtn").classList.remove("on"); $("autoBtn").textContent = "Auto ▸";
+  updateHud();
+  setOverlay(true, "Game Over", "Final score " + score + " · press New", "over");
+}
+function togglePause() {
+  if (over || !running) return;
+  paused = !paused;
+  $("pauseBtn").textContent = paused ? "Resume" : "Pause";
+  setOverlay(paused, "Paused", paused ? "Press P or Resume" : "");
+}
+function newGame() {
+  board = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
+  bag = []; nextQueue = []; refillBag(); ensureQueue();
+  holdType = null; holdUsed = false;
+  score = 0; level = 1; lines = 0;
+  over = false; paused = false; running = true; softDrop = false;
+  autoPlan = null;
+  $("pauseBtn").textContent = "Pause";
+  setOverlay(false);
+  updateHud();
+  newPiece();
+  drawHold(); drawNext(); draw();
+  if (!rafId) { lastT = performance.now(); rafId = requestAnimationFrame(tick); }
+}
+
+/* ---- input ---- */
+const DOWN_KEYS = new Set();
+window.addEventListener("keydown", e => {
+  const k = e.key;
+  if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) e.preventDefault();
+  if (k === "p" || k === "P") { togglePause(); return; }
+  if (over || paused || !running || auto) return;
+  switch (k) {
+    case "ArrowLeft": tryMove(0, -1); break;
+    case "ArrowRight": tryMove(0, 1); break;
+    case "ArrowUp": case "x": case "X": tryRotate(1); break;
+    case "z": case "Z": tryRotate(-1); break;
+    case "ArrowDown": softDrop = true; if (!DOWN_KEYS.has("d")) softStep(); DOWN_KEYS.add("d"); break;
+    case " ": hardDrop(); break;
+    case "c": case "C": case "Shift": hold(); break;
+    default: return;
+  }
+  draw();
+});
+window.addEventListener("keyup", e => {
+  if (e.key === "ArrowDown") { softDrop = false; DOWN_KEYS.delete("d"); }
+});
+
+/* touch d-pad */
+function tap(id, fn) {
+  const el = $(id);
+  el.addEventListener("click", () => { if (over || paused || !running || auto) return; fn(); draw(); });
+}
+tap("tLeft", () => tryMove(0, -1));
+tap("tRight", () => tryMove(0, 1));
+tap("tRot", () => tryRotate(1));
+tap("tDown", () => softStep());
+tap("tDrop", () => hardDrop());
+tap("tHold", () => hold());
+
+$("newBtn").addEventListener("click", newGame);
+$("pauseBtn").addEventListener("click", togglePause);
+$("autoBtn").addEventListener("click", toggleAuto);
+
+/* ---- model panel wiring (local only) ---- */
+if (typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal()) {
+  $("modelSel").addEventListener("change", () => XenoBYOM.saveConfig({ model: $("modelSel").value }));
+  $("refresh").addEventListener("click", loadModels);
+  $("endpoint").addEventListener("change", loadModels);
+}
+
+/* ---- boot ---- */
+board = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
+sizeBoard();
+newGame();
+if (typeof XenoBYOM !== "undefined" && XenoBYOM.isLocal()) {
+  $("endpoint").value = XenoBYOM.loadConfig().endpoint || "http://localhost:11434";
+  loadModels();
+}
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

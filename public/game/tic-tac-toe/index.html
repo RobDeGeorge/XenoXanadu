@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TIC-TAC-TOE // RETRO</title>
+<meta name="description" content="Tic-Tac-Toe rebuilt by hand in neon — three in a row wins. Play a friend or take on a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #140a1f;
+    --bg-2: #1d1030;
+    --panel: #20143a;
+    --panel-2: #2c1c4d;
+    --grid: #4a3a73;
+    --line: #6a52a8;
+    --text: #f1e9ff;
+    --muted: #a594cc;
+    --x: #ff2e88;            /* neon magenta */
+    --x-soft: #ff2e8826;
+    --o: #2bf0e0;            /* neon cyan */
+    --o-soft: #2bf0e026;
+    --accent: #ffd23f;        /* arcade amber */
+    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 620px;
+    --on-accent: #1a1030;
+    --seg-bg: #160c28;
+    --seg-active-bg: #1d1136;
+    --ai-on: var(--o);
+    --ai-err: var(--x);
+  }
+
+  html, body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(900px 600px at 80% -15%, #3a2160 0%, rgba(58,33,96,0) 55%),
+      radial-gradient(900px 600px at 0% 110%, #2a164a 0%, rgba(42,22,74,0) 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+
+  h1 {
+    text-align: center; font-size: clamp(26px, 6vw, 50px); margin: 0 0 6px;
+    letter-spacing: 4px; font-weight: 800; color: var(--accent);
+    text-shadow: 0 0 6px rgba(255,210,63,0.6), 3px 3px 0 var(--x), 6px 6px 0 var(--o);
+  }
+  .subtitle {
+    text-align: center; color: var(--muted); margin: 10px 0 26px;
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* name swatch is a text glyph here (✕ / ◯), not a colour chip */
+  .name-field .swatch { width: 14px; height: 14px; flex: none; font-weight: 800; }
+  .name-field input { width: 110px; }
+
+  /* scoreboard extras: mark glyph + the neutral "draws" column */
+  .score-card { flex: 1 1 120px; max-width: 180px; }
+  .score-card .name { gap: 7px; }
+  .score-card .mk { font-weight: 800; font-size: 16px; }
+  .score-card.draws { color: var(--muted); }
+  .score-card.draws .score { color: var(--muted); }
+
+  /* board */
+  .board-area { display: flex; justify-content: center; }
+  .board {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    width: min(82vw, 420px); height: min(82vw, 420px);
+    background: var(--line); padding: 10px; border-radius: 10px;
+    box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0004;
+    touch-action: manipulation;
+  }
+  .cell {
+    position: relative; background: linear-gradient(145deg, #1a1030 0%, #130b24 100%);
+    border-radius: 8px; cursor: default; display: flex; align-items: center; justify-content: center;
+    transition: background .12s ease, box-shadow .12s ease;
+  }
+  .cell.playable { cursor: pointer; }
+  .cell.playable:hover { background: linear-gradient(145deg, #241543 0%, #1a1030 100%); box-shadow: inset 0 0 0 2px var(--grid); }
+
+  /* X and O drawn with SVG for crisp neon strokes */
+  .cell svg { width: 64%; height: 64%; overflow: visible; }
+  .mark path, .mark circle {
+    fill: none; stroke-width: 9; stroke-linecap: round;
+    stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+    animation: draw .26s ease forwards;
+  }
+  .mark.x path { stroke: var(--x); filter: drop-shadow(0 0 6px var(--x-soft)); }
+  .mark.o circle { stroke: var(--o); filter: drop-shadow(0 0 6px var(--o-soft)); }
+  .mark.x path:nth-child(2) { animation-delay: .12s; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .cell.win { box-shadow: inset 0 0 0 2px var(--accent), 0 0 18px var(--accent); }
+  .cell.win.x { box-shadow: inset 0 0 0 2px var(--x), 0 0 20px var(--x-soft); }
+  .cell.win.o { box-shadow: inset 0 0 0 2px var(--o), 0 0 20px var(--o-soft); }
+
+  @media (max-width: 480px) { .name-field input { width: 96px; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>TIC-TAC-TOE</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Three In A Row &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="tttOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="color:var(--x)">&#10005;</span><input id="name0" value="Player X" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="color:var(--o)">&#9711;</span><input id="name1" value="Player O" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="tttAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="winner-banner" id="winner"></div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const X = 0, O = 1;
+  const LINES = [
+    [0,1,2],[3,4,5],[6,7,8],   // rows
+    [0,3,6],[1,4,7],[2,5,8],   // cols
+    [0,4,8],[2,4,6],           // diagonals
+  ];
+  const CELL_NAME = ["top-left","top-middle","top-right","middle-left","center","middle-right","bottom-left","bottom-middle","bottom-right"];
+
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+
+  let board, current, gameOver, cells, winLine;
+  const tally = [0, 0, 0];   // [X wins, O wins, draws] — persists across rounds this session
+
+  const markChar = (p) => (p === X ? "✕" : "◯");
+  function names() { return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === X ? "Player X" : "Player O")); }
+  const markVar = (p) => (p === X ? "--x" : "--o");
+
+  // ---- rules ----
+  function winnerOf(b) {
+    for (const line of LINES) {
+      const [a, c, d] = line;
+      if (b[a] !== -1 && b[a] === b[c] && b[a] === b[d]) return { player: b[a], line };
+    }
+    return null;
+  }
+  const isFull = (b) => b.every((v) => v !== -1);
+  const openCells = (b) => { const o = []; for (let i = 0; i < 9; i++) if (b[i] === -1) o.push(i); return o; };
+
+  // ---- rendering ----
+  const SVGNS = "http://www.w3.org/2000/svg";
+  function markSVG(player) {
+    const g = document.createElementNS(SVGNS, "svg");
+    g.setAttribute("viewBox", "0 0 100 100");
+    g.setAttribute("class", "mark " + (player === X ? "x" : "o"));
+    if (player === X) {
+      const len = 99;   // ~ diagonal length used for the draw animation
+      [["20","20","80","80"], ["80","20","20","80"]].forEach(([x1,y1,x2,y2]) => {
+        const p = document.createElementNS(SVGNS, "path");
+        p.setAttribute("d", `M${x1} ${y1} L${x2} ${y2}`);
+        p.style.setProperty("--len", len);
+        g.appendChild(p);
+      });
+    } else {
+      const c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("cx", "50"); c.setAttribute("cy", "50"); c.setAttribute("r", "33");
+      c.style.setProperty("--len", 2 * Math.PI * 33);
+      g.appendChild(c);
+    }
+    return g;
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = "";
+    cells = [];
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.i = i;
+      cell.addEventListener("click", () => onCellClick(i));
+      boardEl.appendChild(cell);
+      cells.push(cell);
+    }
+  }
+
+  function paint() {
+    for (let i = 0; i < 9; i++) {
+      const cell = cells[i];
+      const v = board[i];
+      const hasMark = cell.querySelector(".mark");
+      cell.classList.remove("playable", "win", "x", "o");
+      if (v === -1) {
+        if (hasMark) cell.innerHTML = "";
+        if (!gameOver && !isAITurn()) cell.classList.add("playable");
+      } else if (!hasMark) {
+        cell.appendChild(markSVG(v));
+      }
+    }
+    if (winLine) {
+      const w = board[winLine[0]];
+      winLine.forEach((i) => cells[i].classList.add("win", w === X ? "x" : "o"));
+    }
+  }
+
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML =
+      card(X, nm[X]) +
+      '<div class="score-card draws"><div class="name">Draws</div><div class="score" id="scoreDraw">' + tally[2] + '</div></div>' +
+      card(O, nm[O]);
+    function card(p, name) {
+      return '<div class="score-card" id="card' + p + '">' +
+        '<div class="name"><span class="mk" style="color:var(' + markVar(p) + ')">' + markChar(p) + '</span>' +
+        '<span id="label' + p + '">' + name + '</span></div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + markVar(p) + ')">' + tally[p] + '</div></div>';
+    }
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    document.getElementById("scoreDraw").textContent = tally[2];
+    [X, O].forEach((p) => {
+      document.getElementById("label" + p).textContent = nm[p];
+      document.getElementById("score" + p).textContent = tally[p];
+      const card = document.getElementById("card" + p);
+      const active = !gameOver && current === p;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + markVar(p) + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "0 0 16px var(" + (p === X ? "--x-soft" : "--o-soft") + "), 0 0 6px var(" + markVar(p) + ")"
+        : "inset 0 -3px 0 var(" + markVar(p) + ")";
+    });
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    statusEl.innerHTML = msg || `<b style="color:var(${markVar(current)})">${nm[current]}</b>'s turn (${markChar(current)})`;
+  }
+
+  // ---- turn flow ----
+  function onCellClick(i) {
+    if (gameOver || isAITurn()) return;   // isAITurn() also covers the AI's thinking window
+    if (board[i] !== -1) return;
+    placeMove(i, false);
+  }
+
+  function placeMove(i, byAI) {
+    if (board[i] !== -1 || gameOver) return false;
+    board[i] = current;
+    paint();
+    const w = winnerOf(board);
+    if (w) { winLine = w.line; return endGame(w.player); }
+    if (isFull(board)) return endGame(-1);
+    current = 1 - current;
+    paint(); updateScoreboard(); updateStatus();
+    maybeAIMove();
+    return true;
+  }
+
+  function endGame(winnerPlayer) {
+    gameOver = true;
+    const nm = names();
+    if (winnerPlayer === -1) {
+      tally[2]++;
+      winnerEl.innerHTML = "&#9878; Cat's game &mdash; a draw";
+      winnerEl.style.color = "var(--accent)";
+      statusEl.innerHTML = "No three in a row. Press <b>New Game</b>.";
+    } else {
+      tally[winnerPlayer]++;
+      winnerEl.innerHTML = "&#9733; " + nm[winnerPlayer] + " wins! &#9733;";
+      winnerEl.style.color = "var(" + markVar(winnerPlayer) + ")";
+      statusEl.innerHTML = "Three in a row! Press <b>New Game</b> to rematch.";
+    }
+    paint(); updateScoreboard();
+    return true;
+  }
+
+  function startGame() {
+    board = new Array(9).fill(-1);
+    current = X; gameOver = false; winLine = null;
+    winnerEl.textContent = "";
+    buildScoreboard();
+    buildBoard();
+    paint(); updateScoreboard(); updateStatus();
+    if (typeof tttOnNewGame === "function") tttOnNewGame();
+  }
+
+  document.getElementById("newGame").addEventListener("click", startGame);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) { buildScoreboard(); updateScoreboard(); updateStatus(); rebuildSeats(); } }));
+
+  /* ============================================================
+   *  AI opponent — Bring Your Own Model (local only)
+   *  Shared controller in lib/board-ai.js owns the panel, model list and
+   *  observe→ask→move loop. We supply only the Tic-Tac-Toe rules hooks:
+   *  the engine lists the open squares (tagged: does it WIN now? does it
+   *  BLOCK the opponent's win?) and the model picks one by number. A bad
+   *  reply falls back to the top-ranked move, so it never plays illegally.
+   * ============================================================ */
+
+  // would placing `p` at cell `i` complete a line on board `b`?
+  function wins(b, i, p) { const t = b.slice(); t[i] = p; return !!winnerOf(t); }
+
+  // tag every open square and rank it (win > block > center > corner > edge)
+  function rankedMoves() {
+    const me = aiCtl.seat, opp = 1 - aiCtl.seat;
+    const CORNERS = [0,2,6,8], CENTER = 4;
+    return openCells(board).map((i) => {
+      const win = wins(board, i, me);
+      const block = !win && wins(board, i, opp);
+      let score = 0;
+      if (win) score = 100; else if (block) score = 90;
+      else if (i === CENTER) score = 50; else if (CORNERS.indexOf(i) >= 0) score = 30; else score = 10;
+      return { i, win, block, center: i === CENTER, corner: CORNERS.indexOf(i) >= 0, score };
+    }).sort((a, b) => b.score - a.score);
+  }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const lines = ranked.map((m, idx) => {
+      const tags = [];
+      if (m.win) tags.push("WINS the game — take it!");
+      else if (m.block) tags.push("BLOCKS opponent's three-in-a-row");
+      else if (m.center) tags.push("center");
+      else if (m.corner) tags.push("corner");
+      else tags.push("edge");
+      return `${idx + 1}. ${CELL_NAME[m.i]} [${tags.join(", ")}]`;
+    }).join("\n");
+    const gridStr = [0,3,6].map((r) =>
+      [0,1,2].map((c) => { const v = board[r + c]; return v === -1 ? "·" : markChar(v); }).join(" ")
+    ).join("\n");
+    const system =
+`You are a flawless Tic-Tac-Toe player ("${me}", playing ${markChar(seat)}). You never lose.
+Rules of thumb, in priority order: (1) if a move WINS, play it; (2) else if the opponent threatens three-in-a-row, BLOCK it; (3) else take the center; (4) else take a corner; (5) else an edge.
+You get a numbered list of every open square, each tagged. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`You are ${me} (${markChar(seat)}); opponent is ${opp} (${markChar(1 - seat)}).
+Current board (· = empty), rows top to bottom:
+${gridStr}
+
+Open squares:
+${lines}
+
+Pick the best square and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked };
+  }
+
+  function parseMove(reply, ranked) {
+    const idx = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = idx >= 0 ? reply.slice(idx + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    // model named a square instead? match on the cell name
+    const low = seg.toLowerCase();
+    for (const m of ranked) if (low.indexOf(CELL_NAME[m.i]) >= 0) return m;
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("tttAi"),
+    oppSeg: document.getElementById("tttOppSeg"),
+    defaultSeat: O,            // AI plays O by default (human is X, goes first)
+    temperature: 0.3,
+    maxTokens: 500,
+    thinkPlaceholder: "The AI's reasoning streams here as it picks a square…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      'It only ever picks from the list of <em>open</em> squares (each tagged if it wins or blocks), ' +
+      'so it always plays by the rules.',
+    seats: () => { const nm = names(); return [X, O].map((p) => ({ value: p, label: nm[p] + " (" + markChar(p) + (p === X ? ", first" : "") + ")" })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    moveStale: (m) => board[m.i] !== -1,
+    applyMove: (m) => placeMove(m.i, true),
+    moveLabel: (m) => CELL_NAME[m.i],
+    describeMove: (m) => "played " + CELL_NAME[m.i] + (m.win ? " — for the win!" : m.block ? " (block)" : ""),
+    repaint: () => paint(),
+  });
+
+  // thin shims so the core game code keeps its old call sites
+  function isAITurn() { return aiCtl.isAITurn(); }
+  function maybeAIMove() { aiCtl.notify(); }
+  function tttOnNewGame() { aiCtl.newGame(); }
+  function rebuildSeats() { aiCtl.rebuildSeats(); }
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

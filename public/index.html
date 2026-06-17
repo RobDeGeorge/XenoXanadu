@@ -4,98 +4,227 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>XenoXanadu — Classic Games, Handmade</title>
-  <meta name="description" content="A growing arcade of classic games rebuilt from scratch — chess, connect four, dots & boxes, pinball, a falling-sand garden, and more. Some play against a local LLM." />
-  <meta name="theme-color" content="#0b140d" />
+  <meta name="description" content="A handmade arcade of classic games — chess, connect four, dots & boxes, Texas Hold'em, hangman, a falling-sand garden, and more. Some play against a local LLM." />
+  <meta name="theme-color" content="#07090c" />
   <meta property="og:title" content="XenoXanadu — Classic Games, Handmade" />
-  <meta property="og:description" content="A growing arcade of classic games rebuilt from scratch. Play in your browser." />
+  <meta property="og:description" content="A handmade arcade of classic games. Play in your browser." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
   <!-- Mark hosted (non-local) before paint, so BYO-model bits never flash on the public site -->
   <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
   <style>
+    :root {
+      --bg: #07090c;
+      --panel: #0e1411;
+      --grid: #233027;
+      --text: #e8e6d9;
+      --muted: #8a9883;
+      --accent: #9be36b;
+      --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    }
     html.hosted .ai-only { display: none !important; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      min-height: 100vh; background: radial-gradient(circle at 50% 0%, #16241a, #07090c);
-      color: #e8e6d9; font-family: "Trebuchet MS", system-ui, sans-serif;
-      display: flex; flex-direction: column; align-items: center; padding: 48px 20px;
+      min-height: 100vh; background: var(--bg);
+      color: var(--text); font-family: var(--mono);
+      display: flex; flex-direction: column; align-items: center; padding: 56px 20px 40px;
     }
-    h1 { font-size: 44px; color: #9be36b; text-shadow: 0 2px 16px rgba(120,220,90,0.4); margin-bottom: 6px; letter-spacing: 0.5px; }
-    p.sub { color: #a9c98b; font-style: italic; margin-bottom: 36px; text-align: center; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; width: 100%; max-width: 760px; }
+    /* faint CRT scanlines, matching the games */
+    body::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
+      mix-blend-mode: multiply;
+    }
+
+    header { text-align: center; margin-bottom: 40px; }
+    h1 {
+      font-size: clamp(34px, 7vw, 52px); font-weight: 800; letter-spacing: 5px; text-transform: uppercase;
+      color: var(--accent);
+      text-shadow:
+        0 0 6px rgba(155,227,107,0.6),
+        3px 3px 0 #ff2e88,
+        6px 6px 0 #2bf0e0;
+    }
+    p.sub {
+      margin-top: 12px; color: var(--muted); font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; width: 100%; max-width: 760px; }
+
     a.card {
-      display: block; text-decoration: none; color: inherit;
-      background: rgba(255,255,255,0.04); border: 1px solid #2a3a2a; border-radius: 12px;
-      padding: 22px; transition: transform 0.08s, border-color 0.15s, background 0.15s;
+      position: relative; display: flex; flex-direction: column;
+      text-decoration: none; color: inherit;
+      background: var(--panel); border: 1px solid var(--grid);
+      padding: 12px 16px 14px; transition: border-color .12s, background .12s, transform .08s;
     }
-    a.card:hover { transform: translateY(-3px); border-color: #9be36b; background: rgba(155,227,107,0.08); }
-    .card .emoji { font-size: 40px; }
-    .card h2 { font-size: 22px; margin: 10px 0 4px; }
-    .card p { font-size: 13px; color: #b8c4ad; line-height: 1.4; }
-    .card .tag { display: inline-block; margin: 8px 0 0; font-size: 11px; color: #0b140d; background: #9be36b; border-radius: 999px; padding: 2px 9px; font-weight: bold; }
-    .card .play { margin-top: 12px; display: inline-block; font-weight: bold; color: #9be36b; }
-    footer { margin-top: 40px; font-size: 12px; color: #5a6a55; text-align: center; line-height: 1.6; }
+    /* signature-hue top rule — reads each game's colour at a glance */
+    a.card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--c);
+    }
+    a.card:hover { transform: translateY(-2px); border-color: var(--c); background: #121a15; }
+    a.card:hover::before { box-shadow: 0 0 12px var(--c); }
+
+    .card .cover {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      border: 1px solid var(--grid);
+      margin: -6px 0 8px;
+      background: #000;
+    }
+    a.card:hover .cover {
+      border-color: var(--c);
+      box-shadow: 0 0 0 1px var(--c);
+    }
+
+    .card .emoji { font-size: 18px; line-height: 1; margin-right: 6px; }
+    .card h2 {
+      font-size: 16px; margin: 0 0 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--c);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .card p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .card .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .card .play { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--c); }
+    .card .tag {
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--c);
+      border: 1px solid var(--c); padding: 2px 6px; opacity: .8;
+    }
+
+    footer { margin-top: 44px; font-size: 11px; color: #54614f; text-align: center; line-height: 1.8; letter-spacing: 1px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>🕹️ XenoXanadu</h1>
-  <p class="sub">Classic games, rebuilt by hand — playable right in your browser.</p>
+  <header>
+    <h1>XenoXanadu</h1>
+    <p class="sub">Classic games · rebuilt by hand</p>
+  </header>
+
   <div class="grid">
 
-    <a class="card" href="game/verdelve/index.html">
-      <div class="emoji">🌿</div>
-      <h2>Verdelve</h2>
-      <p>A cozy overworld and a dangerous deep. Mine, build, farm, and delve into dungeons for rare loot. Desktop &amp; mobile.</p>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/chess/index.html" style="--c:#7dd957">
+      <img class="cover" src="images/covers/chess.jpg" alt="Chess">
+      <h2><span class="emoji">♟️</span> Chess</h2>
+      <p>Full rules — check, mate, castling.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
-    <a class="card" href="game/pinball/index.html">
-      <div class="emoji">◓</div>
-      <h2>Neon Tilt</h2>
-      <p>A tiny neon pinball arcade. Launch the ball, work the flippers, light up the bumpers, and chase a high score. Desktop &amp; mobile.</p>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/checkers/index.html" style="--c:#ff3b5c">
+      <img class="cover" src="images/covers/checkers.jpg" alt="Checkers">
+      <h2><span class="emoji">🔴</span> Checkers</h2>
+      <p>Jump, chain, and crown your kings.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
-    <a class="card" href="game/chess/index.html">
-      <div class="emoji">♟️</div>
-      <h2>Chess</h2>
-      <p>The full game of kings — legal moves, check, checkmate, and castling. Play a friend, or take on a local model.</p>
-      <span class="tag ai-only">🤖 Local LLM</span>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/connect-four/index.html" style="--c:#3aa0ff">
+      <img class="cover" src="images/covers/connect-four.jpg" alt="Connect Four">
+      <h2><span class="emoji">🔴</span> Connect Four</h2>
+      <p>Drop discs, line up four.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
-    <a class="card" href="game/connect-four/index.html">
-      <div class="emoji">🔴</div>
-      <h2>Connect Four</h2>
-      <p>Drop your discs and line up four in a row. Play a friend, or take on a local Ollama model.</p>
-      <span class="tag ai-only">🤖 Local LLM</span>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/dots-and-boxes/index.html" style="--c:#ffd23f">
+      <img class="cover" src="images/covers/dots-and-boxes.jpg" alt="Dots and Boxes">
+      <h2><span class="emoji">⊞</span> Dots &amp; Boxes</h2>
+      <p>Close the fourth side, claim the box.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
-    <a class="card" href="game/dots-and-boxes/index.html">
-      <div class="emoji">⊞</div>
-      <h2>Dots &amp; Boxes</h2>
-      <p>The pencil-and-paper classic, in retro neon. Claim the most boxes by closing their fourth side. Play friends, or a local model.</p>
-      <span class="tag ai-only">🤖 Local LLM</span>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/tic-tac-toe/index.html" style="--c:#ff4fa3">
+      <img class="cover" src="images/covers/tic-tac-toe.jpg" alt="Tic-Tac-Toe">
+      <h2><span class="emoji">⨉</span> Tic-Tac-Toe</h2>
+      <p>Three in a row. Neon, and scored.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
-    <a class="card" href="game/sand-falling/index.html">
-      <div class="emoji">⏳</div>
-      <h2>Sand Garden</h2>
-      <p>A falling-sand playground — pour sand, water, fire, and more, and watch the elements react. Optional local-LLM gardener.</p>
-      <span class="tag ai-only">🤖 Local LLM</span>
-      <span class="play">Play ▸</span>
+    <a class="card" href="game/othello/index.html" style="--c:#34e0d0">
+      <img class="cover" src="images/covers/othello.jpg" alt="Othello">
+      <h2><span class="emoji">⚫</span> Othello</h2>
+      <p>Flank to flip. Hold the corners.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/texas-holdem/index.html" style="--c:#ff5630">
+      <img class="cover" src="images/covers/texas-holdem.jpg" alt="Texas Hold'em">
+      <h2><span class="emoji">🃏</span> Texas Hold'em</h2>
+      <p>No-limit tournament, rising blinds.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/battleship/index.html" style="--c:#a974ff">
+      <img class="cover" src="images/covers/battleship.jpg" alt="Battleship">
+      <h2><span class="emoji">🚢</span> Battleship</h2>
+      <p>Place your fleet. Hunt and sink.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/hangman/index.html" style="--c:#ff8c42">
+      <img class="cover" src="images/covers/hangman.jpg" alt="Hangman">
+      <h2><span class="emoji">🪢</span> Hangman</h2>
+      <p>Guess the word before he swings.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/sand-falling/index.html" style="--c:#ffd97a">
+      <img class="cover" src="images/covers/sand-falling.jpg" alt="Sand Garden">
+      <h2><span class="emoji">⏳</span> Sand Garden</h2>
+      <p>Pour sand, water, fire. Watch it react.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/2048/index.html" style="--c:#6e7bff">
+      <img class="cover" src="images/covers/2048.jpg" alt="2048">
+      <h2><span class="emoji">🔢</span> 2048</h2>
+      <p>Merge the tiles up to 2048.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/snake/index.html" style="--c:#19e57a">
+      <img class="cover" src="images/covers/snake.jpg" alt="Snake">
+      <h2><span class="emoji">🐍</span> Snake</h2>
+      <p>Eat, grow, don't bite yourself.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/tetris/index.html" style="--c:#2de2ff">
+      <img class="cover" src="images/covers/tetris.jpg" alt="Tetris">
+      <h2><span class="emoji">🧱</span> Tetris</h2>
+      <p>Stack the falling blocks, clear lines.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/minesweeper/index.html" style="--c:#ff3860">
+      <img class="cover" src="images/covers/minesweeper.jpg" alt="Minesweeper">
+      <h2><span class="emoji">💣</span> Minesweeper</h2>
+      <p>Clear the field, flag the mines.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/rock-paper-scissors/index.html" style="--c:#e94bff">
+      <img class="cover" src="images/covers/rock-paper-scissors.jpg" alt="Rock Paper Scissors">
+      <h2><span class="emoji">✊</span> Rock Paper Scissors</h2>
+      <p>It learns your tells. Out-guess it.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
+    </a>
+
+    <a class="card" href="game/backgammon/index.html" style="--c:#ffb454">
+      <img class="cover" src="images/covers/backgammon.jpg" alt="Backgammon">
+      <h2><span class="emoji">🎲</span> Backgammon</h2>
+      <p>Race them home, hit the blots, bear off.</p>
+      <div class="foot"><span class="play">Play ▸</span><span class="tag ai-only">🤖 LLM</span></div>
     </a>
 
     <!-- Add future games here as new folders in game/ + a card -->
   </div>
+
   <footer>
-    More games coming soon…
+    More games coming soon
     <span class="ai-only"><br />
-    🤖 marks games you can play against your own local model —
-    <a href="ai-setup.html" style="color:#9be36b;font-weight:bold">connect a model ▸</a><br />
-    bring your own <a href="https://ollama.com" style="color:#7ab85a">Ollama</a> or any OpenAI-compatible server; nothing leaves your machine.</span>
+    🤖 = play against your own local model · <a href="ai-setup.html">connect a model ▸</a><br />
+    bring your own Ollama or OpenAI-compatible server — nothing leaves your machine.</span>
   </footer>
 </body>
 </html>
