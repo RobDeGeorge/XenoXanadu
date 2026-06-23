@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MANCALA // RETRO</title>
+<meta name="description" content="Mancala (Kalah) rebuilt by hand in neon — sow stones counterclockwise, chain extra turns and snap up captures. Play a friend, the built-in 'elder' AI, or a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --board: #131417;
+    --board-2: #0c0d0f;
+    --pit: #0c0d0f;
+    --pit-rim: #24262b;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --p1: #c7a24a;            /* muted amber — player 1 (South / bottom) */
+    --p1-soft: #c7a24a26;
+    --p2: #5fb6b0;            /* muted teal — player 2 (North / top) */
+    --p2-soft: #5fb6b026;
+    --stone: #8a8d93;         /* stone fill */
+    --accent: #c06a9b;        /* muted pink */
+    --hint: #9ec27a;          /* legal-pit highlight */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 860px;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
+    --ai-on: var(--p2);
+    --ai-err: var(--accent);
+  }
+
+  html, body {
+    background: var(--bg);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 6px;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .subtitle {
+    text-align: center; color: var(--muted);
+    margin: 10px 0 26px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 50%; flex: none; }
+  .name-field input { width: 118px; }
+
+  .scoreboard { gap: 14px; }
+  .score-card { flex: 1 1 150px; max-width: 230px; padding: 12px 16px; }
+  .score-card .name { font-size: 14px; }
+  .score-card .pip { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .score-card .score { font-size: 42px; line-height: 1.15; }
+
+  /* ---------- the board ---------- */
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    position: relative; background: var(--board);
+    border: 1px solid var(--grid); border-radius: 0;
+    padding: 18px;
+    width: min(94vw, 760px);
+  }
+  /* board grid: [store] [3x2 pit columns] [store] */
+  .board {
+    display: grid;
+    grid-template-columns: 1.15fr repeat(6, 1fr) 1.15fr;
+    grid-template-rows: auto auto;
+    gap: 10px;
+    align-items: stretch;
+  }
+  /* the two big stores span both rows on each end */
+  .store {
+    grid-row: 1 / span 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    background: var(--pit);
+    border: 2px solid var(--pit-rim);
+    border-radius: 0;
+    padding: 12px 6px;
+    min-height: 200px;
+    position: relative;
+    transition: border-color .2s ease;
+  }
+  .store.left  { grid-column: 1; }
+  .store.right { grid-column: 8; }
+  .store .store-count { font-size: 30px; font-weight: 800; }
+  .store .store-stones { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: center; max-width: 60px; }
+
+  .pit {
+    position: relative;
+    background: var(--pit);
+    border: 2px solid var(--pit-rim);
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px;
+    cursor: default;
+    transition: border-color .12s ease, box-shadow .12s ease, transform .1s ease, background .12s ease;
+  }
+  .pit .pit-count { font-size: clamp(14px, 3.4vw, 22px); font-weight: 800; line-height: 1; }
+  .pit .pit-stones {
+    display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; align-content: center;
+    max-width: 78%; max-height: 46%; overflow: hidden;
+  }
+  .stone {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--stone);
+  }
+  .pit.p1 { border-color: var(--p1); }
+  .pit.p2 { border-color: var(--p2); }
+  .pit.p1 .pit-count { color: var(--p1); }
+  .pit.p2 .pit-count { color: var(--p2); }
+  .store.p1 { border-color: var(--p1); }
+  .store.p2 { border-color: var(--p2); }
+  .store.p1 .store-count { color: var(--p1); }
+  .store.p2 .store-count { color: var(--p2); }
+
+  .pit.playable { cursor: pointer; }
+  .pit.playable:hover { transform: translateY(-3px); background: var(--panel-2); }
+  .pit.playable.p1 { box-shadow: inset 0 0 0 2px var(--p1); }
+  .pit.playable.p2 { box-shadow: inset 0 0 0 2px var(--p2); }
+  .pit.hintable::after {
+    content: ""; position: absolute; inset: -2px; border-radius: 50%;
+    border: 2px solid var(--hint); opacity: .5; pointer-events: none;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:.25; } 50% { opacity:.6; } }
+  .pit.lastsow { animation: sow .5s ease; }
+  @keyframes sow { 0% { box-shadow: inset 0 0 0 2px var(--accent); } 30% { box-shadow: inset 0 0 0 3px var(--accent); } 100% { box-shadow: none; } }
+  .pit.captured { animation: cap .6s ease; }
+  @keyframes cap { 0% { transform: scale(1); } 40% { transform: scale(1.12); box-shadow: inset 0 0 0 2px var(--hint); } 100% { transform: scale(1); } }
+
+  /* row placement: top row = player 2 pits (right→left visually), bottom = player 1 */
+  .pit.top { grid-row: 1; }
+  .pit.bot { grid-row: 2; }
+
+  /* little turn arrows between rows */
+  .flow-note { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin: 12px 0 0; text-transform: uppercase; }
+
+  .rules { max-width: 600px; margin: 26px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+  .rules b { color: var(--text); }
+
+  @media (max-width: 560px) {
+    .name-field input { width: 100px; }
+    .board-frame { padding: 12px; }
+    .board { gap: 6px; }
+    .store { min-height: 150px; }
+    .stone { width: 6px; height: 6px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MANCALA</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Sow &amp; Capture &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="mcOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Elder AI</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn" data-depth="1">Easy</button>
+          <button type="button" class="seg-btn active" data-depth="5">Medium</button>
+          <button type="button" class="seg-btn" data-depth="9">Hard</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Move Hints</label>
+        <div class="seg" id="hintSeg">
+          <button type="button" class="seg-btn active" data-hints="1">On</button>
+          <button type="button" class="seg-btn" data-hints="0">Off</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="background:var(--p1)"></span><input id="name0" value="South" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="background:var(--p2)"></span><input id="name1" value="North" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="mcAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+    <p class="flow-note">Sowing runs counter-clockwise &rarr; toward your own store. Bottom row is South&rsquo;s, top row is North&rsquo;s.</p>
+
+    <div class="winner-banner" id="winner"></div>
+
+    <p class="rules">
+      Pick a non-empty pit on <b>your</b> side and sow its stones one-by-one counter-clockwise into the
+      following pits and <b>your own</b> store, skipping your opponent&rsquo;s store. Land the last stone in
+      <b>your store</b> and you go <b>again</b>. Land it in an <b>empty pit on your side</b> and you
+      <b>capture</b> it plus every stone in the pit directly opposite. When one side empties, the other player
+      banks the rest &mdash; most stones in store wins.
+    </p>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+   *  Mancala (Kalah) — board layout
+   *
+   *  14 cells, sown counter-clockwise by increasing index:
+   *      indices  0  1  2  3  4  5  = South's six pits
+   *      index    6                 = South's store (mancala)
+   *      indices  7  8  9 10 11 12  = North's pits
+   *      index    13                = North's store (mancala)
+   *
+   *  Player 0 = South (bottom row), store 6.   Player 1 = North (top row), store 13.
+   *  A player skips the OTHER player's store while sowing. Opposite-pit pairs
+   *  (for captures) are i and 12 - i.
+   * ============================================================ */
+  const SOUTH = 0, NORTH = 1;
+  const STORE = [6, 13];                       // each player's store index
+  const PITS  = [[0,1,2,3,4,5], [7,8,9,10,11,12]];
+  const OPP_STORE = [13, 6];                   // store to SKIP while sowing
+  const opposite = (i) => 12 - i;              // pit directly across the board
+
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+
+  // ---- game state ----
+  let cells;            // Int array length 14 — stone counts
+  let current;          // whose turn (0 South, 1 North)
+  let pitEls, storeEls; // DOM handles
+  let gameOver;
+  let lastSown, lastCaptured; // for animation cues
+  let showHints = true;
+  let aiDepth = 5;      // built-in "elder" search depth
+
+  const playerVar = (p) => (p === SOUTH ? "--p1" : "--p2");
+
+  function names() {
+    return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === 0 ? "South" : "North"));
+  }
+
+  // ---- core rules (pure helpers operate on an arbitrary cells array) ----
+
+  // Pits with stones on `player`'s side — the legal moves.
+  function legalPits(player, b) {
+    b = b || cells;
+    return PITS[player].filter((i) => b[i] > 0);
+  }
+
+  // Is one side completely empty? (game-ending condition)
+  function sideEmpty(player, b) {
+    b = b || cells;
+    return PITS[player].every((i) => b[i] === 0);
+  }
+
+  /* Apply a sow from pit `pit` for `player` to a COPY of board `b`.
+   * Returns { board, extraTurn, captured, landed } — captured = number of stones
+   * scooped, landed = final index. Pure: never touches the live state. */
+  function sow(b, player, pit) {
+    const n = b.slice();
+    let stones = n[pit];
+    n[pit] = 0;
+    let i = pit;
+    while (stones > 0) {
+      i = (i + 1) % 14;
+      if (i === OPP_STORE[player]) continue;   // skip the opponent's store
+      n[i]++;
+      stones--;
+    }
+    let captured = 0;
+    let extraTurn = false;
+    if (i === STORE[player]) {
+      extraTurn = true;                         // last stone in own store → go again
+    } else if (PITS[player].indexOf(i) >= 0 && n[i] === 1) {
+      // landed in a previously-empty pit on own side → capture it + the opposite pit
+      const opp = opposite(i);
+      if (n[opp] > 0) {
+        captured = n[opp] + 1;
+        n[STORE[player]] += captured;
+        n[opp] = 0;
+        n[i] = 0;
+      }
+    }
+    return { board: n, extraTurn, captured, landed: i };
+  }
+
+  // Sweep the remaining stones into each player's own store (end of game).
+  function gatherRemaining(b) {
+    const n = b.slice();
+    [SOUTH, NORTH].forEach((p) => {
+      PITS[p].forEach((i) => { n[STORE[p]] += n[i]; n[i] = 0; });
+    });
+    return n;
+  }
+
+  // ---- rendering ----
+  // Layout in the CSS grid: store-left, then 6 top-row pits, store-right, then 6 bottom-row pits.
+  // Top row shows North's pits 12→7 (left to right) so sowing reads right-to-left up top and
+  // left-to-right along the bottom — the natural counter-clockwise loop.
+  const TOP_ORDER = [12, 11, 10, 9, 8, 7];   // North pits, visual left→right
+  const BOT_ORDER = [0, 1, 2, 3, 4, 5];      // South pits, visual left→right
+
+  function buildBoard() {
+    boardEl.innerHTML = "";
+    pitEls = {};
+    storeEls = {};
+
+    // North's store on the LEFT (sowing for North wraps up and into it)
+    storeEls[STORE[NORTH]] = makeStore(NORTH, "left");
+    boardEl.appendChild(storeEls[STORE[NORTH]]);
+
+    // top row — North pits
+    TOP_ORDER.forEach((idx) => { const e = makePit(idx, NORTH, "top"); pitEls[idx] = e; boardEl.appendChild(e); });
+
+    // South's store on the RIGHT
+    storeEls[STORE[SOUTH]] = makeStore(SOUTH, "right");
+    boardEl.appendChild(storeEls[STORE[SOUTH]]);
+
+    // bottom row — South pits
+    BOT_ORDER.forEach((idx) => { const e = makePit(idx, SOUTH, "bot"); pitEls[idx] = e; boardEl.appendChild(e); });
+  }
+
+  function makePit(idx, player, rowCls) {
+    const e = document.createElement("div");
+    e.className = "pit " + (player === SOUTH ? "p1 " : "p2 ") + rowCls;
+    e.dataset.idx = idx;
+    e.innerHTML = '<div class="pit-stones"></div><div class="pit-count">0</div>';
+    e.addEventListener("click", () => onPitClick(idx));
+    return e;
+  }
+
+  function makeStore(player, side) {
+    const e = document.createElement("div");
+    e.className = "store " + side + " " + (player === SOUTH ? "p1" : "p2");
+    e.innerHTML = '<div class="store-count">0</div><div class="store-stones"></div>';
+    return e;
+  }
+
+  function pip(n, max) {
+    // render up to `max` little stones, clamp for huge piles
+    let s = "";
+    const show = Math.min(n, max);
+    for (let k = 0; k < show; k++) s += '<span class="stone"></span>';
+    return s;
+  }
+
+  function render() {
+    // pits
+    PITS[SOUTH].concat(PITS[NORTH]).forEach((idx) => {
+      const e = pitEls[idx];
+      e.querySelector(".pit-count").textContent = cells[idx];
+      e.querySelector(".pit-stones").innerHTML = pip(cells[idx], 12);
+      e.classList.remove("playable", "hintable", "lastsow", "captured");
+    });
+    // stores
+    [SOUTH, NORTH].forEach((p) => {
+      const e = storeEls[STORE[p]];
+      e.querySelector(".store-count").textContent = cells[STORE[p]];
+      e.querySelector(".store-stones").innerHTML = pip(cells[STORE[p]], 24);
+      e.classList.toggle("active", !gameOver && false);
+    });
+
+    // legal-move affordances for the human to move (not while AI is on the clock)
+    if (!gameOver && !isAITurn()) {
+      legalPits(current).forEach((idx) => {
+        pitEls[idx].classList.add("playable");
+        if (showHints) pitEls[idx].classList.add("hintable");
+      });
+    }
+
+    // animation cues
+    if (lastSown != null && pitEls[lastSown]) pitEls[lastSown].classList.add("lastsow");
+    if (lastCaptured != null && pitEls[lastCaptured]) pitEls[lastCaptured].classList.add("captured");
+
+    updateScoreboard();
+  }
+
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML = "";
+    [SOUTH, NORTH].forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + p;
+      card.innerHTML =
+        '<div class="name"><span class="pip" style="background:var(' + playerVar(p) + ')"></span>' +
+        '<span id="label' + p + '"></span></div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + playerVar(p) + ')">0</div>';
+      sb.appendChild(card);
+      document.getElementById("label" + p).textContent = nm[p];
+    });
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    [SOUTH, NORTH].forEach((p) => {
+      document.getElementById("label" + p).textContent = nm[p];
+      document.getElementById("score" + p).textContent = cells[STORE[p]];
+      const card = document.getElementById("card" + p);
+      const active = !gameOver && current === p;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + playerVar(p) + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "0 0 16px var(" + playerVar(p) + "26), 0 0 6px var(" + playerVar(p) + ")"
+        : "inset 0 -3px 0 var(" + playerVar(p) + ")";
+    });
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    statusEl.innerHTML = msg || `<b style="color:var(${playerVar(current)})">${nm[current]}</b>'s move`;
+  }
+
+  // ---- turn flow ----
+  function onPitClick(idx) {
+    if (gameOver || isAITurn()) return;
+    if (PITS[current].indexOf(idx) < 0 || cells[idx] === 0) return;   // not a legal pit
+    playPit(idx, false);
+  }
+
+  // Commit a real move to the live board, animate, then advance / chain extra turns.
+  function playPit(idx, byAI) {
+    if (gameOver) return false;
+    if (PITS[current].indexOf(idx) < 0 || cells[idx] === 0) return false;
+
+    const res = sow(cells, current, idx);
+    cells = res.board;
+    lastSown = res.landed >= 0 && res.landed !== STORE[0] && res.landed !== STORE[1] ? res.landed : null;
+    lastCaptured = res.captured > 0 ? opposite(res.landed) : null;
+
+    // game can end immediately if a side just emptied
+    if (sideEmpty(SOUTH) || sideEmpty(NORTH)) {
+      render();
+      endGame();
+      return true;
+    }
+
+    if (res.extraTurn) {
+      render();
+      updateStatus(`<b style="color:var(${playerVar(current)})">${names()[current]}</b> &mdash; landed in store, go again &#9733;`);
+      maybeAIMove();
+      return true;
+    }
+
+    current = 1 - current;
+    render();
+    let note = "";
+    if (res.captured > 0) note = ` &mdash; captured ${res.captured} stones!`;
+    updateStatus(note ? `<b style="color:var(${playerVar(1 - current)})">${names()[1 - current]}</b>` + note : null);
+    maybeAIMove();
+    return true;
+  }
+
+  function endGame() {
+    cells = gatherRemaining(cells);
+    gameOver = true;
+    lastSown = null; lastCaptured = null;
+    render();
+    const nm = names();
+    const s = cells[STORE[SOUTH]], n = cells[STORE[NORTH]];
+    let text, color;
+    if (s === n) { text = "&#9878; Tie &mdash; " + s + " each"; color = "var(--accent)"; }
+    else {
+      const w = s > n ? SOUTH : NORTH;
+      text = "&#9733; " + nm[w] + " wins " + Math.max(s, n) + "&ndash;" + Math.min(s, n) + " &#9733;";
+      color = "var(" + playerVar(w) + ")";
+    }
+    winnerEl.innerHTML = text;
+    winnerEl.style.color = color;
+    statusEl.innerHTML = "Game over &mdash; press <b>New Game</b> to play again.";
+  }
+
+  function startGame() {
+    cells = new Array(14).fill(4);
+    cells[STORE[SOUTH]] = 0;
+    cells[STORE[NORTH]] = 0;
+    current = SOUTH; gameOver = false; lastSown = null; lastCaptured = null;
+    winnerEl.textContent = "";
+    buildScoreboard();
+    buildBoard();
+    render();
+    updateStatus();
+    if (typeof mcOnNewGame === "function") mcOnNewGame();
+  }
+
+  // ---- control panel ----
+  function wireSegment(id, attr, onPick) {
+    const container = document.getElementById(id);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn"); if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(btn.getAttribute(attr));
+    });
+  }
+  wireSegment("hintSeg", "data-hints", (v) => { showHints = v === "1"; if (!gameOver) render(); });
+  wireSegment("diffSeg", "data-depth", (v) => { aiDepth = +v; });
+  document.getElementById("newGame").addEventListener("click", startGame);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) updateScoreboard(); }));
+
+  /* ============================================================
+   *  Built-in "elder" AI — minimax with alpha-beta over full turns.
+   *
+   *  Mancala's extra-turn rule means one "ply" can be a CHAIN of moves by the
+   *  same player. The search recurses on whose-turn-it-actually-is after each
+   *  sow, so extra-turn chains are explored naturally (the same player keeps
+   *  moving until they don't land in their store). The leaf heuristic favours
+   *  store lead, hoarding on your side, and threatened captures.
+   *  This is the reference opponent AND the ranker behind the LLM's move list.
+   * ============================================================ */
+
+  function heuristic(b, me) {
+    const opp = 1 - me;
+    // store differential dominates
+    let score = (b[STORE[me]] - b[STORE[opp]]) * 8;
+    // stones still on your side are "in hand" potential
+    let mine = 0, theirs = 0;
+    PITS[me].forEach((i) => mine += b[i]);
+    PITS[opp].forEach((i) => theirs += b[i]);
+    score += (mine - theirs);
+    // reward an empty pit on your side opposite a loaded enemy pit (a capture threat)
+    PITS[me].forEach((i) => {
+      if (b[i] === 0 && b[opposite(i)] > 0) score += b[opposite(i)] * 0.5;
+    });
+    return score;
+  }
+
+  function terminal(b) { return sideEmpty(SOUTH, b) || sideEmpty(NORTH, b); }
+
+  // negamax-ish: always evaluate from `me`'s perspective; `toMove` is the side on the clock.
+  function search(b, toMove, me, depth, alpha, beta) {
+    if (depth <= 0 || terminal(b)) {
+      const fb = terminal(b) ? gatherRemaining(b) : b;
+      return heuristic(fb, me);
+    }
+    const moves = legalPits(toMove, b);
+    if (moves.length === 0) {
+      // forced pass shouldn't happen mid-game (terminal catches empties), but guard it
+      return heuristic(gatherRemaining(b), me);
+    }
+    const maximizing = toMove === me;
+    let best = maximizing ? -Infinity : Infinity;
+    for (const pit of moves) {
+      const res = sow(b, toMove, pit);
+      // extra turn → same player moves again (don't decrement depth as harshly)
+      const nextMover = res.extraTurn ? toMove : 1 - toMove;
+      const cost = res.extraTurn ? 0 : 1;       // chains are "free" plies so we see them whole
+      const val = search(res.board, nextMover, me, depth - cost, alpha, beta);
+      if (maximizing) {
+        if (val > best) best = val;
+        if (best > alpha) alpha = best;
+      } else {
+        if (val < best) best = val;
+        if (best < beta) beta = best;
+      }
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+
+  // Score every legal pit for `player`, best first. Used by the elder AI and as the
+  // ranked list handed to the LLM. Each entry carries human-readable tags.
+  function rankedMoves() {
+    const player = aiCtl.seat;
+    const depth = Math.max(1, aiDepth);
+    return legalPits(player, cells).map((pit) => {
+      const res = sow(cells, player, pit);
+      const val = search(res.board, res.extraTurn ? player : 1 - player, player, depth - (res.extraTurn ? 0 : 1), -Infinity, Infinity);
+      return {
+        pit,
+        score: val,
+        extraTurn: res.extraTurn,
+        captured: res.captured,
+        landed: res.landed,
+      };
+    }).sort((a, b) => b.score - a.score
+      || (b.extraTurn - a.extraTurn)
+      || (b.captured - a.captured));
+  }
+
+  // ---- pit naming for the human-facing move list (model + UI) ----
+  // Label pits by their owner's side and a 1-6 position from that player's far pit
+  // toward their store, so the model can reason positionally.
+  function pitLabel(idx) {
+    const player = idx <= 5 ? SOUTH : NORTH;
+    const pos = PITS[player].indexOf(idx) + 1;   // 1..6, 6 == nearest the store
+    return (player === SOUTH ? "S" : "N") + pos;
+  }
+
+  /* ============================================================
+   *  AI opponent — Bring Your Own Model (local only)
+   *  Shared controller in lib/board-ai.js owns the panel, model list and
+   *  observe→ask→move loop. We supply the Mancala hooks: the engine lists every
+   *  legal pit (tagged with whether it earns an extra turn, makes a capture, and
+   *  its minimax score) and the model picks one by number. A bad reply falls back
+   *  to the highest-ranked legal pit, so it can never play illegally.
+   * ============================================================ */
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const lines = ranked.map((m, i) => {
+      const tags = [];
+      if (m.extraTurn) tags.push("EXTRA TURN — lands in your store, you move again");
+      if (m.captured > 0) tags.push(`CAPTURE — scoops ${m.captured} stones`);
+      tags.push(`${cells[m.pit]} stones`);
+      return `${i + 1}. pit ${pitLabel(m.pit)} (${cells[m.pit]} stones)  [${tags.join(", ")}]`;
+    }).join("\n");
+    const myPits = PITS[seat].map((i) => `${pitLabel(i)}=${cells[i]}`).join(" ");
+    const oppPits = PITS[1 - seat].map((i) => `${pitLabel(i)}=${cells[i]}`).join(" ");
+    const system =
+`You are a strong Mancala (Kalah) player ("${me}"). On your turn you pick one of YOUR non-empty pits and sow its stones one-by-one counter-clockwise into the following pits and your own store, skipping the opponent's store.
+Key rules to exploit: (1) landing your LAST stone in your own STORE earns an EXTRA TURN — chain these; (2) landing your last stone in an EMPTY pit on YOUR side CAPTURES it plus all stones directly opposite, into your store; (3) the game ends when one side empties and the other banks the rest. Most stones in your store wins.
+Strategy, in priority order: take extra-turn moves (especially several in a row), grab big captures, build toward your store, and avoid leaving juicy captures for the opponent.
+You get a numbered list of every legal pit, each tagged with its effect (an engine has already scored them, best first). Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence explaining the sowing chain, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`Store totals — ${nm[SOUTH]}: ${cells[STORE[SOUTH]]}, ${nm[NORTH]}: ${cells[STORE[NORTH]]}. You are ${me}; opponent is ${opp}.
+Pits are named S1..S6 (${nm[SOUTH]}'s, S6 nearest their store) and N1..N6 (${nm[NORTH]}'s, N6 nearest their store).
+Your pits:      ${myPits}
+Opponent pits:  ${oppPits}
+Your legal moves:
+${lines}
+
+Pick the best move and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked };
+  }
+
+  function parseMove(reply, ranked) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    const pm = seg.match(/\b([sn])\s*([1-6])\b/i);    // model gave a pit name directly
+    if (pm) {
+      const want = pm[1].toUpperCase() + pm[2];
+      const hit = ranked.find((m) => pitLabel(m.pit) === want);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("mcAi"),
+    oppSeg: document.getElementById("mcOppSeg"),
+    defaultSeat: NORTH,        // AI plays North by default (human is South, moves first)
+    temperature: 0.4,
+    maxTokens: 600,
+    thinkPlaceholder: "The AI's reasoning streams here as it picks a pit…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      "It only ever picks from the game's list of <em>legal</em> pits (each tagged with whether it earns an " +
+      'extra turn or makes a capture, pre-scored by the elder engine), so it always plays by the rules.',
+    seats: () => { const nm = names(); return [SOUTH, NORTH].map((p) => ({ value: p, label: nm[p] + (p === SOUTH ? " (first)" : "") })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    moveStale: (m) => cells[m.pit] === 0,
+    applyMove: (m) => playPit(m.pit, true),
+    moveLabel: (m) => "pit " + pitLabel(m.pit),
+    describeMove: (m) => "sowed " + pitLabel(m.pit) + (m.extraTurn ? " — extra turn!" : m.captured ? " — captured " + m.captured + "!" : ""),
+    repaint: () => render(),
+  });
+
+  // thin shims so the core game code keeps its old call sites
+  function isAITurn() { return aiCtl.isAITurn(); }
+  function maybeAIMove() { aiCtl.notify(); }
+  function mcOnNewGame() { aiCtl.newGame(); }
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

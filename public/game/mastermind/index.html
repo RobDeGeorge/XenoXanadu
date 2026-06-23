@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mastermind // XenoXanadu</title>
+<meta name="description" content="Neon Mastermind — crack a hidden code of colored pegs with exact/colour feedback, or set a code and watch a built-in Knuth-style minimax solver crack yours while an optional local LLM narrates how each clue prunes the candidate set." />
+<!-- hide BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  :root {
+    --bg: #0c0d0f; --bg-2: #131417; --panel: #131417; --panel-2: #1a1c20;
+    --grid: #24262b; --line: #313338;
+    --text: #e7e6e0; --muted: #8a8d93;
+    --accent: #9b86c4; --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --on-accent: #0c0d0f; --seg-bg: #131417; --seg-active-bg: #1a1c20;
+    --ai-on: #5fb6b0; --ai-err: #cf5a52; --wrap-max: 760px;
+
+    /* code-peg palette (1..8; only the first N used by colour count) */
+    --p1: #cf5a52; --p2: #c7a24a; --p3: #6f9bd1; --p4: #9ec27a;
+    --p5: #9b86c4; --p6: #cf8a52; --p7: #c06a9b; --p8: #8a8d93;
+  }
+  body { background: var(--bg); }
+
+  h1 {
+    text-align: center; font-size: clamp(34px, 8vw, 60px); margin: 6px 0 2px;
+    letter-spacing: 8px; text-transform: uppercase; color: var(--text);
+  }
+  .tagline { text-align: center; color: var(--muted); margin: 0 0 22px; letter-spacing: 1px; font-size: 14px; }
+
+  /* ---------- board ---------- */
+  .board-wrap {
+    background: var(--panel); border: 1px solid var(--grid); border-radius: 0;
+    padding: 14px; margin: 0 auto 18px; max-width: 520px;
+  }
+  .rows { display: flex; flex-direction: column-reverse; gap: 8px; }
+  .row {
+    display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+    padding: 6px 8px; border: 1px solid transparent; border-radius: 0;
+  }
+  .row.active { border-color: var(--accent); background: var(--panel-2); }
+  .row.past { opacity: .92; }
+  .row-no { color: var(--muted); font-size: 12px; text-align: right; }
+
+  .slots { display: flex; gap: 8px; flex-wrap: wrap; }
+  .peg {
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--grid);
+    background: var(--bg-2); cursor: default; position: relative;
+  }
+  .row.active .peg.editable { cursor: pointer; border-color: var(--line); }
+  .row.active .peg.editable:hover { border-color: var(--accent); }
+  .peg[data-c]::after {
+    content: ""; position: absolute; inset: 3px; border-radius: 50%;
+  }
+  .peg.c1 { background: var(--p1); } .peg.c2 { background: var(--p2); }
+  .peg.c3 { background: var(--p3); } .peg.c4 { background: var(--p4); }
+  .peg.c5 { background: var(--p5); } .peg.c6 { background: var(--p6); }
+  .peg.c7 { background: var(--p7); } .peg.c8 { background: var(--p8); }
+  .peg.sel { box-shadow: 0 0 0 3px var(--accent); }
+
+  /* feedback key-pegs */
+  .feedback { display: grid; grid-auto-flow: column dense; grid-template-rows: repeat(2, 1fr); gap: 4px; min-width: 34px; }
+  .key { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--grid); background: var(--bg-2); }
+  .key.black { background: var(--text); border-color: var(--text); }
+  .key.white { background: var(--muted); border-color: var(--muted); }
+
+  /* ---------- colour picker palette ---------- */
+  .palette {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin: 4px auto 16px; max-width: 520px;
+  }
+  .pick {
+    width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--grid); cursor: pointer;
+    transition: transform .08s ease;
+  }
+  .pick:hover { transform: translateY(-2px); }
+  .pick.on { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .pick.erase { background: var(--bg-2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; }
+  .pick.c1 { background: var(--p1); } .pick.c2 { background: var(--p2); }
+  .pick.c3 { background: var(--p3); } .pick.c4 { background: var(--p4); }
+  .pick.c5 { background: var(--p5); } .pick.c6 { background: var(--p6); }
+  .pick.c7 { background: var(--p7); } .pick.c8 { background: var(--p8); }
+
+  .row-controls { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .btn {
+    cursor: pointer; border: 1px solid var(--grid); border-radius: 0; padding: 10px 20px;
+    font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: var(--mono); color: var(--text); background: var(--panel);
+    transition: transform .06s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.ghost { border-color: var(--grid); color: var(--muted); }
+  .btn.ghost:hover:not(:disabled) { background: var(--panel-2); color: var(--text); border-color: var(--muted); }
+
+  .check-num { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .check-num input {
+    background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); border-radius: 0;
+    font-family: var(--mono); font-size: 14px; width: 60px; text-align: center; padding: 6px;
+  }
+  .check-num input:focus { outline: none; border-color: var(--accent); }
+
+  .reveal-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 10px 0 4px; }
+  .reveal-row .peg { width: 28px; height: 28px; }
+
+  .winner-banner.win { color: var(--ai-on); }
+  .winner-banner.lose { color: var(--ai-err); }
+
+  .opts { display: flex; gap: 14px 24px; flex-wrap: wrap; justify-content: center; }
+  .num-seg .seg-btn { padding: 9px 13px; }
+
+  .ai-think h3 { display: none; }
+  .xeno-ai .ai-think.solver { white-space: pre-wrap; }
+  .step-line { color: var(--muted); font-size: 13px; text-align: center; min-height: 20px; margin-bottom: 6px; letter-spacing: .5px; }
+  .step-line b { color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MASTERMIND</h1>
+    <p class="tagline">Break the hidden code — exact pegs, colour pegs, and only so many tries.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Mode</label>
+        <div class="seg" id="modeSeg">
+          <button type="button" class="seg-btn active" data-mode="crack">You crack it</button>
+          <button type="button" class="seg-btn" data-mode="solve">AI cracks yours</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Code length</label>
+        <div class="seg num-seg" id="lenSeg">
+          <button type="button" class="seg-btn" data-len="3">3</button>
+          <button type="button" class="seg-btn active" data-len="4">4</button>
+          <button type="button" class="seg-btn" data-len="5">5</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Colours</label>
+        <div class="seg num-seg" id="colSeg">
+          <button type="button" class="seg-btn" data-col="4">4</button>
+          <button type="button" class="seg-btn" data-col="5">5</button>
+          <button type="button" class="seg-btn active" data-col="6">6</button>
+          <button type="button" class="seg-btn" data-col="8">8</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Repeats</label>
+        <div class="seg" id="repSeg">
+          <button type="button" class="seg-btn active" data-rep="1">Allowed</button>
+          <button type="button" class="seg-btn" data-rep="0">No dupes</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New game</button>
+    </div>
+
+    <div class="status" id="status">Pick a colour, fill the row, then submit your guess.</div>
+
+    <!-- ============ BOARD ============ -->
+    <div class="board-wrap">
+      <div class="rows" id="rows"></div>
+    </div>
+
+    <!-- colour palette (crack mode + code-setting in solve mode) -->
+    <div class="palette" id="palette"></div>
+
+    <!-- crack-mode action -->
+    <div class="row-controls" id="crackControls">
+      <button type="button" class="btn" id="submitBtn" disabled>Submit guess ▸</button>
+      <button type="button" class="btn ghost" id="clearBtn">Clear row</button>
+    </div>
+
+    <!-- solve-mode controls -->
+    <div class="row-controls" id="solveSetup" style="display:none">
+      <button type="button" class="btn" id="lockBtn" disabled>Lock code &amp; let the solver crack it ▸</button>
+      <button type="button" class="btn ghost" id="randCodeBtn">Random code</button>
+    </div>
+    <div class="row-controls" id="solveRun" style="display:none">
+      <button type="button" class="btn" id="stepBtn">Next guess ▸</button>
+      <button type="button" class="btn ghost" id="autoBtn">Auto-solve</button>
+    </div>
+
+    <div class="step-line" id="stepLine"></div>
+
+    <div class="winner-banner" id="banner"></div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <label class="ai-explain" style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="explainChk" /> Have my model narrate the solver's reasoning out loud
+      </label>
+      <div class="ai-think solver" id="aiThink">In <b>AI cracks yours</b> mode, the built-in minimax solver chooses each guess and the engine computes every clue. A connected model only <em>narrates</em> how each clue prunes the candidate set — it never invents feedback or a guess, so it can't cheat or be wrong.</div>
+      <div class="ai-hint">
+        The solver and all feedback are pure logic and work without any model. Connecting a local model only adds the
+        plain-English narration. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

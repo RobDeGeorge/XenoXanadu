@@ -8,24 +8,26 @@
 <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
   html.hosted .ai-only { display: none !important; }
-  /* ---- sharpened neon arcade · signature hue: green ---- */
+  /* ---- house style · signature hue: green ---- */
   :root {
-    --light: #e9edcf;          /* board squares */
-    --dark: #51713f;
-    --light-sel: #f2f178;      /* selected square */
-    --dark-sel: #b6c24a;
-    --move-dot: rgba(10, 20, 8, 0.42);
-    --check: #ff5050;
-    --last: rgba(125, 217, 87, 0.34);
-    --bg: #07090c;
-    --bg-2: #0a0f0b;
-    --panel: #0e1411;
-    --grid: #233027;
-    --text: #e8e6d9;
-    --muted: #8a9883;
-    --accent: #7dd957;         /* neon green */
-    --on-accent: #07120a;
-    --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --light: #2f3138;          /* board squares (muted two-tone) */
+    --dark: #1a1c20;
+    --light-sel: #4a5238;      /* selected square */
+    --dark-sel: #353d28;
+    --move-dot: rgba(231, 230, 224, 0.30);
+    --check: #cf5a52;
+    --last: rgba(158, 194, 122, 0.20);
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --accent: #9ec27a;         /* muted green */
+    --on-accent: #0c0d0f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -41,24 +43,14 @@
     min-height: 100vh;
     padding: 30px 20px 50px;
   }
-  /* CRT scanline overlay */
-  body::after {
-    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
-    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
-    mix-blend-mode: multiply;
-  }
 
   h1 {
     text-align: center;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 4px;
     text-transform: uppercase;
     font-size: clamp(28px, 6vw, 52px);
-    color: var(--accent);
-    text-shadow:
-      0 0 6px rgba(125,217,87,0.6),
-      3px 3px 0 #ff2e88,
-      6px 6px 0 #2bf0e0;
+    color: var(--text);
     margin: 0 0 6px;
   }
 
@@ -87,8 +79,7 @@
     grid-template-columns: repeat(8, var(--sq));
     grid-template-rows: repeat(8, var(--sq));
     --sq: 72px;
-    border: 2px solid var(--grid);
-    box-shadow: 0 0 0 1px #0006, 0 10px 40px rgba(0,0,0,0.55);
+    border: 1px solid var(--grid);
     user-select: none;
   }
 
@@ -113,7 +104,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle, var(--check) 0%, rgba(255,80,80,0) 72%);
+    box-shadow: inset 0 0 0 3px var(--check);
   }
 
   .piece {
@@ -123,12 +114,12 @@
     line-height: 1;
   }
   .piece.white {
-    color: #fff;
-    text-shadow: 0 0 2px #000, 0 1px 2px rgba(0,0,0,.6);
+    color: #e7e6e0;
+    text-shadow: 0 1px 0 #0c0d0f, 0 -1px 0 #0c0d0f, 1px 0 0 #0c0d0f, -1px 0 0 #0c0d0f;
   }
   .piece.black {
-    color: #1a1a1a;
-    text-shadow: 0 0 1px #000;
+    color: #0c0d0f;
+    text-shadow: 0 1px 0 #5a5d63, 0 -1px 0 #5a5d63, 1px 0 0 #5a5d63, -1px 0 0 #5a5d63;
   }
 
   .dot {
@@ -161,8 +152,7 @@
 
   .panel {
     background: var(--panel);
-    border: 2px solid var(--grid);
-    box-shadow: 0 0 0 1px #0006, 0 10px 30px #0007, inset 0 0 30px #0003;
+    border: 1px solid var(--grid);
     padding: 18px;
     width: 248px;
   }
@@ -180,7 +170,7 @@
   .turn .swatch {
     width: 16px;
     height: 16px;
-    border: 2px solid var(--grid);
+    border: 1px solid var(--grid);
   }
 
   .status {
@@ -192,8 +182,8 @@
     font-weight: 700;
     margin-bottom: 14px;
   }
-  .status.warn { color: #ffcf4e; }
-  .status.over { color: #ff5050; }
+  .status.warn { color: #c7a24a; }
+  .status.over { color: #cf5a52; }
 
   .captured {
     font-size: 22px;
@@ -243,24 +233,25 @@
   }
   button {
     flex: 1;
-    background: transparent;
-    color: var(--accent);
-    border: 2px solid var(--accent);
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 10px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     font-family: var(--mono);
     cursor: pointer;
-    transition: background .15s, color .15s, box-shadow .15s, transform .06s;
+    transition: background .15s, border-color .15s, color .15s, transform .08s;
   }
-  button:hover { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 14px var(--accent); }
-  button:active { transform: translateY(2px); }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:active { transform: translateY(1px); }
   button.secondary { color: var(--muted); border-color: var(--grid); }
-  button.secondary:hover { background: var(--grid); color: var(--text); box-shadow: none; }
-  button:disabled { opacity: .35; cursor: default; }
-  button:disabled:hover { background: transparent; color: var(--muted); box-shadow: none; }
+  button.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button:disabled:hover { background: var(--panel); color: var(--muted); border-color: var(--grid); }
 
   /* Promotion dialog */
   .overlay {
@@ -275,26 +266,25 @@
   .overlay.show { display: flex; }
   .promo {
     background: var(--panel);
-    border: 2px solid var(--accent);
-    box-shadow: 0 0 24px rgba(125,217,87,0.3), 0 10px 40px rgba(0,0,0,0.6);
+    border: 1px solid var(--accent);
     padding: 20px 24px;
     text-align: center;
   }
-  .promo h3 { margin: 0 0 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 14px; color: var(--accent); }
+  .promo h3 { margin: 0 0 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 14px; color: var(--text); }
   .promo-choices { display: flex; gap: 10px; }
   .promo-choices div {
     width: 64px;
     height: 64px;
-    background: var(--light);
+    background: var(--bg-2);
     border: 1px solid var(--grid);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 46px;
     cursor: pointer;
-    transition: transform .1s, box-shadow .1s;
+    transition: border-color .12s, transform .08s;
   }
-  .promo-choices div:hover { transform: translateY(-2px); box-shadow: 0 0 12px var(--accent); }
+  .promo-choices div:hover { transform: translateY(-2px); border-color: var(--accent); }
 
   @media (max-width: 760px) {
     .board { --sq: 11.4vw; }
@@ -311,17 +301,17 @@
   #chessAi .seg button { flex: none; background: transparent; border: 0; color: var(--muted); padding: 5px 9px;
                          font-size: 11px; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; font-family: var(--mono); }
   #chessAi .seg button:hover { background: transparent; color: var(--text); box-shadow: none; }
-  #chessAi .seg button.active { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+  #chessAi .seg button.active { background: var(--panel-2); color: var(--accent); font-weight: 700; }
   #chessAi select, #chessAi input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text);
                          border: 1px solid var(--grid); padding: 5px 7px;
                          font-size: 12px; font-family: var(--mono); }
   #chessAi #chessRefresh { flex: none; background: var(--bg-2); color: var(--accent); border: 1px solid var(--grid);
                          padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
-  #chessAi #chessRefresh:hover { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+  #chessAi #chessRefresh:hover { background: var(--accent); color: var(--on-accent); }
   #chessAi .ai-statusline { display: flex; align-items: center; gap: 7px; color: var(--muted); }
   #chessAi .ai-dot { width: 9px; height: 9px; background: #555; flex: none; }
-  #chessAi .ai-dot.on { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
-  #chessAi .ai-dot.err { background: #ff2e88; box-shadow: 0 0 7px #ff2e88; }
+  #chessAi .ai-dot.on { background: var(--accent); }
+  #chessAi .ai-dot.err { background: #cf5a52; }
   #chessAi .ai-think { max-height: 124px; overflow: auto; background: var(--bg-2);
                        border: 1px solid var(--grid); padding: 8px;
                        color: var(--text); white-space: pre-wrap; font-size: 12px; line-height: 1.45; }

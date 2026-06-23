@@ -11,40 +11,36 @@
 <style>
   /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
   :root {
-    --bg: #0a1a14;
-    --bg-2: #0f261c;
-    --panel: #112a20;
-    --panel-2: #163a2c;
-    --grid: #2f5e49;
-    --felt: #0d3325;
-    --felt-2: #0a2a1e;
-    --line: #1f7a55;
-    --text: #ecfff5;
-    --muted: #8fc7ad;
-    --dark: #14110f;          /* the "black" disc */
-    --dark-edge: #ff2e88;     /* neon magenta rim */
-    --dark-soft: #ff2e8826;
-    --light: #f3fff8;         /* the "white" disc */
-    --light-edge: #2bf0e0;    /* neon cyan rim */
-    --light-soft: #2bf0e026;
-    --accent: #ffd23f;        /* arcade amber */
-    --hint: #6bffb0;          /* legal-move glow */
-    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --felt: #131417;
+    --felt-2: #0c0d0f;
+    --line: #24262b;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --dark: #1a1a1a;          /* the "black" disc */
+    --dark-edge: #c06a9b;     /* muted magenta rim */
+    --dark-soft: #c06a9b26;
+    --light: #d8d6d0;         /* the "white" disc */
+    --light-edge: #5fb6b0;    /* muted teal rim */
+    --light-soft: #5fb6b026;
+    --accent: #c7a24a;        /* muted amber */
+    --hint: #6dbf95;          /* legal-move indicator */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     /* shared-chrome knobs (see lib/arcade.css) */
     --wrap-max: 720px;
-    --on-accent: #10241a;
-    --seg-bg: #0a1f17;
-    --seg-active-bg: #122c20;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
     --ai-on: var(--light-edge);
     --ai-err: var(--dark-edge);
   }
 
   html, body {
     background: var(--bg);
-    background-image:
-      radial-gradient(900px 600px at 80% -15%, #1a4a36 0%, rgba(26,74,54,0) 55%),
-      radial-gradient(900px 600px at 0% 110%, #103826 0%, rgba(16,56,38,0) 55%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   }
 
   h1 {
@@ -52,9 +48,9 @@
     font-size: clamp(28px, 6vw, 52px);
     margin: 0 0 6px;
     letter-spacing: 6px;
-    font-weight: 800;
-    color: var(--accent);
-    text-shadow: 0 0 6px rgba(255,210,63,0.6), 3px 3px 0 var(--dark-edge), 6px 6px 0 var(--light-edge);
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
   }
   .subtitle {
     text-align: center; color: var(--muted);
@@ -75,50 +71,45 @@
   /* ---------- the board ---------- */
   .board-area { display: flex; justify-content: center; }
   .board-frame {
-    position: relative; background: #08231a; border: 2px solid var(--grid); border-radius: 8px;
-    padding: 16px; box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0005;
+    position: relative; background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0;
+    padding: 16px;
   }
   .board {
     display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
     width: min(78vw, 520px); height: min(78vw, 520px);
-    background: var(--line); padding: 3px; border-radius: 4px;
+    background: var(--line); padding: 3px; border-radius: 0;
     touch-action: manipulation;
   }
   .cell {
-    position: relative; background:
-      linear-gradient(135deg, var(--felt) 0%, var(--felt-2) 100%);
+    position: relative; background: var(--felt);
     display: flex; align-items: center; justify-content: center; cursor: default;
     transition: background .12s ease;
   }
   .cell.playable { cursor: pointer; }
-  .cell.playable:hover { background: linear-gradient(135deg, #114231 0%, #0c3526 100%); }
+  .cell.playable:hover { background: var(--panel-2); }
 
   /* legal-move hint dot */
   .hint {
     position: absolute; width: 26%; height: 26%; border-radius: 50%;
-    background: var(--hint); opacity: 0.28;
-    box-shadow: 0 0 10px var(--hint); pointer-events: none;
-    animation: pulse 1.6s ease-in-out infinite;
+    background: var(--hint); opacity: 0.35;
+    pointer-events: none;
   }
   .cell.playable:hover .hint { opacity: 0.6; }
-  @keyframes pulse { 0%,100% { transform: scale(0.85); opacity:.22; } 50% { transform: scale(1.05); opacity:.5; } }
 
   /* discs */
   .disc {
     width: 80%; height: 80%; border-radius: 50%;
-    transition: transform .28s ease, box-shadow .28s ease;
+    transition: transform .28s ease;
     transform: scale(0); transform-origin: center;
   }
   .disc.show { transform: scale(1); }
   .disc.dark {
-    background: radial-gradient(circle at 35% 30%, #3a3330 0%, var(--dark) 60%);
+    background: var(--dark);
     border: 2px solid var(--dark-edge);
-    box-shadow: 0 0 10px var(--dark-soft), inset 0 0 8px #000;
   }
   .disc.light {
-    background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--light) 65%);
+    background: var(--light);
     border: 2px solid var(--light-edge);
-    box-shadow: 0 0 10px var(--light-soft), inset 0 -4px 8px #b9d8cd;
   }
   .disc.flip { animation: flip .42s ease; }
   @keyframes flip { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.05); } 100% { transform: scaleX(1); } }
@@ -371,7 +362,7 @@
       card.style.transform = active ? "translateY(-3px)" : "";
       card.style.borderColor = active ? "var(" + edge + ")" : "var(--grid)";
       card.style.boxShadow = active
-        ? "0 0 16px var(" + soft + "), 0 0 6px var(" + edge + ")"
+        ? "inset 0 0 0 1px var(" + edge + ")"
         : "inset 0 -3px 0 var(" + edge + ")";
     });
   }

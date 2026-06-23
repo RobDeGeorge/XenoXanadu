@@ -9,16 +9,21 @@
 <style>
   html.hosted .ai-only { display: none !important; }
   :root {
-    --board: #1b3a8f;
-    --board-dark: #14296b;
-    --empty: #0c1a44;
-    --red: #e8423b;
-    --red-dark: #b32a25;
-    --blue: #2e7df0;
-    --blue-dark: #1a55b8;
-    --bg: #0a0f1f;
-    --text: #f0f4ff;
-    --panel: rgba(255,255,255,0.05);
+    /* shared house surfaces (identical across the arcade) */
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --accent: #6f9bd1;        /* connect four's muted blue identity */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    /* board + discs */
+    --board: #1a1c20;
+    --empty: #0c0d0f;
+    --red: #cf5a52;
+    --blue: #5a8fcf;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,14 +34,14 @@
   }
 
   body {
-    background: radial-gradient(circle at 50% 0%, #16224a, var(--bg));
+    background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--mono);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: clamp(10px, 2.4vh, 20px);
-    padding: 18px 16px 32px;
+    padding: 28px 16px 40px;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -44,8 +49,9 @@
   h1 {
     margin: 0;
     font-size: clamp(22px, 5vw, 34px);
-    font-weight: 800;
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
   }
 
   .status {
@@ -59,14 +65,13 @@
   }
 
   .chip {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     flex: 0 0 auto;
-    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.35);
   }
-  .chip.red  { background: radial-gradient(circle at 35% 30%, #ff6b63, var(--red)); }
-  .chip.blue { background: radial-gradient(circle at 35% 30%, #6aa6ff, var(--blue)); }
+  .chip.red  { background: var(--red); }
+  .chip.blue { background: var(--blue); }
 
   /* Column number labels */
   .col-labels {
@@ -77,7 +82,7 @@
     padding: 0 clamp(8px, 2.2vw, 16px);
     font-size: clamp(11px, 2.6vw, 14px);
     font-weight: 700;
-    color: rgba(240,244,255,0.55);
+    color: var(--muted);
     text-align: center;
     margin-bottom: -6px;
   }
@@ -90,13 +95,13 @@
 
   .board {
     position: relative;
-    background: linear-gradient(160deg, var(--board), var(--board-dark));
-    border-radius: 18px;
+    background: var(--board);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: clamp(8px, 2.2vw, 16px);
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: clamp(6px, 1.6vw, 12px);
-    box-shadow: 0 18px 40px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.08);
     touch-action: manipulation;
   }
 
@@ -106,7 +111,6 @@
     aspect-ratio: 1 / 1;
     background: var(--empty);
     border-radius: 50%;
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
     overflow: hidden;
   }
 
@@ -117,8 +121,8 @@
     transform: translateY(-650%);
     animation: drop 0.42s cubic-bezier(0.34, 1.12, 0.64, 1) forwards;
   }
-  .disc.red  { background: radial-gradient(circle at 35% 30%, #ff6b63, var(--red) 70%, var(--red-dark)); }
-  .disc.blue { background: radial-gradient(circle at 35% 30%, #6aa6ff, var(--blue) 70%, var(--blue-dark)); }
+  .disc.red  { background: var(--red); }
+  .disc.blue { background: var(--blue); }
 
   @keyframes drop {
     0%   { transform: translateY(-650%); }
@@ -126,12 +130,8 @@
   }
 
   .disc.win {
-    animation: drop 0.42s cubic-bezier(0.34, 1.12, 0.64, 1) forwards, pulse 0.9s ease-in-out 0.42s infinite;
-    box-shadow: 0 0 0 3px #fff, 0 0 18px 4px rgba(255,255,255,0.7);
-  }
-  @keyframes pulse {
-    0%, 100% { filter: brightness(1); }
-    50%      { filter: brightness(1.45); }
+    animation: drop 0.42s cubic-bezier(0.34, 1.12, 0.64, 1) forwards;
+    box-shadow: inset 0 0 0 3px var(--text);
   }
 
   /* a faint marker on the column the AI is about to play */
@@ -168,23 +168,26 @@
   button {
     font: inherit;
     font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 13px;
     color: var(--text);
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
+    background: var(--panel);
+    border: 1px solid var(--grid);
     padding: 10px 18px;
-    border-radius: 999px;
+    border-radius: 0;
     cursor: pointer;
-    transition: transform 0.08s, background 0.15s;
+    transition: transform 0.08s, background 0.15s, border-color 0.15s, color 0.15s;
     touch-action: manipulation;
   }
-  button:active { transform: scale(0.95); }
+  button:active { transform: translateY(1px); }
   button:disabled {
     opacity: 0.4;
     cursor: default;
     transform: none;
   }
   @media (hover: hover) {
-    button:hover { background: rgba(255,255,255,0.18); }
+    button:hover { border-color: var(--accent); color: var(--accent); }
   }
 
   .scores {
@@ -201,8 +204,8 @@
   .ai-panel {
     width: min(94vw, 560px);
     background: var(--panel);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px;
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
@@ -215,55 +218,57 @@
     align-items: center;
   }
   .ai-row .label {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
-    opacity: 0.7;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
     margin-right: 2px;
   }
   .seg {
     display: inline-flex;
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 999px;
-    overflow: hidden;
+    gap: 6px;
   }
   .seg button {
-    border: none;
+    border: 1px solid var(--grid);
     border-radius: 0;
     padding: 8px 14px;
-    background: transparent;
-    font-size: 13px;
+    background: var(--bg-2);
+    color: var(--muted);
+    font-size: 12px;
   }
   .seg button.active {
-    background: rgba(110,166,255,0.35);
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--panel-2);
   }
   select {
     font: inherit;
     font-size: 13px;
-    font-weight: 600;
     color: var(--text);
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 8px 10px;
     max-width: 220px;
   }
-  select option { color: #111; }
+  select option { color: var(--text); background: var(--bg-2); }
   input[type=text] {
     font: inherit;
     font-size: 12px;
     color: var(--text);
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 7px 10px;
     width: 200px;
   }
   .ai-think {
-    background: #060a18;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--mono);
     font-size: 12.5px;
     line-height: 1.5;
     white-space: pre-wrap;
@@ -271,31 +276,31 @@
     min-height: 64px;
     max-height: 200px;
     overflow-y: auto;
-    color: #b9c6e6;
+    color: var(--muted);
   }
   .ai-status {
     font-size: 12px;
     font-weight: 700;
-    opacity: 0.8;
+    color: var(--muted);
     display: flex;
     align-items: center;
     gap: 8px;
   }
   .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #5a6a90;
+    width: 8px; height: 8px; border-radius: 0;
+    background: #5a5a5a;
   }
-  .dot.on { background: #46d17a; box-shadow: 0 0 8px #46d17a; }
-  .dot.err { background: #e8423b; box-shadow: 0 0 8px #e8423b; }
+  .dot.on { background: var(--accent); }
+  .dot.err { background: #cf5a52; }
   .hint {
     font-size: 11.5px;
     line-height: 1.5;
-    opacity: 0.6;
+    color: var(--muted);
   }
   .hint code {
-    background: rgba(255,255,255,0.1);
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
     padding: 1px 5px;
-    border-radius: 5px;
   }
   .hide { display: none !important; }
 </style>
@@ -364,8 +369,8 @@
 
     <div class="hint" id="aiHint">
       Plays against a model on <em>your</em> machine —
-      <a href="../../ai-setup.html" style="color:#8ab4ff;font-weight:bold">connect a model ▸</a>.
-      Bring your own <a href="https://ollama.com" target="_blank" style="color:#8ab4ff">Ollama</a> or any OpenAI-compatible
+      <a href="../../ai-setup.html" style="color:var(--accent);font-weight:bold">connect a model ▸</a>.
+      Bring your own <a href="https://ollama.com" target="_blank" style="color:var(--accent)">Ollama</a> or any OpenAI-compatible
       server (LM Studio, llama.cpp…). The connection you set there is shared here.
     </div>
   </div>

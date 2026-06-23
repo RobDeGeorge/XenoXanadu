@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HEX // RETRO</title>
+<meta name="description" content="Hex — the classic connection game rebuilt by hand in neon. Bridge across the rhombus to link your two edges. No draws, ever. Play a friend, the built-in connection AI, or a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --red: #cf5a52;          /* player 1 — top/bottom, muted red */
+    --red-edge: #cf5a52;
+    --red-soft: #cf5a5230;
+    --blue: #6f9bd1;         /* player 2 — left/right, muted blue */
+    --blue-edge: #6f9bd1;
+    --blue-soft: #6f9bd130;
+    --empty: #1a1c20;        /* empty cell fill */
+    --empty-2: #131417;
+    --accent: #c7a24a;       /* muted amber */
+    --hint: #9b86c4;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 760px;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
+    --ai-on: var(--blue-edge);
+    --ai-err: var(--red-edge);
+  }
+
+  html, body {
+    background: var(--bg);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 8px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .subtitle {
+    text-align: center; color: var(--muted);
+    margin: 10px 0 26px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* name swatch is a small hexagon chip */
+  .name-field .swatch {
+    width: 14px; height: 14px; flex: none; border: 2px solid;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  }
+  .name-field input { width: 118px; }
+
+  .scoreboard { gap: 14px; }
+  .score-card { flex: 1 1 170px; max-width: 250px; padding: 12px 16px; }
+  .score-card .name { font-size: 14px; }
+  .score-card .stone-marker {
+    width: 15px; height: 15px; flex: none; border: 2px solid;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  }
+  .score-card .score { font-size: 36px; line-height: 1.15; }
+  .score-card .edge-note { font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+
+  /* ---------- the board: SVG rhombus of hexagons ---------- */
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    position: relative; background: var(--bg-2);
+    border: 1px solid var(--grid); border-radius: 0;
+    padding: 14px;
+  }
+  svg.board { display: block; width: min(86vw, 600px); height: auto; touch-action: manipulation; }
+
+  /* edge ribbons drawn under the cells */
+  .edge-red { fill: var(--red); opacity: 0.5; }
+  .edge-blue { fill: var(--blue); opacity: 0.5; }
+
+  /* hex cells */
+  .hexcell { stroke: var(--line); stroke-width: 1.4; fill: var(--empty); transition: fill .12s ease, stroke .12s ease; }
+  .hexcell.playable { cursor: pointer; }
+  .hexcell.playable:hover { fill: var(--panel-2); stroke: var(--muted); }
+  .hexcell.red   { fill: var(--red);  stroke: var(--red-edge);  }
+  .hexcell.blue  { fill: var(--blue); stroke: var(--blue-edge); }
+  .hexcell.win   { stroke: var(--accent); stroke-width: 2.6; }
+  .hexcell.last  { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 4 3; }
+
+  /* legal-move hint dot + bridge highlight */
+  .hint-dot { fill: var(--hint); opacity: 0.32; pointer-events: none; }
+  .hexcell.playable:hover + .hint-dot { opacity: 0.6; }
+  .bridge-ring { fill: none; stroke: var(--accent); stroke-width: 1.8; opacity: 0.85; pointer-events: none;
+                 stroke-dasharray: 3 3; animation: spin 6s linear infinite; }
+  @keyframes spin { to { stroke-dashoffset: -24; } }
+
+  .rules { max-width: 600px; margin: 26px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+  .rules b.red { color: var(--red-edge); }
+  .rules b.blue { color: var(--blue-edge); }
+
+  @media (max-width: 520px) {
+    .name-field input { width: 100px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>HEX</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Bridge The Rhombus &#9632; No Draws &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="hxOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Board Size</label>
+        <div class="seg" id="sizeSeg">
+          <button type="button" class="seg-btn" data-size="9">9</button>
+          <button type="button" class="seg-btn active" data-size="11">11</button>
+          <button type="button" class="seg-btn" data-size="13">13</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Built-in AI</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn" data-diff="0">Easy</button>
+          <button type="button" class="seg-btn active" data-diff="1">Medium</button>
+          <button type="button" class="seg-btn" data-diff="2">Hard</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Hints</label>
+        <div class="seg" id="hintSeg">
+          <button type="button" class="seg-btn active" data-hints="1">On</button>
+          <button type="button" class="seg-btn" data-hints="0">Off</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="background:var(--red);border-color:var(--red-edge)"></span><input id="name0" value="Red" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="background:var(--blue);border-color:var(--blue-edge)"></span><input id="name1" value="Blue" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="hxAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <svg class="board" id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div class="winner-banner" id="winner"></div>
+
+    <p class="rules">
+      <b class="red">Red</b> connects the <b>top</b> and <b>bottom</b> edges; <b class="blue">Blue</b> connects the
+      <b>left</b> and <b>right</b> edges. Take turns placing one stone on any empty cell — adjacent cells
+      (six neighbours per hex) of your colour link up. First to span their two edges wins. There are
+      <b>no draws</b> in Hex: a full board always contains exactly one winning chain. A <b>bridge</b> (two
+      stones a knight-ish hop apart with two shared empty links) is a near-unbreakable connection — the AI
+      flags them for you.
+    </p>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const RED = 0, BLUE = 1, EMPTY = -1;
+  // Axial-ish neighbours on the rhombic Hex board. With our offset render
+  // (each row shifted right), the six neighbours of (r,c) are:
+  //   same row:  (r,c-1) (r,c+1)
+  //   row above: (r-1,c) (r-1,c+1)
+  //   row below: (r+1,c-1) (r+1,c)
+  const NB = [[0,-1],[0,1],[-1,0],[-1,1],[1,-1],[1,0]];
+  // The six "bridge" patterns: a carrier pair of empty cells + the bridge endpoint,
+  // relative to a stone at (0,0). Each entry: [endpoint, carrierA, carrierB].
+  const BRIDGES = [
+    [[-1,2],  [-1,1],[0,1]],
+    [[1,1],   [0,1],[1,0]],
+    [[2,-1],  [1,0],[1,-1]],
+    [[1,-2],  [1,-1],[0,-1]],
+    [[-1,-1], [0,-1],[-1,0]],
+    [[-2,1],  [-1,0],[-1,1]],
+  ];
+
+  const boardEl  = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+
+  // ---- geometry ----
+  const HEX_R = 18;                       // pointy-top hexagon "radius" (center→corner)
+  const HEX_W = Math.sqrt(3) * HEX_R;     // flat width
+  const ROW_H = HEX_R * 1.5;              // vertical step between rows
+  const MARGIN = 26;                      // room for edge ribbons
+
+  // ---- game state ----
+  let N = 11;
+  let board, current, gameOver, lastMove, winChain;
+  let cellEls = [];                       // cellEls[r][c] -> <polygon>
+  let centers = [];                       // centers[r][c] -> {x,y}
+  let showHints = true;
+  let difficulty = 1;                     // 0 easy, 1 medium, 2 hard
+
+  const idx = (r, c) => r * N + c;
+  const inBounds = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+  const colorClass = (p) => (p === RED ? "red" : "blue");
+
+  function names() {
+    return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === 0 ? "Red" : "Blue"));
+  }
+
+  // ===================================================================
+  //  WIN DETECTION — union-find / flood fill from one edge to the other
+  //  RED owns rows 0 (top) and N-1 (bottom); BLUE owns cols 0 (left)
+  //  and N-1 (right). No draws are possible, so we only ever check the
+  //  player who just moved.
+  // ===================================================================
+  function connectedChain(player, b) {
+    b = b || board;
+    // BFS from the player's "start" edge; if we reach the "end" edge, return
+    // the set of cells on a connecting path (for highlighting). Else null.
+    const seen = new Uint8Array(N * N);
+    const prev = new Int32Array(N * N).fill(-1);
+    const stack = [];
+    const isStart = (r, c) => player === RED ? r === 0 : c === 0;
+    const isEnd   = (r, c) => player === RED ? r === N - 1 : c === N - 1;
+    for (let i = 0; i < N; i++) {
+      const r = player === RED ? 0 : i;
+      const c = player === RED ? i : 0;
+      if (b[r][c] === player) { seen[idx(r, c)] = 1; stack.push([r, c]); }
+    }
+    let endCell = null;
+    while (stack.length) {
+      const [r, c] = stack.pop();
+      if (isEnd(r, c)) { endCell = [r, c]; break; }
+      for (const [dr, dc] of NB) {
+        const nr = r + dr, nc = c + dc;
+        if (inBounds(nr, nc) && !seen[idx(nr, nc)] && b[nr][nc] === player) {
+          seen[idx(nr, nc)] = 1;
+          prev[idx(nr, nc)] = idx(r, c);
+          stack.push([nr, nc]);
+        }
+      }
+    }
+    if (!endCell) return null;
+    // walk prev[] back to build the winning chain
+    const chain = [];
+    let cur = idx(endCell[0], endCell[1]);
+    while (cur !== -1) { chain.push([Math.floor(cur / N), cur % N]); cur = prev[cur]; }
+    return chain;
+  }
+
+  // ===================================================================
+  //  RENDERING — pointy-top hexagons, rows offset right to form a rhombus
+  // ===================================================================
+  function hexPoints(cx, cy) {
+    let pts = "";
+    for (let i = 0; i < 6; i++) {
+      const ang = Math.PI / 180 * (60 * i - 90);   // pointy-top
+      pts += (cx + HEX_R * Math.cos(ang)).toFixed(2) + "," + (cy + HEX_R * Math.sin(ang)).toFixed(2) + " ";
+    }
+    return pts.trim();
+  }
+
+  function buildBoard() {
+    cellEls = []; centers = [];
+    const totalW = HEX_W * N + (N - 1) * (HEX_W / 2) + MARGIN * 2 + HEX_W;
+    const totalH = ROW_H * (N - 1) + HEX_R * 2 + MARGIN * 2;
+    boardEl.setAttribute("viewBox", "0 0 " + totalW.toFixed(1) + " " + totalH.toFixed(1));
+    boardEl.innerHTML =
+      '<defs>' +
+        '<radialGradient id="emptyGrad" cx="35%" cy="30%"><stop offset="0%" stop-color="#2a2150"/><stop offset="100%" stop-color="#1a1432"/></radialGradient>' +
+        '<radialGradient id="redGrad" cx="35%" cy="30%"><stop offset="0%" stop-color="#ff7d9c"/><stop offset="100%" stop-color="#ff3b6b"/></radialGradient>' +
+        '<radialGradient id="blueGrad" cx="35%" cy="30%"><stop offset="0%" stop-color="#9af0ff"/><stop offset="100%" stop-color="#2bd6ff"/></radialGradient>' +
+      '</defs>';
+
+    // compute centers
+    for (let r = 0; r < N; r++) {
+      const row = [];
+      for (let c = 0; c < N; c++) {
+        const cx = MARGIN + HEX_W / 2 + c * HEX_W + r * (HEX_W / 2);
+        const cy = MARGIN + HEX_R + r * ROW_H;
+        row.push({ x: cx, y: cy });
+      }
+      centers.push(row);
+    }
+
+    const NS = "http://www.w3.org/2000/svg";
+
+    // --- edge ribbons (drawn first, under the cells) ---
+    function ribbon(cls, pts) {
+      const p = document.createElementNS(NS, "polygon");
+      p.setAttribute("points", pts);
+      p.setAttribute("class", cls);
+      boardEl.appendChild(p);
+    }
+    const top = centers[0], bot = centers[N - 1], pad = HEX_R * 0.9;
+    // red top ribbon
+    ribbon("edge-red",
+      (top[0].x) + "," + (top[0].y - pad) + " " +
+      (top[N-1].x) + "," + (top[N-1].y - pad) + " " +
+      (top[N-1].x) + "," + (top[N-1].y) + " " +
+      (top[0].x) + "," + (top[0].y));
+    // red bottom ribbon
+    ribbon("edge-red",
+      (bot[0].x) + "," + (bot[0].y) + " " +
+      (bot[N-1].x) + "," + (bot[N-1].y) + " " +
+      (bot[N-1].x) + "," + (bot[N-1].y + pad) + " " +
+      (bot[0].x) + "," + (bot[0].y + pad));
+    // blue left ribbon
+    ribbon("edge-blue",
+      (centers[0][0].x - pad) + "," + (centers[0][0].y) + " " +
+      (centers[0][0].x) + "," + (centers[0][0].y) + " " +
+      (centers[N-1][0].x) + "," + (centers[N-1][0].y) + " " +
+      (centers[N-1][0].x - pad) + "," + (centers[N-1][0].y));
+    // blue right ribbon
+    ribbon("edge-blue",
+      (centers[0][N-1].x) + "," + (centers[0][N-1].y) + " " +
+      (centers[0][N-1].x + pad) + "," + (centers[0][N-1].y) + " " +
+      (centers[N-1][N-1].x + pad) + "," + (centers[N-1][N-1].y) + " " +
+      (centers[N-1][N-1].x) + "," + (centers[N-1][N-1].y));
+
+    // --- cells ---
+    for (let r = 0; r < N; r++) {
+      const row = [];
+      for (let c = 0; c < N; c++) {
+        const { x, y } = centers[r][c];
+        const poly = document.createElementNS(NS, "polygon");
+        poly.setAttribute("points", hexPoints(x, y));
+        poly.setAttribute("class", "hexcell");
+        poly.dataset.r = r; poly.dataset.c = c;
+        poly.addEventListener("click", () => onCellClick(r, c));
+        boardEl.appendChild(poly);
+        row.push(poly);
+      }
+      cellEls.push(row);
+    }
+  }
+
+  function clearOverlays() {
+    boardEl.querySelectorAll(".hint-dot, .bridge-ring").forEach((n) => n.remove());
+  }
+
+  function render() {
+    clearOverlays();
+    const winSet = new Set((winChain || []).map(([r, c]) => r + "," + c));
+    const NS = "http://www.w3.org/2000/svg";
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        const el = cellEls[r][c];
+        const v = board[r][c];
+        el.classList.remove("red", "blue", "win", "last", "playable");
+        if (v === RED) el.classList.add("red");
+        else if (v === BLUE) el.classList.add("blue");
+        if (winSet.has(r + "," + c)) el.classList.add("win");
+        if (lastMove && lastMove.r === r && lastMove.c === c) el.classList.add("last");
+      }
+    // hints + bridge rings for the side to move (skip during AI's turn / game over)
+    if (!gameOver && !isAITurn()) {
+      const bridgeCells = showHints ? bridgeMoveCells(current) : new Set();
+      for (let r = 0; r < N; r++)
+        for (let c = 0; c < N; c++) {
+          if (board[r][c] !== EMPTY) continue;
+          cellEls[r][c].classList.add("playable");
+          if (!showHints) continue;
+          const { x, y } = centers[r][c];
+          const dot = document.createElementNS(NS, "circle");
+          dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+          dot.setAttribute("r", HEX_R * 0.22);
+          dot.setAttribute("class", "hint-dot");
+          boardEl.appendChild(dot);
+          if (bridgeCells.has(r + "," + c)) {
+            const ring = document.createElementNS(NS, "circle");
+            ring.setAttribute("cx", x); ring.setAttribute("cy", y);
+            ring.setAttribute("r", HEX_R * 0.6);
+            ring.setAttribute("class", "bridge-ring");
+            boardEl.appendChild(ring);
+          }
+        }
+    }
+    updateScoreboard();
+  }
+
+  // Empty cells that would form a *bridge* with one of `player`'s existing
+  // stones (or edge), flagged in the UI to teach the connection idea.
+  function bridgeMoveCells(player) {
+    const out = new Set();
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        if (board[r][c] !== player) continue;
+        for (const [end, ca, cb] of BRIDGES) {
+          const er = r + end[0], ec = c + end[1];
+          const ar = r + ca[0], ac = c + ca[1];
+          const br = r + cb[0], bc = c + cb[1];
+          if (!inBounds(er, ec) || board[er][ec] !== EMPTY) continue;
+          if (!inBounds(ar, ac) || board[ar][ac] !== EMPTY) continue;
+          if (!inBounds(br, bc) || board[br][bc] !== EMPTY) continue;
+          out.add(er + "," + ec);
+        }
+      }
+    return out;
+  }
+
+  // ---- scoreboard / status ----
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML = "";
+    const notes = ["Top ↔ Bottom", "Left ↔ Right"];
+    [RED, BLUE].forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + p;
+      const edge = p === RED ? "--red-edge" : "--blue-edge";
+      const fill = p === RED ? "--red" : "--blue";
+      card.innerHTML =
+        '<div class="name"><span class="stone-marker" style="background:var(' + fill + ');border-color:var(' + edge + ')"></span>' +
+        '<span id="label' + p + '"></span></div>' +
+        '<div class="edge-note">' + notes[p] + '</div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + edge + ')">0</div>';
+      sb.appendChild(card);
+      document.getElementById("label" + p).textContent = nm[p];
+    });
+    updateScoreboard();
+  }
+
+  function stoneCount(p) {
+    let n = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (board[r][c] === p) n++;
+    return n;
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    [RED, BLUE].forEach((p) => {
+      const lab = document.getElementById("label" + p);
+      const sc = document.getElementById("score" + p);
+      if (!lab || !sc) return;
+      lab.textContent = nm[p];
+      sc.textContent = stoneCount(p);
+      const card = document.getElementById("card" + p);
+      const edge = p === RED ? "--red-edge" : "--blue-edge";
+      const soft = p === RED ? "--red-soft" : "--blue-soft";
+      const active = !gameOver && current === p;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + edge + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "inset 0 0 0 1px var(" + edge + ")"
+        : "inset 0 -3px 0 var(" + edge + ")";
+    });
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    const edge = current === RED ? "--red-edge" : "--blue-edge";
+    statusEl.innerHTML = msg || `<b style="color:var(${edge})">${nm[current]}</b>'s move`;
+  }
+
+  // ===================================================================
+  //  TURN FLOW
+  // ===================================================================
+  function onCellClick(r, c) {
+    if (gameOver || isAITurn()) return;
+    if (board[r][c] !== EMPTY) return;
+    placeMove(r, c, false);
+  }
+
+  function placeMove(r, c, byAI) {
+    if (board[r][c] !== EMPTY) return false;
+    board[r][c] = current;
+    lastMove = { r, c };
+    const chain = connectedChain(current);
+    if (chain) { winChain = chain; render(); endGame(current); return true; }
+    current = 1 - current;
+    render();
+    updateStatus();
+    maybeAIMove();
+    return true;
+  }
+
+  function endGame(winner) {
+    gameOver = true;
+    render();
+    const nm = names();
+    const edge = winner === RED ? "--red-edge" : "--blue-edge";
+    winnerEl.innerHTML = "&#9733; " + nm[winner] + " connects " +
+      (winner === RED ? "top &amp; bottom" : "left &amp; right") + " &#9733;";
+    winnerEl.style.color = "var(" + edge + ")";
+    statusEl.innerHTML = "Game over &mdash; press <b>New Game</b> to play again.";
+  }
+
+  function startGame() {
+    board = [];
+    for (let r = 0; r < N; r++) board.push(new Array(N).fill(EMPTY));
+    current = RED; gameOver = false; lastMove = null; winChain = null;
+    winnerEl.textContent = "";
+    buildBoard();
+    buildScoreboard();
+    render();
+    updateStatus();
+    if (typeof hxOnNewGame === "function") hxOnNewGame();
+  }
+
+  // ===================================================================
+  //  BUILT-IN CONNECTION AI (works fully offline)
+  //
+  //  Evaluation = path-resistance / shortest-connection style. For a player
+  //  we compute a Dijkstra-like minimum "distance" between their two edges,
+  //  where already-owned cells cost 0, empty cells cost 1, and the
+  //  opponent's cells are impassable. A *lower* distance means closer to
+  //  connecting. The move score balances "advance my own connection" vs
+  //  "lengthen the opponent's" — i.e. shortest-connection with blocking.
+  //  Bridges are recognised implicitly (two carrier cells give the same
+  //  0-extra-stones-needed feel) and rewarded explicitly with a small bonus.
+  // ===================================================================
+  const INF = 1e9;
+
+  // Minimum number of EMPTY cells a player must still fill to connect their
+  // two edges, treating own stones as free and opponent stones as walls.
+  // 0 => already connected. A 0-1 BFS (deque) over the hex graph + virtual
+  // edge nodes.
+  function connectionDistance(player, b) {
+    b = b || board;
+    const opp = 1 - player;
+    const dist = new Float64Array(N * N).fill(INF);
+    // simple bucket deque via array of [cell,d]; we use a binary-heap-free
+    // 0/1 BFS: a value-cost graph where stepping into an empty cell costs 1,
+    // into an own cell costs 0. Use two stacks (Dial's algorithm, costs 0/1).
+    let cur = [], next = [];
+    const push = (r, c, d, fromCost) => {
+      const cell = b[r][c];
+      if (cell === opp) return;
+      const cost = cell === player ? 0 : 1;
+      const nd = d + cost;
+      if (nd < dist[idx(r, c)]) {
+        dist[idx(r, c)] = nd;
+        (cost === 0 ? cur : next).push([r, c, nd]);
+      }
+    };
+    // seed the start edge
+    for (let i = 0; i < N; i++) {
+      const r = player === RED ? 0 : i;
+      const c = player === RED ? i : 0;
+      push(r, c, 0, 0);
+    }
+    const isEnd = (r, c) => player === RED ? r === N - 1 : c === N - 1;
+    // process in waves of equal/+1 distance
+    while (cur.length || next.length) {
+      if (!cur.length) { cur = next; next = []; }
+      // sort the working set so we always expand the smallest distance first
+      cur.sort((a, b2) => a[2] - b2[2]);
+      const [r, c, d] = cur.shift();
+      if (d > dist[idx(r, c)]) continue;
+      if (isEnd(r, c)) return d - (b[r][c] === player ? 0 : 0); // reached far edge
+      for (const [dr, dc] of NB) {
+        const nr = r + dr, nc = c + dc;
+        if (inBounds(nr, nc)) push(nr, nc, d, b[nr][nc] === player ? 0 : 1);
+      }
+    }
+    // never reached far edge => find min dist among far-edge cells (may be INF)
+    let best = INF;
+    for (let i = 0; i < N; i++) {
+      const r = player === RED ? N - 1 : i;
+      const c = player === RED ? i : N - 1;
+      best = Math.min(best, dist[idx(r, c)]);
+    }
+    return best;
+  }
+
+  function emptyCells(b) {
+    b = b || board;
+    const out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (b[r][c] === EMPTY) out.push({ r, c });
+    return out;
+  }
+
+  // Evaluate the whole board from `player`'s perspective: positive is good.
+  function evalBoard(player, b) {
+    const opp = 1 - player;
+    const myD = connectionDistance(player, b);
+    const opD = connectionDistance(opp, b);
+    if (myD === 0) return 1e6;       // already won
+    if (opD === 0) return -1e6;      // already lost
+    // closer (smaller distance) is better; opponent's larger distance is better.
+    return (opD - myD) * 100;
+  }
+
+  // Score a single candidate move for `player` (used by Easy/Medium and as the
+  // ranking the LLM sees). Higher = better.
+  function scoreMove(player, r, c) {
+    const opp = 1 - player;
+    board[r][c] = player;
+    const base = evalBoard(player, board);
+    board[r][c] = EMPTY;
+    // bridge bonus: does this cell create a bridge with one of my stones?
+    let bridgeBonus = 0;
+    for (const [end, ca, cb] of BRIDGES) {
+      const er = r + end[0], ec = c + end[1];
+      const ar = r + ca[0], ac = c + ca[1];
+      const br = r + cb[0], bc = c + cb[1];
+      if (inBounds(er, ec) && board[er][ec] === player &&
+          inBounds(ar, ac) && board[ar][ac] === EMPTY &&
+          inBounds(br, bc) && board[br][bc] === EMPTY) bridgeBonus += 14;
+    }
+    // gentle centrality term: central cells touch more of the board
+    const cr = (N - 1) / 2;
+    const central = -(Math.abs(r - cr) + Math.abs(c - cr));
+    return base + bridgeBonus + central;
+  }
+
+  // Rank every legal (empty) move best-first. Tags bridge moves and notes the
+  // resulting connection distances — the same list the LLM is shown.
+  function rankedMoves() {
+    const player = aiCtl.seat;
+    const cells = emptyCells();
+    const bridgeSet = bridgeMoveCells(player);
+    const baseMyD = connectionDistance(player, board);
+    const baseOpD = connectionDistance(1 - player, board);
+    const scored = cells.map(({ r, c }) => {
+      board[r][c] = player;
+      const myD = connectionDistance(player, board);
+      const opD = connectionDistance(1 - player, board);
+      board[r][c] = EMPTY;
+      const score = scoreMove(player, r, c);
+      return {
+        r, c, score, myD, opD,
+        bridge: bridgeSet.has(r + "," + c),
+        winning: myD === 0,
+        blocks: opD > baseOpD,     // lengthens the opponent's shortest connection
+        advances: myD < baseMyD,   // shortens our own
+      };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
+  }
+
+  // The actual built-in opponent move. Easy = some randomness among decent
+  // moves; Medium = best by 1-ply path-resistance; Hard = best of a shallow
+  // search (try my best moves, assume opponent replies with their best).
+  function builtinMove() {
+    const player = aiCtl.seat;
+    const ranked = rankedMoves();
+    if (!ranked.length) return null;
+    if (difficulty === 0) {
+      // pick randomly among the top third of moves
+      const k = Math.max(1, Math.floor(ranked.length / 3));
+      return ranked[Math.floor(Math.random() * k)];
+    }
+    if (difficulty === 1) return ranked[0];
+    // Hard: 2-ply look — for our best handful, simulate opponent's best reply.
+    const opp = 1 - player;
+    const top = ranked.slice(0, Math.min(8, ranked.length));
+    let best = ranked[0], bestVal = -Infinity;
+    for (const m of top) {
+      board[m.r][m.c] = player;
+      let myWin = connectionDistance(player, board) === 0;
+      let val;
+      if (myWin) { val = 1e7; }
+      else {
+        // opponent's best reply minimises our advantage
+        const oppCells = emptyCells();
+        let worst = Infinity;
+        // only scan a slice of opponent replies for speed
+        const oppRanked = oppCells.map((cc) => {
+          board[cc.r][cc.c] = opp;
+          const v = evalBoard(player, board);  // from OUR perspective; opp wants it low
+          board[cc.r][cc.c] = EMPTY;
+          return { cc, v };
+        }).sort((a, b) => a.v - b.v).slice(0, 6);
+        for (const { cc } of oppRanked) {
+          board[cc.r][cc.c] = opp;
+          worst = Math.min(worst, evalBoard(player, board));
+          board[cc.r][cc.c] = EMPTY;
+        }
+        val = worst === Infinity ? evalBoard(player, board) : worst;
+      }
+      board[m.r][m.c] = EMPTY;
+      if (val > bestVal) { bestVal = val; best = m; }
+    }
+    return best;
+  }
+
+  // ===================================================================
+  //  AI opponent — Bring Your Own Model (local only)
+  //  board-ai.js owns the panel + observe→ask→move loop. The engine lists
+  //  every legal (empty) cell, ranked by the connection heuristic and tagged
+  //  (bridge / advances / blocks / winning) and the model picks ONE by number.
+  //  A bad/failed reply falls back to the built-in connection AI's move, so
+  //  nothing illegal is ever possible.
+  // ===================================================================
+  function cellName(r, c) { return "r" + (r + 1) + "c" + (c + 1); }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const myEdges = seat === RED ? "TOP and BOTTOM" : "LEFT and RIGHT";
+    const oppEdges = seat === RED ? "LEFT and RIGHT" : "TOP and BOTTOM";
+    // Show the model a manageable, best-first slice (whole board can be 169 cells).
+    const slice = ranked.slice(0, Math.min(28, ranked.length));
+    const lines = slice.map((m, i) => {
+      const tags = [];
+      if (m.winning) tags.push("WINS NOW — completes your connection");
+      if (m.bridge) tags.push("BRIDGE — near-unbreakable link to your group");
+      if (m.advances) tags.push("advances your path");
+      if (m.blocks) tags.push("blocks opponent");
+      tags.push("your-dist " + (m.myD >= INF ? "∞" : m.myD));
+      tags.push("opp-dist " + (m.opD >= INF ? "∞" : m.opD));
+      return `${i + 1}. ${cellName(m.r, m.c)}  [${tags.join(", ")}]`;
+    }).join("\n");
+    const system =
+`You are a strong Hex player ("${me}") on a ${N}x${N} rhombic board. Hex has NO draws — exactly one player connects their edges. You (${me}) must connect the ${myEdges} edges; your opponent connects the ${oppEdges} edges. Each turn you place ONE stone on an empty cell; your same-colour stones link through the six hex neighbours.
+Strategy: minimise YOUR connection distance (empty cells still needed to link your two edges) while maximising the opponent's. Build along the short diagonal, use BRIDGES (two-stone links with two empty carriers — almost impossible to cut) to gain tempo, and block the opponent when their distance gets short. If a move WINS NOW, take it.
+You get a numbered list of the strongest legal cells, each tagged with distances. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence about your path or bridge, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`You are ${me} (connect ${myEdges}); opponent is ${opp} (connect ${oppEdges}). Cells are named r<row>c<col>, rows 1–${N} top→bottom, cols 1–${N} left→right.
+Your strongest legal cells (best first):
+${lines}
+
+Pick the best move and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked: slice };
+  }
+
+  function parseMove(reply, ranked) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    // model gave a coordinate directly, e.g. r3c5
+    const cm = seg.match(/r\s*(\d+)\s*c\s*(\d+)/i);
+    if (cm) {
+      const r = +cm[1] - 1, c = +cm[2] - 1;
+      const hit = ranked.find((m) => m.r === r && m.c === c);
+      if (hit) return hit;
+      if (inBounds(r, c) && board[r][c] === EMPTY) return { r, c, bridge: false };
+    }
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("hxAi"),
+    oppSeg: document.getElementById("hxOppSeg"),
+    defaultSeat: BLUE,          // AI plays Blue by default (human is Red, moves first)
+    temperature: 0.4,
+    maxTokens: 600,
+    thinkPlaceholder: "The AI's reasoning streams here as it plots a connection…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      "It only ever picks from the game's list of <em>legal</em> empty cells (each tagged with " +
+      'connection distance and whether it forms a <em>bridge</em>), so it always plays by the rules; ' +
+      'a bad reply falls back to the built-in connection AI.',
+    seats: () => { const nm = names(); return [RED, BLUE].map((p) => ({ value: p, label: nm[p] + (p === RED ? " (first)" : "") })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    moveStale: (m) => board[m.r][m.c] !== EMPTY,
+    applyMove: (m) => placeMove(m.r, m.c, true),
+    moveLabel: (m) => cellName(m.r, m.c),
+    describeMove: (m) => "played " + cellName(m.r, m.c) + (m.bridge ? " (bridge!)" : ""),
+    repaint: () => render(),
+  });
+
+  // thin shims so the core game code keeps its call sites
+  function isAITurn() { return aiCtl.isAITurn(); }
+  function maybeAIMove() {
+    // If "vs AI" but no model is connected, the built-in connection AI plays.
+    if (gameOver) return;
+    if (aiCtl.mode === "ai" && current === aiCtl.seat) {
+      if (XenoBYOM.isLocal() && aiUsableModel()) { aiCtl.notify(); return; }
+      // built-in fallback (also the only path on the hosted site)
+      render();   // drop human hints during AI's turn
+      setTimeout(() => {
+        if (gameOver || !(aiCtl.mode === "ai" && current === aiCtl.seat)) return;
+        const m = builtinMove();
+        if (m) placeMove(m.r, m.c, true);
+      }, 280);
+    }
+  }
+  function hxOnNewGame() { aiCtl.newGame(); maybeAIMove(); }
+
+  // Is a live model actually selected/ready? (board-ai.js doesn't expose this,
+  // so we mirror its gate: local + a chosen model in the panel's select.)
+  function aiUsableModel() {
+    if (!XenoBYOM.isLocal()) return false;
+    const sel = document.querySelector("#hxAi .ai-model");
+    return !!(sel && !sel.disabled && sel.value);
+  }
+
+  // ---- control panel wiring ----
+  function wireSegment(id, attr, onPick) {
+    const container = document.getElementById(id);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn"); if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(btn.getAttribute(attr));
+    });
+  }
+  wireSegment("sizeSeg", "data-size", (v) => { N = +v; startGame(); });
+  wireSegment("diffSeg", "data-diff", (v) => { difficulty = +v; });
+  wireSegment("hintSeg", "data-hints", (v) => { showHints = v === "1"; if (!gameOver) render(); });
+  document.getElementById("newGame").addEventListener("click", startGame);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) updateScoreboard(); aiCtl.rebuildSeats(); }));
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

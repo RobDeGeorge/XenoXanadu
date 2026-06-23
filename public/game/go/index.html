@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GO // RETRO</title>
+<meta name="description" content="Go (Baduk / Weiqi) rebuilt by hand in neon — surround territory, capture stones. 9x9/13x13/19x19, area scoring with komi, a scaling heuristic bot, or take on a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --board: #131417;        /* the goban field */
+    --board-2: #0c0d0f;
+    --linewood: #313338;     /* the grid lines drawn on the goban */
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --dark: #1a1a1a;          /* black stone */
+    --dark-edge: #5fb6b0;     /* muted teal rim */
+    --dark-soft: #5fb6b026;
+    --light: #d8d6d0;         /* white stone */
+    --light-edge: #c06a9b;    /* muted magenta rim */
+    --light-soft: #c06a9b26;
+    --accent: #c7a24a;        /* muted amber */
+    --hint: #6dbf95;          /* legal-move / last-move indicator */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 760px;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
+    --ai-on: var(--dark-edge);
+    --ai-err: var(--light-edge);
+  }
+
+  html, body {
+    background: var(--bg);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 8px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .subtitle {
+    text-align: center; color: var(--muted);
+    margin: 10px 0 26px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* name swatch is a round stone chip */
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 50%; flex: none; border: 2px solid; }
+  .name-field input { width: 118px; }
+
+  .scoreboard { gap: 14px; }
+  .score-card { flex: 1 1 160px; max-width: 240px; padding: 12px 16px; }
+  .score-card .name { font-size: 14px; }
+  .score-card .disc-marker { width: 15px; height: 15px; border-radius: 50%; flex: none; border: 2px solid; }
+  .score-card .score { font-size: 40px; line-height: 1.15; }
+  .score-card .breakdown { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+  /* ---------- the board ---------- */
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    position: relative; background: var(--board);
+    border: 1px solid var(--grid); border-radius: 0;
+    padding: 4px;
+  }
+  /* the SVG goban (grid lines + star points + stones) is drawn into here */
+  #goban { display: block; width: min(82vw, 560px); height: min(82vw, 560px); touch-action: manipulation; cursor: pointer; }
+
+  /* a faint ko/last-move ring is drawn in SVG; nothing extra needed here */
+
+  .rules { max-width: 600px; margin: 26px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+
+  .pass-bar { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 14px 0 4px; flex-wrap: wrap; }
+  .pass-bar button { font-family: var(--mono); }
+  .est { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin: 6px 0 0; text-transform: uppercase; }
+
+  @media (max-width: 520px) {
+    .name-field input { width: 100px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GO</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Surround &amp; Capture &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="goOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Board</label>
+        <div class="seg" id="sizeSeg">
+          <button type="button" class="seg-btn active" data-size="9">9&times;9</button>
+          <button type="button" class="seg-btn" data-size="13">13&times;13</button>
+          <button type="button" class="seg-btn" data-size="19">19&times;19</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Bot Strength</label>
+        <div class="seg" id="strengthSeg">
+          <button type="button" class="seg-btn" data-strength="0">Beginner</button>
+          <button type="button" class="seg-btn active" data-strength="1">Easy</button>
+          <button type="button" class="seg-btn" data-strength="2">Medium</button>
+          <button type="button" class="seg-btn" data-strength="3">Hard</button>
+          <button type="button" class="seg-btn" data-strength="4">Expert</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="background:var(--dark);border-color:var(--dark-edge)"></span><input id="name0" value="Black" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="background:var(--light);border-color:var(--light-edge)"></span><input id="name1" value="White" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="goAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <svg id="goban" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div class="pass-bar">
+      <button type="button" id="passBtn">Pass</button>
+      <button type="button" id="undoBtn">Undo</button>
+    </div>
+    <p class="est" id="estLine"></p>
+
+    <div class="winner-banner" id="winner"></div>
+
+    <p class="rules">
+      Place a stone on an empty intersection. A connected group with no <b>liberties</b> (empty
+      adjacent points) is captured and removed. Suicide is illegal unless it captures. You may not
+      repeat the previous board position (<b>ko</b>). <b>Pass</b> is legal; two passes in a row end
+      the game. Score is <b>area</b> (your stones + territory you surround), with <b>komi 6.5</b> to White.
+    </p>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ============================================================
+  //  Go — pure rules engine + neon SVG board + scaling heuristic bot.
+  //  Stones: BLACK = 0, WHITE = 1, EMPTY = -1. Black moves first.
+  //  Area scoring, komi 6.5 to White, positional-superko-lite (simple ko
+  //  via "can't recreate the immediately previous board position").
+  // ============================================================
+
+  const BLACK = 0, WHITE = 1, EMPTY = -1;
+  const KOMI = 6.5;
+  const STAR = {            // star-point (hoshi) coordinates per board size
+    9:  [[2,2],[2,6],[6,2],[6,6],[4,4]],
+    13: [[3,3],[3,9],[9,3],[9,9],[6,6]],
+    19: [[3,3],[3,9],[3,15],[9,3],[9,9],[9,15],[15,3],[15,9],[15,15]],
+  };
+
+  const svg = document.getElementById("goban");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+  const estLine = document.getElementById("estLine");
+
+  // ---- game state ----
+  let N = 9;                 // board size
+  let board;                 // board[r][c] in {BLACK, WHITE, EMPTY}
+  let current;               // side to move
+  let captures;              // captures[BLACK] = black stones removed BY white..; we track "captured by X"
+  let gameOver, lastMove, passCount;
+  let koPoint;               // {r,c} forbidden by simple ko, or null
+  let history;               // stack of snapshots for Undo
+  let strength = 1;
+
+  const inB = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+  const key = (r, c) => r * N + c;
+  const NEI = (r, c) => {
+    const out = [];
+    if (r > 0) out.push([r - 1, c]);
+    if (r < N - 1) out.push([r + 1, c]);
+    if (c > 0) out.push([r, c - 1]);
+    if (c < N - 1) out.push([r, c + 1]);
+    return out;
+  };
+  const colLabel = (c) => "ABCDEFGHJKLMNOPQRST"[c];        // Go skips "I"
+  const coordOf = (r, c) => colLabel(c) + (N - r);         // bottom-left = A1 convention
+
+  function names() {
+    return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === 0 ? "Black" : "White"));
+  }
+  function stoneClass(p) { return p === BLACK ? "dark" : "light"; }
+
+  // ---- core rules: groups, liberties, captures ----------------------------
+
+  // Flood-fill the group of same-coloured stones containing (r,c) on board b.
+  // Returns { stones: [[r,c]...], libs: Set of liberty keys }.
+  function groupAt(b, r, c) {
+    const color = b[r][c];
+    const stones = [];
+    const libs = new Set();
+    const seen = new Set([key(r, c)]);
+    const stack = [[r, c]];
+    while (stack.length) {
+      const [cr, cc] = stack.pop();
+      stones.push([cr, cc]);
+      for (const [nr, nc] of NEI(cr, cc)) {
+        const v = b[nr][nc];
+        if (v === EMPTY) { libs.add(key(nr, nc)); }
+        else if (v === color && !seen.has(key(nr, nc))) { seen.add(key(nr, nc)); stack.push([nr, nc]); }
+      }
+    }
+    return { stones, libs };
+  }
+
+  // Apply a play of `color` at (r,c) to a CLONE of board b. Assumes (r,c) empty.
+  // Returns { board: newBoard, captured: [[r,c]...] } or null if illegal (suicide).
+  // Does NOT check ko — caller does that.
+  function tryPlay(b, r, c, color) {
+    const nb = b.map((row) => row.slice());
+    nb[r][c] = color;
+    const opp = 1 - color;
+    const captured = [];
+    // remove any opponent groups now with zero liberties
+    for (const [nr, nc] of NEI(r, c)) {
+      if (nb[nr][nc] === opp) {
+        const g = groupAt(nb, nr, nc);
+        if (g.libs.size === 0) {
+          for (const [sr, sc] of g.stones) { nb[sr][sc] = EMPTY; captured.push([sr, sc]); }
+        }
+      }
+    }
+    // suicide check: our own group must now have a liberty
+    const mine = groupAt(nb, r, c);
+    if (mine.libs.size === 0) return null;   // illegal suicide (captured nothing useful)
+    return { board: nb, captured };
+  }
+
+  // Is playing (r,c) by `color` legal right now (occupancy + suicide + ko)?
+  function isLegal(r, c, color) {
+    if (!inB(r, c) || board[r][c] !== EMPTY) return false;
+    const res = tryPlay(board, r, c, color);
+    if (!res) return false;                                   // suicide
+    if (koPoint && r === koPoint.r && c === koPoint.c) return false;  // simple ko
+    return true;
+  }
+
+  // Every legal point + the pass move, for `color`.
+  function legalMoves(color) {
+    const out = [];
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++)
+        if (isLegal(r, c, color)) out.push({ r, c, pass: false });
+    out.push({ pass: true });
+    return out;
+  }
+
+  // ---- area scoring (Tromp-Taylor-ish) ------------------------------------
+  // Each empty region reaching only one colour counts as that colour's territory.
+  // Score = stones-on-board + territory; White adds komi.
+  function score(b) {
+    b = b || board;
+    let black = 0, white = 0, terrB = 0, terrW = 0;
+    const seen = new Set();
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] === BLACK) black++;
+      else if (b[r][c] === WHITE) white++;
+    }
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] !== EMPTY || seen.has(key(r, c))) continue;
+      // flood the empty region, recording which colours border it
+      const region = [];
+      const borders = new Set();
+      const stack = [[r, c]];
+      seen.add(key(r, c));
+      while (stack.length) {
+        const [cr, cc] = stack.pop();
+        region.push([cr, cc]);
+        for (const [nr, nc] of NEI(cr, cc)) {
+          const v = b[nr][nc];
+          if (v === EMPTY) { if (!seen.has(key(nr, nc))) { seen.add(key(nr, nc)); stack.push([nr, nc]); } }
+          else borders.add(v);
+        }
+      }
+      if (borders.size === 1) {
+        if (borders.has(BLACK)) terrB += region.length; else terrW += region.length;
+      }
+    }
+    const blackArea = black + terrB;
+    const whiteArea = white + terrW + KOMI;
+    return { black, white, terrB, terrW, blackArea, whiteArea };
+  }
+
+  // ---- snapshots / undo ---------------------------------------------------
+  function snapshot() {
+    return {
+      board: board.map((row) => row.slice()),
+      current, passCount, lastMove, gameOver,
+      ko: koPoint ? { r: koPoint.r, c: koPoint.c } : null,
+      cap: captures.slice(),
+    };
+  }
+  function restore(s) {
+    board = s.board.map((row) => row.slice());
+    current = s.current; passCount = s.passCount; lastMove = s.lastMove;
+    gameOver = s.gameOver; koPoint = s.ko ? { r: s.ko.r, c: s.ko.c } : null;
+    captures = s.cap.slice();
+  }
+
+  // ---- turn flow ----------------------------------------------------------
+  function onPoint(r, c) {
+    if (gameOver || isAITurn()) return;
+    if (!isLegal(r, c, current)) return;
+    playStone(r, c, false);
+  }
+
+  // Commit a stone play. Returns true on success.
+  function playStone(r, c, byAI) {
+    if (!isLegal(r, c, current)) return false;
+    history.push(snapshot());
+    const res = tryPlay(board, r, c, current);
+    board = res.board;
+    // record captures (stones removed belonged to the opponent)
+    const opp = 1 - current;
+    captures[current] += res.captured.length;   // captures[X] = stones X has captured
+    // simple ko: if exactly one stone was captured AND the just-played stone is
+    // itself now a lone stone with a single liberty (the captured point), that
+    // capture point is ko-forbidden for the opponent's reply.
+    koPoint = null;
+    if (res.captured.length === 1) {
+      const g = groupAt(board, r, c);
+      if (g.stones.length === 1 && g.libs.size === 1) {
+        const lib = [...g.libs][0];
+        koPoint = { r: Math.floor(lib / N), c: lib % N };
+      }
+    }
+    lastMove = { r, c, pass: false };
+    passCount = 0;
+    current = 1 - current;
+    render();
+    afterMove();
+    return true;
+  }
+
+  function playPass(byAI) {
+    if (gameOver) return;
+    history.push(snapshot());
+    koPoint = null;
+    lastMove = { pass: true, by: current };
+    passCount++;
+    current = 1 - current;
+    if (passCount >= 2) { endGame(); return; }
+    render();
+    afterMove();
+  }
+
+  function afterMove() {
+    updateStatus();
+    maybeAIMove();
+  }
+
+  function undo() {
+    if (gameOver && history.length === 0) return;
+    // when vs AI, undo a full round (human + AI reply) when possible
+    let steps = (aiCtl && aiCtl.mode === "ai") ? 2 : 1;
+    while (steps-- > 0 && history.length) restore(history.pop());
+    if (history.length === 0 && !board) return;
+    winnerEl.textContent = "";
+    render();
+    updateStatus();
+    aiCtl.interrupt();
+    maybeAIMove();
+  }
+
+  function endGame() {
+    gameOver = true;
+    render();
+    const nm = names();
+    const s = score();
+    const bA = s.blackArea, wA = s.whiteArea;
+    let text, color;
+    if (bA === wA) { text = "&#9878; Jigo (tie) &mdash; " + bA + " each"; color = "var(--accent)"; }
+    else {
+      const w = bA > wA ? BLACK : WHITE;
+      const edge = w === BLACK ? "--dark-edge" : "--light-edge";
+      const margin = Math.abs(bA - wA);
+      text = "&#9733; " + nm[w] + " wins by " + (Math.round(margin * 10) / 10) + " &#9733;";
+      color = "var(" + edge + ")";
+    }
+    winnerEl.innerHTML = text;
+    winnerEl.style.color = color;
+    statusEl.innerHTML = "Two passes &mdash; game over. " +
+      "<b>" + nm[BLACK] + "</b> " + bA + " &nbsp; vs &nbsp; <b>" + nm[WHITE] + "</b> " + wA +
+      " (incl. komi " + KOMI + "). Press <b>New Game</b>.";
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    const edge = current === BLACK ? "--dark-edge" : "--light-edge";
+    if (msg) { statusEl.innerHTML = msg; return; }
+    let extra = "";
+    if (lastMove && lastMove.pass) extra = " &nbsp;<span style='color:var(--muted)'>(" + nm[lastMove.by] + " passed)</span>";
+    statusEl.innerHTML = `<b style="color:var(${edge})">${nm[current]}</b>'s move${extra}`;
+  }
+
+  function updateEstimate() {
+    const s = score();
+    const nm = names();
+    estLine.innerHTML =
+      "Live estimate (area + komi) &mdash; " + nm[BLACK] + " " + s.blackArea +
+      " &nbsp;·&nbsp; " + nm[WHITE] + " " + s.whiteArea +
+      " &nbsp;·&nbsp; captures " + nm[BLACK] + " " + captures[BLACK] + " / " + nm[WHITE] + " " + captures[WHITE];
+  }
+
+  // ---- rendering (SVG) ----------------------------------------------------
+  // We draw the goban as crisp SVG: grid lines, star points, last-move ring,
+  // ko marker, and stones with a neon rim. Click maps pixel → nearest point.
+  const VIEW = 1000;                                 // viewbox units
+  function geo() {
+    const pad = VIEW * 0.045;
+    const span = VIEW - pad * 2;
+    const step = span / (N - 1);
+    return { pad, step };
+  }
+  function ptXY(r, c) { const { pad, step } = geo(); return [pad + c * step, pad + r * step]; }
+
+  function buildBoard() {
+    svg.setAttribute("viewBox", "0 0 " + VIEW + " " + VIEW);
+    render();
+  }
+
+  function svgEl(tag, attrs) {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function render() {
+    const { pad, step } = geo();
+    svg.innerHTML = "";
+    const stoneR = step * 0.46;
+
+    // grid lines
+    for (let i = 0; i < N; i++) {
+      const a = pad + i * step;
+      svg.appendChild(svgEl("line", { x1: pad, y1: a, x2: VIEW - pad, y2: a, stroke: "var(--linewood)", "stroke-width": 1.6, opacity: 0.85 }));
+      svg.appendChild(svgEl("line", { x1: a, y1: pad, x2: a, y2: VIEW - pad, stroke: "var(--linewood)", "stroke-width": 1.6, opacity: 0.85 }));
+    }
+    // star points
+    (STAR[N] || []).forEach(([r, c]) => {
+      const [x, y] = ptXY(r, c);
+      svg.appendChild(svgEl("circle", { cx: x, cy: y, r: step * 0.07, fill: "var(--linewood)", opacity: 0.95 }));
+    });
+
+    // ko marker (a small square at the forbidden point)
+    if (koPoint && !gameOver) {
+      const [x, y] = ptXY(koPoint.r, koPoint.c);
+      const s = stoneR * 0.7;
+      svg.appendChild(svgEl("rect", { x: x - s / 2, y: y - s / 2, width: s, height: s, fill: "none", stroke: "var(--accent)", "stroke-width": 3, opacity: 0.8 }));
+    }
+
+    // stones
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const v = board[r][c];
+      if (v === EMPTY) continue;
+      const [x, y] = ptXY(r, c);
+      const isBlack = v === BLACK;
+      const fill = isBlack ? "var(--dark)" : "var(--light)";
+      const edge = isBlack ? "var(--dark-edge)" : "var(--light-edge)";
+      svg.appendChild(svgEl("circle", { cx: x, cy: y, r: stoneR, fill, stroke: edge, "stroke-width": 2 }));
+    }
+
+    // last-move ring
+    if (lastMove && !lastMove.pass && lastMove.r != null) {
+      const [x, y] = ptXY(lastMove.r, lastMove.c);
+      const ringColor = board[lastMove.r][lastMove.c] === BLACK ? "var(--hint)" : "var(--hint)";
+      svg.appendChild(svgEl("circle", { cx: x, cy: y, r: stoneR * 0.5, fill: "none", stroke: ringColor, "stroke-width": 3, opacity: 0.9 }));
+    }
+
+    updateScoreboard();
+    updateEstimate();
+  }
+
+  // map a click to the nearest intersection
+  function pickPoint(evt) {
+    const rect = svg.getBoundingClientRect();
+    const cx = evt.clientX != null ? evt.clientX : (evt.touches && evt.touches[0].clientX);
+    const cy = evt.clientY != null ? evt.clientY : (evt.touches && evt.touches[0].clientY);
+    const x = (cx - rect.left) / rect.width * VIEW;
+    const y = (cy - rect.top) / rect.height * VIEW;
+    const { pad, step } = geo();
+    const c = Math.round((x - pad) / step);
+    const r = Math.round((y - pad) / step);
+    if (!inB(r, c)) return null;
+    // reject clicks too far from the actual intersection
+    const [px, py] = ptXY(r, c);
+    if (Math.hypot(x - px, y - py) > step * 0.5) return null;
+    return { r, c };
+  }
+  svg.addEventListener("click", (e) => {
+    const p = pickPoint(e);
+    if (p) onPoint(p.r, p.c);
+  });
+
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML = "";
+    [BLACK, WHITE].forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + p;
+      const edge = p === BLACK ? "--dark-edge" : "--light-edge";
+      const fill = p === BLACK ? "--dark" : "--light";
+      card.innerHTML =
+        '<div class="name"><span class="disc-marker" style="background:var(' + fill + ');border-color:var(' + edge + ')"></span>' +
+        '<span id="label' + p + '"></span></div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + edge + ')">0</div>' +
+        '<div class="breakdown" id="break' + p + '"></div>';
+      sb.appendChild(card);
+      document.getElementById("label" + p).textContent = nm[p];
+    });
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    const s = score();
+    const area = [s.blackArea, s.whiteArea];
+    const terr = [s.terrB, s.terrW];
+    const stones = [s.black, s.white];
+    [BLACK, WHITE].forEach((p) => {
+      document.getElementById("label" + p).textContent = nm[p];
+      document.getElementById("score" + p).textContent = Math.round(area[p] * 10) / 10;
+      document.getElementById("break" + p).textContent =
+        stones[p] + " stones + " + terr[p] + " terr" + (p === WHITE ? " + " + KOMI + " komi" : "");
+      const card = document.getElementById("card" + p);
+      const edge = p === BLACK ? "--dark-edge" : "--light-edge";
+      const soft = p === BLACK ? "--dark-soft" : "--light-soft";
+      const active = !gameOver && current === p;
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + edge + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "inset 0 0 0 1px var(" + edge + ")"
+        : "inset 0 -3px 0 var(" + edge + ")";
+    });
+  }
+
+  // ============================================================
+  //  Built-in heuristic bot — scales Beginner → Expert.
+  //  No model required. It evaluates each legal move by simulating it and
+  //  scoring the resulting position with a blend of:
+  //    • material (stones captured this move, big bonus)
+  //    • self-atari avoidance (don't play into immediate capture)
+  //    • saving own groups in atari / putting enemy groups into atari
+  //    • liberty health of the played stone's group
+  //    • influence (distance-weighted control of the board)
+  //    • light eye/territory sense via the area-score delta
+  //  Strength tunes: how much it looks (capture/atari awareness),
+  //  greediness (weight on territory vs. safety) and random noise.
+  // ============================================================
+
+  // strength presets: 0 beginner .. 4 expert
+  const STR = [
+    { noise: 9.0, atari: 0.2, infl: 0.3, terr: 0.3, fillEnd: false, tactical: 0.3 },  // beginner
+    { noise: 5.0, atari: 0.6, infl: 0.6, terr: 0.6, fillEnd: false, tactical: 0.6 },  // easy
+    { noise: 2.2, atari: 1.0, infl: 1.0, terr: 1.0, fillEnd: true,  tactical: 1.0 },  // medium
+    { noise: 0.9, atari: 1.0, infl: 1.2, terr: 1.3, fillEnd: true,  tactical: 1.0 },  // hard
+    { noise: 0.25,atari: 1.0, infl: 1.4, terr: 1.6, fillEnd: true,  tactical: 1.0 },  // expert
+  ];
+
+  // For a board b, smallest liberty count among groups of `color` neighbouring (r,c).
+  function minOppLibsAround(b, r, c, color) {
+    const opp = 1 - color;
+    let mn = Infinity;
+    const seen = new Set();
+    for (const [nr, nc] of NEI(r, c)) {
+      if (b[nr][nc] === opp && !seen.has(key(nr, nc))) {
+        const g = groupAt(b, nr, nc);
+        g.stones.forEach(([sr, sc]) => seen.add(key(sr, sc)));
+        mn = Math.min(mn, g.libs.size);
+      }
+    }
+    return mn;
+  }
+
+  // Influence: each stone radiates control to nearby empty points (decay by
+  // Manhattan distance). Net (black - white) summed; positive favours Black.
+  function influence(b) {
+    let net = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const v = b[r][c];
+      if (v === EMPTY) continue;
+      const sign = v === BLACK ? 1 : -1;
+      net += sign * 4;
+    }
+    return net; // stone-count proxy; territory handled separately
+  }
+
+  // Count groups of `color` currently in atari (exactly 1 liberty) on board b.
+  function atariCount(b, color) {
+    let n = 0;
+    const seen = new Set();
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] === color && !seen.has(key(r, c))) {
+        const g = groupAt(b, r, c);
+        g.stones.forEach(([sr, sc]) => seen.add(key(sr, sc)));
+        if (g.libs.size === 1) n += g.stones.length;
+      }
+    }
+    return n;
+  }
+
+  // Evaluate the position after a hypothetical move, from `color`'s view.
+  function evalAfter(nb, color, capturedNow, playedR, playedC, cfg) {
+    const opp = 1 - color;
+    const s = score(nb);
+    const myArea = color === BLACK ? s.blackArea : s.whiteArea;
+    const oppArea = color === BLACK ? s.whiteArea : s.blackArea;
+    let v = (myArea - oppArea) * cfg.terr;
+    // captures this move are very good
+    v += capturedNow * 8 * cfg.tactical;
+    // self-atari penalty: how healthy is the group we just played?
+    const g = groupAt(nb, playedR, playedC);
+    if (g.libs.size === 1) v -= 6 * cfg.atari;       // played into atari — usually bad
+    else v += Math.min(g.libs.size, 4) * 0.4;
+    // pressure: enemy groups left in atari (good — threatens capture)
+    v += atariCount(nb, opp) * 1.5 * cfg.atari * cfg.tactical;
+    // our own stones left in atari (bad)
+    v -= atariCount(nb, color) * 1.2 * cfg.atari;
+    // influence / stone presence
+    v += (color === BLACK ? influence(nb) : -influence(nb)) * 0.05 * cfg.infl;
+    return v;
+  }
+
+  // Choose a move for `color`. Returns {r,c,pass}. Pure on a snapshot of board.
+  function botMove(color) {
+    const cfg = STR[strength];
+    const legals = legalMoves(color).filter((m) => !m.pass);
+    if (!legals.length) return { pass: true };
+
+    let best = null, bestScore = -Infinity;
+    for (const m of legals) {
+      const res = tryPlay(board, m.r, m.c, color);
+      if (!res) continue;
+      // skip filling our own eyes / single-point empties surrounded by us late game
+      let v = evalAfter(res.board, color, res.captured.length, m.r, m.c, cfg);
+      // beginner-ish play: small center bias so it doesn't cling to edges blindly
+      const edgeDist = Math.min(m.r, m.c, N - 1 - m.r, N - 1 - m.c);
+      v += Math.min(edgeDist, 2) * 0.3 * cfg.infl;
+      v += (Math.random() - 0.5) * cfg.noise;
+      if (v > bestScore) { bestScore = v; best = m; }
+    }
+    if (!best) return { pass: true };
+
+    // Endgame sense: if our best move barely changes the score and the game is
+    // mostly settled, stronger bots will pass to end gracefully rather than
+    // fill their own territory. We compare passing vs the best play.
+    if (cfg.fillEnd) {
+      const cur = score(board);
+      const myNow = color === BLACK ? cur.blackArea : cur.whiteArea;
+      const oppNow = color === BLACK ? cur.whiteArea : cur.blackArea;
+      // if we're already ahead and the best move is a tiny/negative-value point
+      // (likely self-fill), pass — but only if the opponent just passed too, so
+      // we don't pass away a live game.
+      const wouldBeSelfFill = isOwnEye(best.r, best.c, color);
+      if (wouldBeSelfFill && (passCount >= 1)) return { pass: true };
+      if (wouldBeSelfFill && myNow - oppNow > 0) {
+        // avoid filling our own eye — pick a non-eye alternative if any sensible one
+        const alt = legals.find((m) => !isOwnEye(m.r, m.c, color));
+        if (!alt) return { pass: true };
+      }
+    }
+    // never fill your own single-point eye unless capturing
+    if (isOwnEye(best.r, best.c, color)) {
+      const res = tryPlay(board, best.r, best.c, color);
+      if (res && res.captured.length === 0) {
+        const alt = pickNonEye(legals, color);
+        if (alt) return alt;
+        return { pass: true };
+      }
+    }
+    return best;
+  }
+
+  // A point is "our own eye" if it's empty and ALL orthogonal neighbours are our
+  // stones (board-edge counts as friendly). Filling it is almost always wrong.
+  function isOwnEye(r, c, color) {
+    if (board[r][c] !== EMPTY) return false;
+    for (const [nr, nc] of NEI(r, c)) if (board[nr][nc] !== color) return false;
+    return true;
+  }
+  function pickNonEye(legals, color) {
+    const cfg = STR[strength];
+    let best = null, bestScore = -Infinity;
+    for (const m of legals) {
+      if (isOwnEye(m.r, m.c, color)) continue;
+      const res = tryPlay(board, m.r, m.c, color);
+      if (!res) continue;
+      let v = evalAfter(res.board, color, res.captured.length, m.r, m.c, cfg) + (Math.random() - 0.5) * cfg.noise;
+      if (v > bestScore) { bestScore = v; best = m; }
+    }
+    return best;
+  }
+
+  // ============================================================
+  //  AI opponent — Bring Your Own Model (local only)
+  //  board-ai.js owns the panel + observe→ask→move loop. We hand it the
+  //  numbered list of legal moves (ranked by our heuristic, pass included)
+  //  and the model replies MOVE: <n>. A bad reply falls back to ranked[0],
+  //  which is the heuristic's own top pick — so the model can never play
+  //  illegally and "vs AI" still works with no model at all.
+  // ============================================================
+
+  // ranked legal moves for the AI seat: heuristic-scored, pass appended.
+  function rankedMoves() {
+    const color = aiCtl.seat;
+    const cfg = STR[Math.max(2, strength)];     // model gets at least "medium" tagging
+    const legals = legalMoves(color);
+    const scored = [];
+    for (const m of legals) {
+      if (m.pass) { scored.push({ pass: true, score: -50, capturedNow: 0, atariEnemy: 0, selfAtari: false }); continue; }
+      const res = tryPlay(board, m.r, m.c, color);
+      if (!res) continue;
+      const g = groupAt(res.board, m.r, m.c);
+      const v = evalAfter(res.board, color, res.captured.length, m.r, m.c, cfg);
+      scored.push({
+        r: m.r, c: m.c, pass: false, score: v,
+        capturedNow: res.captured.length,
+        selfAtari: g.libs.size === 1,
+        libs: g.libs.size,
+        atariEnemy: minOppLibsAround(res.board, m.r, m.c, color) === 1,
+      });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
+  }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const s = score();
+    // cap the list we show the model (keep prompts tight on 19x19)
+    const TOP = Math.min(ranked.length, N >= 19 ? 28 : (N >= 13 ? 36 : 50));
+    const shown = ranked.slice(0, TOP);
+    const lines = shown.map((m, i) => {
+      if (m.pass) return `${i + 1}. PASS  [end the game if opponent also passes — only when the board is settled in your favour]`;
+      const tags = [];
+      if (m.capturedNow > 0) tags.push("CAPTURES " + m.capturedNow + " stone(s)");
+      if (m.atariEnemy) tags.push("puts enemy in atari");
+      if (m.selfAtari) tags.push("SELF-ATARI — risky, may be captured next");
+      tags.push("liberties " + m.libs);
+      return `${i + 1}. ${coordOf(m.r, m.c)}  [${tags.join(", ")}]`;
+    }).join("\n");
+    const system =
+`You are a strong Go (Baduk) player ("${me}") on a ${N}x${N} board. Stones placed on empty intersections; a connected group with zero liberties is captured. Score is AREA (your stones + surrounded territory), komi ${KOMI} to White.
+Strategy, in priority order: (1) capture enemy stones when it gains territory, and rescue your own groups that are in atari (1 liberty); (2) avoid self-atari unless it captures more; (3) build a framework — take big open areas and corners/sides early for influence and territory, rather than contact-fighting from move one; (4) make/keep eye shape so your groups live; (5) in the endgame, take the biggest boundary points; pass only when the position is settled in your favour and passing wins.
+You get a numbered list of legal moves, each tagged. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence about territory/influence, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`Live area estimate — ${nm[BLACK]} (black) ${s.blackArea}, ${nm[WHITE]} (white) ${s.whiteArea} (incl. komi). You are ${me}; opponent is ${opp}.
+Points are named column+row, columns A-${colLabel(N - 1)} left to right (no "I"), rows ${N} at top down to 1 at bottom.
+Your legal moves (best-first by a quick heuristic):
+${lines}
+
+Pick the move that builds the most territory/influence (or makes the key capture) and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked: shown };
+  }
+
+  function parseMove(reply, ranked) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    // model gave a coordinate directly, e.g. "D4" or "PASS"
+    if (/\bPASS\b/i.test(seg)) { const p = ranked.find((m) => m.pass); if (p) return p; }
+    const cm = seg.match(/\b([A-HJ-T])\s*(\d{1,2})\b/i);
+    if (cm) {
+      const c = "ABCDEFGHJKLMNOPQRST".indexOf(cm[1].toUpperCase());
+      const r = N - (+cm[2]);
+      const hit = ranked.find((m) => !m.pass && m.r === r && m.c === c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("goAi"),
+    oppSeg: document.getElementById("goOppSeg"),
+    defaultSeat: WHITE,        // AI plays White by default (human is Black, moves first)
+    temperature: 0.4,
+    maxTokens: 700,
+    thinkPlaceholder: "The AI's reasoning streams here as it weighs territory & influence…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      "It only ever picks from the game's list of <em>legal</em> moves (each tagged with captures, " +
+      'atari and liberties, plus Pass), so it always plays by the rules &mdash; and the built-in bot ' +
+      "covers it offline.",
+    seats: () => { const nm = names(); return [BLACK, WHITE].map((p) => ({ value: p, label: nm[p] + (p === BLACK ? " (first)" : "") })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    moveStale: (m) => m && !m.pass && !isLegal(m.r, m.c, aiCtl.seat),
+    applyMove: (m) => { if (m.pass) playPass(true); else playStone(m.r, m.c, true); },
+    moveLabel: (m) => (m && m.pass ? "Pass" : coordOf(m.r, m.c)),
+    describeMove: (m) => m && m.pass ? "passed" :
+      ("played " + coordOf(m.r, m.c) + (m.capturedNow ? " — captured " + m.capturedNow : "")),
+    repaint: () => render(),
+  });
+
+  // thin shims so the core game code keeps tidy call sites
+  function isAITurn() { return aiCtl.isAITurn(); }
+
+  // The AI move loop. Two worlds:
+  //   • LOCAL page → board-ai.js drives the turn (a connected model picks from
+  //     the numbered legal list; if its reply is unreadable OR no model is
+  //     loaded, board-ai falls back to ranked[0], which IS our heuristic's top
+  //     pick — so it always plays a sane legal move).
+  //   • HOSTED / offline (no model reachable) → our built-in heuristic bot plays
+  //     directly, giving a full Beginner→Expert opponent with zero model.
+  // The Bot-Strength control tunes the heuristic in both worlds (it's also the
+  // ranking board-ai falls back to).
+  function maybeAIMove() {
+    if (gameOver) return;
+    if (aiCtl.mode !== "ai" || current !== aiCtl.seat) return;
+    // hand off to the connected model only when one is actually loaded;
+    // otherwise (hosted, or local with no model) play the heuristic ourselves.
+    if (XenoBYOM.isLocal() && modelLoaded()) { aiCtl.notify(); return; }
+    setTimeout(() => {
+      if (gameOver || aiCtl.mode !== "ai" || current !== aiCtl.seat) return;
+      const mv = botMove(aiCtl.seat);
+      if (mv.pass) playPass(true); else playStone(mv.r, mv.c, true);
+    }, 360);
+  }
+  // A model is usable when board-ai's <select> (which it built into #goAi) has
+  // a real value and isn't disabled. If not, the built-in bot covers the turn.
+  function modelLoaded() {
+    const sel = document.querySelector("#goAi .ai-model");
+    return !!(sel && !sel.disabled && sel.value);
+  }
+  function goOnNewGame() { aiCtl.newGame(); }
+
+  // ---- control panel wiring ----
+  function wireSegment(id, attr, onPick) {
+    const container = document.getElementById(id);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn"); if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(btn.getAttribute(attr));
+    });
+  }
+  let pendingSize = N;
+  wireSegment("sizeSeg", "data-size", (v) => { pendingSize = +v; startGame(); });
+  wireSegment("strengthSeg", "data-strength", (v) => { strength = +v; });
+  document.getElementById("newGame").addEventListener("click", startGame);
+  // board-ai owns these controls for the *model* path; we add a second listener so
+  // the offline heuristic also opens when it becomes the bot's turn (e.g. AI set to
+  // Black on an empty board, or just-switched to "vs AI"). board-ai's own handlers
+  // run first (attached at create()), so aiCtl.mode/seat are already current here.
+  document.getElementById("goOppSeg").addEventListener("click", () => setTimeout(maybeAIMove, 0));
+  document.getElementById("goAi").addEventListener("change", (e) => {
+    if (e.target && e.target.classList.contains("ai-seat")) setTimeout(maybeAIMove, 0);
+  });
+  document.getElementById("passBtn").addEventListener("click", () => { if (!gameOver && !isAITurn()) playPass(false); });
+  document.getElementById("undoBtn").addEventListener("click", undo);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) { updateScoreboard(); updateStatus(); } }));
+
+  function startGame() {
+    N = pendingSize;
+    board = [];
+    for (let r = 0; r < N; r++) board.push(new Array(N).fill(EMPTY));
+    current = BLACK; gameOver = false; lastMove = null; passCount = 0; koPoint = null;
+    captures = [0, 0];
+    history = [];
+    winnerEl.textContent = "";
+    buildScoreboard();
+    buildBoard();
+    render();
+    updateStatus();
+    if (typeof goOnNewGame === "function") goOnNewGame();
+  }
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

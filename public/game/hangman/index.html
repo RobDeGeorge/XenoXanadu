@@ -20,17 +20,17 @@
         <h2>Pick a mode</h2>
         <div class="modes">
           <button type="button" class="mode-btn" data-mode="2p">
-            <div class="m-em">🙈</div>
+            <div class="m-em"></div>
             <div class="m-title">Two Players</div>
             <div class="m-desc">Pass &amp; play. One of you secretly types <em>any</em> word — masked so the other can't peek — then hands over the device to guess.</div>
           </button>
           <button type="button" class="mode-btn" data-mode="ai-word">
-            <div class="m-em">🤖</div>
+            <div class="m-em"></div>
             <div class="m-title">vs AI — it picks</div>
             <div class="m-desc">A local model secretly chooses a themed word and you guess it. It reacts in character and tosses you a hint when you're nearly done for.</div>
           </button>
           <button type="button" class="mode-btn" data-mode="ai-guess">
-            <div class="m-em">🧠</div>
+            <div class="m-em"></div>
             <div class="m-title">vs AI — it guesses</div>
             <div class="m-desc">You type a word; the model tries to crack it letter by letter, thinking out loud. Can you stump it?</div>
           </button>
@@ -94,15 +94,15 @@
     <!-- ============ SECURE ENTRY ============ -->
     <div class="screen" id="entryScreen">
       <div class="panel">
-        <div class="lookaway" id="lookaway">🙈 <span id="lookawayWho">Player 2</span>, look away! 🙈</div>
+        <div class="lookaway" id="lookaway"><span id="lookawayWho">Player 2</span>, look away!</div>
         <div class="entry-field">
           <label id="entryLabel">Secret word or phrase</label>
           <input type="text" id="secretInput" class="masked" autocomplete="off" autocorrect="off"
                  autocapitalize="off" spellcheck="false" placeholder="type it here…" />
-          <button type="button" class="eye" id="eyeBtn" title="Show / hide what you typed">👁</button>
+          <button type="button" class="eye" id="eyeBtn" title="Show / hide what you typed"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <div class="entry-err" id="entryErr"></div>
           <div class="entry-note">Letters, spaces, hyphens and apostrophes. It stays masked so no one peeks —
-            tap 👁 to check your spelling.</div>
+            tap the eye to check your spelling.</div>
         </div>
         <div class="entry-field">
           <label>Optional hint (shown to the guesser)</label>

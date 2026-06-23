@@ -6,7 +6,7 @@
 //
 //  Run:   npm install   (once)
 //         node server.js
-//  Then open http://localhost:8787 and click the 🤖 button -> Start AI.
+//  Then open http://localhost:8787 and click the AI button -> Start AI.
 //
 //  Config via env vars:
 //    OLLAMA_URL    default http://localhost:11434
@@ -300,8 +300,8 @@ function recordWish(text, opts = {}) {
   };
   if (opts.during) entry.during = opts.during;
   fs.appendFile(WISH_LOG, JSON.stringify(entry) + "\n", (e) => { if (e) console.warn("wish log error:", e.message); });
-  console.log(`   ✨ WISH (${entry.source}) → ${text}`);
-  if (browser) send(browser, { type: "status", text: "✨ game-improvement idea logged" });
+  console.log(`   WISH (${entry.source}) → ${text}`);
+  if (browser) send(browser, { type: "status", text: "game-improvement idea logged" });
 }
 
 // a dedicated reflection turn: explicitly ask the model what the game is missing.
@@ -322,7 +322,7 @@ async function reflectOnce(board, recent) {
   send(browser, { type: "stream_end" });
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length > 8 && !/^\W*none\b/i.test(clean)) recordWish(clean, { source: "reflection" });
-  else console.log("   ✨ reflection: no wish this round");
+  else console.log("   reflection: no wish this round");
 }
 
 // ---------- per-model element/tool usage stats ----------
@@ -385,7 +385,7 @@ async function aiLoop() {
 
     let { thinking, action } = parseMove(text);
     moveNo++;
-    if (thinking) console.log(`\n#${moveNo} 💭 ${thinking.replace(/\s+/g, " ").trim().slice(0, 240)}`);
+    if (thinking) console.log(`\n#${moveNo} ${thinking.replace(/\s+/g, " ").trim().slice(0, 240)}`);
 
     // it rambled without an ACTION — one cheap re-prompt for just the action line
     // (reasoning models drift into prose; this recovers the turn instead of wasting it)
@@ -406,7 +406,7 @@ async function aiLoop() {
     if (action) {
       if (typeof action.plan === "string" && action.plan.trim()) {
         plan = action.plan.trim().slice(0, 240);   // carry the scheme forward
-        console.log(`   📋 plan: ${plan}`);
+        console.log(`   plan: ${plan}`);
       }
       // the model hit a limitation — capture it as a game-design wish
       if (typeof action.wish === "string" && action.wish.trim()) {
@@ -425,7 +425,7 @@ async function aiLoop() {
     } else {
       parseFails++;
       send(browser, { type: "status", text: "couldn't read an ACTION — retrying" });
-      console.warn(`   ⚠ NO ACTION PARSED (${parseFails} total). tail: …${text.slice(-120).replace(/\s+/g, " ")}`);
+      console.warn(`   NO ACTION PARSED (${parseFails} total). tail: …${text.slice(-120).replace(/\s+/g, " ")}`);
     }
     await sleep(DELAY);
 
@@ -446,5 +446,5 @@ server.listen(PORT, () => {
   console.log(`Claude models: ${CLAUDE_MODELS.join(", ")}  —  ANTHROPIC_API_KEY ${process.env.ANTHROPIC_API_KEY ? "✓ set (Claude ready)" : "✗ NOT set (set it to use Claude)"}`);
   console.log(`Game-improvement wishes → ${WISH_LOG}  (reflection every ${REFLECT_EVERY} moves; AI_REFLECT_EVERY=0 to disable)`);
   console.log(`Per-model element usage → ${STATS_FILE}`);
-  console.log(`Open the page, click 🤖, then Start AI.`);
+  console.log(`Open the page, click the AI button, then Start AI.`);
 });

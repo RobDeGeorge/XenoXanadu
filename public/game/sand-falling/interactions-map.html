@@ -6,20 +6,24 @@
 <title>Sand Garden • Interaction Map</title>
 <style>
   :root {
-    --bg: #14111d;
-    --panel: #1e1a2b;
-    --panel-edge: #2e2840;
-    --ink: #e8e2f4;
-    --ink-dim: #9a92b5;
-    --accent: #ffd97a;
-    --accent2: #c3a6ff;
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --panel-edge: #24262b;
+    --ink: #e7e6e0;
+    --ink-dim: #8a8d93;
+    --accent: #c7a24a;
+    --accent2: #9b86c4;
+    --on-accent: #0c0d0f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body {
     height: 100%;
-    background: radial-gradient(ellipse at 50% -10%, #211b33 0%, var(--bg) 60%);
+    background: var(--bg);
     color: var(--ink);
-    font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
+    font-family: var(--mono);
     margin: 0; padding: 0;
   }
   .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 20px 60px; }
@@ -28,6 +32,7 @@
   }
   header h1 {
     font-size: 28px; font-weight: 700; letter-spacing: 0.5px; margin: 0;
+    text-transform: uppercase;
     display: flex; align-items: center; gap: 10px;
   }
   header h1 svg { width: 26px; height: 26px; color: var(--accent); }
@@ -39,18 +44,17 @@
     text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
     display: flex; align-items: center; gap: 8px;
   }
-  .section h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--panel-edge), transparent); }
+  .section h2::after { content: ''; flex: 1; height: 1px; background: var(--panel-edge); }
 
   .card {
     background: var(--panel);
     border: 1px solid var(--panel-edge);
-    border-radius: 14px;
+    border-radius: 0;
     padding: 18px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
   }
 
   .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
-  .images img { width: 100%; border-radius: 10px; border: 1px solid var(--panel-edge); display: block; }
+  .images img { width: 100%; border-radius: 0; border: 1px solid var(--panel-edge); display: block; }
   .img-caption { font-size: 12px; color: var(--ink-dim); margin-top: 6px; text-align: center; }
 
   /* Legend */
@@ -59,14 +63,14 @@
   }
   .legend .item { display: flex; align-items: center; gap: 6px; }
   .legend .swatch {
-    width: 14px; height: 14px; border-radius: 4px; border: 1px solid #3a3450;
+    width: 14px; height: 14px; border-radius: 0; border: 1px solid var(--panel-edge);
   }
 
   /* Interactive Graph */
   #graph-container {
-    background: #0f0c18;
+    background: var(--bg-2);
     border: 1px solid var(--panel-edge);
-    border-radius: 14px;
+    border-radius: 0;
     padding: 12px;
     position: relative;
     touch-action: none;
@@ -74,18 +78,18 @@
   #graph-svg { width: 100%; height: auto; display: block; }
   .node {
     cursor: pointer;
-    transition: filter 0.1s, stroke 0.1s;
+    transition: stroke 0.1s;
   }
-  .node:hover { filter: brightness(1.15) saturate(1.1); }
-  .node.selected { stroke: #fff; stroke-width: 2.5; }
+  .node:hover { stroke: var(--ink-dim); }
+  .node.selected { stroke: var(--ink); stroke-width: 2.5; }
   .node-label {
     font-size: 9.5px; font-weight: 600; pointer-events: none;
     text-anchor: middle; dominant-baseline: middle;
-    fill: #e8e2f4; paint-order: stroke;
-    stroke: #14111d; stroke-width: 2.5; stroke-linejoin: round;
+    fill: var(--ink); paint-order: stroke;
+    stroke: #0c0d0f; stroke-width: 2.5; stroke-linejoin: round;
   }
   .edge {
-    stroke: #5a516f; stroke-width: 1.1; stroke-opacity: 0.55;
+    stroke: #313338; stroke-width: 1.1; stroke-opacity: 0.7;
     fill: none; marker-end: url(#arrow);
     transition: stroke 0.1s, stroke-opacity 0.1s, stroke-width 0.1s;
   }
@@ -95,36 +99,36 @@
     stroke-width: 2.2;
   }
   .edge-label {
-    font-size: 7.5px; fill: #b8a8d8; pointer-events: none;
-    text-shadow: 0 0 3px #14111d;
+    font-size: 7.5px; fill: var(--ink-dim); pointer-events: none;
   }
 
   .graph-controls {
     position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 2;
   }
   .gbtn {
-    font-size: 11px; padding: 4px 9px; border-radius: 6px;
-    background: #2a243f; color: var(--ink); border: 1px solid var(--panel-edge);
-    cursor: pointer; transition: all 0.1s;
+    font-size: 11px; padding: 4px 9px; border-radius: 0;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--panel-edge);
+    cursor: pointer; font-family: var(--mono);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
-  .gbtn:hover { background: #3a3450; border-color: #4a4068; }
-  .gbtn.active { background: var(--accent); color: #14111d; border-color: var(--accent); font-weight: 600; }
+  .gbtn:hover { background: var(--panel-2); border-color: var(--accent); color: var(--accent); }
+  .gbtn.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 
   /* Details panel */
   #details {
     margin-top: 12px;
-    background: #0f0c18;
+    background: var(--bg-2);
     border: 1px solid var(--panel-edge);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 12px 14px;
     min-height: 68px;
     font-size: 13px;
   }
   #details .title { font-weight: 600; color: var(--accent); margin-bottom: 4px; }
-  .rule { margin: 3px 0; padding-left: 4px; border-left: 2px solid #463d5a; }
-  .rule .from { color: #ffcc66; font-weight: 500; }
-  .rule .arrow { color: #6f6590; }
-  .rule .to { color: #8ee4ff; font-weight: 500; }
+  .rule { margin: 3px 0; padding-left: 4px; border-left: 2px solid var(--panel-edge); }
+  .rule .from { color: #cf8a52; font-weight: 500; }
+  .rule .arrow { color: var(--ink-dim); }
+  .rule .to { color: #5fa8b8; font-weight: 500; }
   .rule .meta { color: var(--ink-dim); font-size: 11.5px; }
 
   /* Table */
@@ -132,46 +136,47 @@
     width: 100%; border-collapse: collapse; font-size: 12.5px;
     background: var(--panel);
     border: 1px solid var(--panel-edge);
-    border-radius: 10px; overflow: hidden;
+    border-radius: 0; overflow: hidden;
   }
   th {
-    background: #252033; text-align: left; font-weight: 600; font-size: 11px;
+    background: var(--panel-2); text-align: left; font-weight: 600; font-size: 11px;
     color: var(--accent); padding: 9px 10px; border-bottom: 1px solid var(--panel-edge);
   }
-  td { padding: 7px 10px; border-bottom: 1px solid #2a2638; vertical-align: top; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--panel-edge); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  .src { color: #ffcc66; font-weight: 500; white-space: nowrap; }
-  .tgt { color: #8ee4ff; font-weight: 500; white-space: nowrap; }
-  .act { color: #d9b36c; }
+  .src { color: #cf8a52; font-weight: 500; white-space: nowrap; }
+  .tgt { color: #5fa8b8; font-weight: 500; white-space: nowrap; }
+  .act { color: #c7a24a; }
   .meta-col { color: var(--ink-dim); font-size: 11px; max-width: 380px; }
 
   .filters {
     display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
   }
   .filters input, .filters select {
-    background: #0f0c18; color: var(--ink); border: 1px solid var(--panel-edge);
-    padding: 6px 9px; border-radius: 7px; font-size: 12px;
+    background: var(--bg-2); color: var(--ink); border: 1px solid var(--panel-edge);
+    padding: 6px 9px; border-radius: 0; font-size: 12px; font-family: var(--mono);
   }
   .filters input { width: 220px; }
+  .filters input:focus, .filters select:focus { outline: none; border-color: var(--accent); }
 
   .mini-diagram {
-    background: #0f0c18;
+    background: var(--bg-2);
     border: 1px solid var(--panel-edge);
-    border-radius: 12px;
+    border-radius: 0;
     padding: 14px;
   }
   .mini-title { font-size: 12px; color: var(--accent); margin-bottom: 8px; font-weight: 600; }
 
   kbd {
-    background: #252033; border: 1px solid #3a3450; border-radius: 3px;
-    padding: 0 4px; font-size: 10px; color: #c8bfd9;
+    background: var(--panel-2); border: 1px solid var(--panel-edge); border-radius: 0;
+    padding: 0 4px; font-size: 10px; color: var(--ink-dim);
   }
 
   .note {
-    font-size: 12px; color: var(--ink-dim); background: #0f0c18;
-    padding: 10px 12px; border-radius: 8px; border-left: 3px solid #463d5a;
+    font-size: 12px; color: var(--ink-dim); background: var(--bg-2);
+    padding: 10px 12px; border-radius: 0; border-left: 3px solid var(--panel-edge);
   }
-  .hub { color: #ff8c4a; font-weight: 600; }
+  .hub { color: #cf8a52; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -216,7 +221,7 @@
 
     <div id="details">
       <div class="title">Click a node to explore its interactions</div>
-      <div id="detail-content" style="color:#9a92b5; font-size:12.5px;">Hover or click nodes for precise rules from the update() switch.</div>
+      <div id="detail-content" style="color:#8a8d93; font-size:12.5px;">Hover or click nodes for precise rules from the update() switch.</div>
     </div>
 
     <div class="legend" style="margin-top:10px; padding:0 4px;">
@@ -268,7 +273,7 @@
   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(310px,1fr)); gap:14px;">
     <div class="mini-diagram">
       <div class="mini-title">Shared Physics Helpers</div>
-      <div style="font-size:12.5px; line-height:1.45; color:#c8bfd9;">
+      <div style="font-size:12.5px; line-height:1.45; color:#cfccc4;">
         <strong>powder(x,y,i, slip, speedUp)</strong><br>
         • Used by: SPARKLE, SHADOW, CRYSTAL, SALT, SEED, ASH, ICE, (VOID lazy)<br>
         • Down + optional diagonal slip. Density swap vs lower-density liquids.<br>
@@ -285,7 +290,7 @@
 
     <div class="mini-diagram">
       <div class="mini-title">Special Movement (not using powder/liquid)</div>
-      <div style="font-size:12.5px; line-height:1.45; color:#c8bfd9;">
+      <div style="font-size:12.5px; line-height:1.45; color:#cfccc4;">
         • <strong>STONE</strong>: only straight down or swap with liquids below (no slip).<br>
         • <strong>DREAM</strong>: biased drift + phase-swap through almost everything.<br>
         • <strong>LIGHTNING</strong>: 4-step downward "zip" with random side jolts + glow.<br>
@@ -299,7 +304,7 @@
 
     <div class="mini-diagram">
       <div class="mini-title">Key Emergent Loops &amp; Hubs</div>
-      <div style="font-size:12.5px; line-height:1.5; color:#c8bfd9;">
+      <div style="font-size:12.5px; line-height:1.5; color:#cfccc4;">
         <span class="hub">FIRE</span> + <span class="hub">LAVA</span> are the biggest hubs (ignite plants/wood/honey, bake mud, melt ice/stone, fuse sparkle).<br><br>
         <strong>Water cycle</strong>: Cloud rains → pools → salt dissolves → brine evaporates near heat → salt crystals.<br>
         <strong>Life cycle</strong>: Seed + water/mud → Plant/Vine → can burn or frost back to seed/ash.<br>
@@ -316,7 +321,7 @@
   <div class="card" style="font-size:13px; padding:16px 18px; line-height:1.5;">
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
       <div>
-        <strong style="color:#ffd97a">Input Layer</strong><br>
+        <strong style="color:#c7a24a">Input Layer</strong><br>
         • Canvas pointer events (down/move/up/leave + capture)<br>
         • Brush slider + [ ] keys<br>
         • Rotary time dial (drag + wheel) → exponential 0.1×–3.0× mapped to simSpeed<br>
@@ -324,14 +329,14 @@
         • Space = pause, C = clear
       </div>
       <div>
-        <strong style="color:#ffd97a">Painting</strong><br>
+        <strong style="color:#c7a24a">Painting</strong><br>
         • Only writes into EMPTY cells (eraser always clears)<br>
         • Disk brush with per-material fill probability (liquids dense, dream/void/bird/fish sparse, fire medium)<br>
         • Special initial life[] / shade[] for FIRE, LIGHTNING, LAVA, BOUNCE<br>
         • paintStroke() does grid-space Bresenham interpolation
       </div>
       <div>
-        <strong style="color:#ffd97a">Tick &amp; Render</strong><br>
+        <strong style="color:#c7a24a">Tick &amp; Render</strong><br>
         • rAF tick() accumulates simSpeed into stepAcc<br>
         • 0–6 simulation steps per visual frame (capped)<br>
         • step() marks + updates bottom-up with row parity<br>
@@ -364,7 +369,7 @@
   </div>
 </div>
 
-<footer style="margin-top:40px; font-size:11px; color:#655d7d; text-align:center;">
+<footer style="margin-top:40px; font-size:11px; color:#8a8d93; text-align:center;">
   Generated from static analysis of index.html (update switch + helpers + painting + UI wiring). 
   All probabilities and neighbor checks (NB4/NB8) are taken directly from the source.
 </footer>
@@ -537,7 +542,7 @@ function buildGraph(showMajorOnly = true) {
       <path d="M0,0 L0,6 L7,3 z" fill="#5a516f"/>
     </marker>
     <marker id="arrow-hi" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L7,3 z" fill="#ffd97a"/>
+      <path d="M0,0 L0,6 L7,3 z" fill="#c7a24a"/>
     </marker>
   `;
   svg.appendChild(defs);
@@ -580,7 +585,7 @@ function buildGraph(showMajorOnly = true) {
     circle.setAttribute("cy", n.y);
     circle.setAttribute("r", r);
     circle.setAttribute("fill", n.color);
-    circle.setAttribute("stroke", "#2e2840");
+    circle.setAttribute("stroke", "#24262b");
     circle.setAttribute("stroke-width", "2.5");
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -628,23 +633,23 @@ function selectNode(id, el) {
   const outgoing = EDGES.filter(e => e.from === id);
   const incoming = EDGES.filter(e => e.to === id || e.to === "*");
 
-  let html = `<div style="margin-bottom:4px"><span style="color:${node.color}; font-weight:700">${id}</span> <span style="color:#6f6590">— ${node.desc}</span></div>`;
+  let html = `<div style="margin-bottom:4px"><span style="color:${node.color}; font-weight:700">${id}</span> <span style="color:#8a8d93">— ${node.desc}</span></div>`;
 
   if (outgoing.length) {
-    html += `<div style="margin:6px 0 2px; font-size:11px; color:#ffd97a; font-weight:600">OUTGOING</div>`;
+    html += `<div style="margin:6px 0 2px; font-size:11px; color:#c7a24a; font-weight:600">OUTGOING</div>`;
     outgoing.forEach(r => {
       const tgt = r.to === "*" ? "many" : r.to;
-      html += `<div class="rule"><span class="from">${id}</span> <span class="arrow">→</span> <span class="to">${tgt}</span> <span style="color:#d9b36c">${r.action}</span> <span class="meta">${r.note}</span></div>`;
+      html += `<div class="rule"><span class="from">${id}</span> <span class="arrow">→</span> <span class="to">${tgt}</span> <span style="color:#c7a24a">${r.action}</span> <span class="meta">${r.note}</span></div>`;
     });
   }
   if (incoming.length) {
-    html += `<div style="margin:8px 0 2px; font-size:11px; color:#8ee4ff; font-weight:600">INCOMING (reacts with this)</div>`;
+    html += `<div style="margin:8px 0 2px; font-size:11px; color:#5fa8b8; font-weight:600">INCOMING (reacts with this)</div>`;
     incoming.forEach(r => {
-      html += `<div class="rule"><span class="from">${r.from}</span> <span class="arrow">→</span> <span class="to">${id}</span> <span style="color:#d9b36c">${r.action}</span> <span class="meta">${r.note}</span></div>`;
+      html += `<div class="rule"><span class="from">${r.from}</span> <span class="arrow">→</span> <span class="to">${id}</span> <span style="color:#c7a24a">${r.action}</span> <span class="meta">${r.note}</span></div>`;
     });
   }
   if (!outgoing.length && !incoming.length) {
-    html += `<div style="color:#6f6590; font-size:12px">This element participates mostly through movement physics (powder/liquid) or as a passive surface (perching/support).</div>`;
+    html += `<div style="color:#8a8d93; font-size:12px">This element participates mostly through movement physics (powder/liquid) or as a passive surface (perching/support).</div>`;
   }
 
   document.getElementById("detail-content").innerHTML = html;

@@ -43,7 +43,7 @@
   var panel = document.createElement('div');
   panel.className = 'ai-panel ai-only';
   panel.innerHTML =
-    '<div class="ai-row"><span class="label" style="font-size:14px;opacity:.95">🧪 Benchmark — model vs perfect solver</span></div>' +
+    '<div class="ai-row"><span class="label" style="font-size:14px;opacity:.95">Benchmark — model vs perfect solver</span></div>' +
     '<div class="ai-row">' +
       '<span class="label">Model</span><select id="bModel"><option>loading…</option></select>' +
       '<button id="bRefresh" title="Re-scan for installed models">↻</button>' +
@@ -72,7 +72,7 @@
     '<div class="ai-row">' +
       '<button id="bCSV">⬇ Export CSV</button>' +
       '<button id="bJSONL">⬇ Export JSONL</button>' +
-      '<button id="bClear">🗑 Clear stored data</button>' +
+      '<button id="bClear">Clear stored data</button>' +
       '<span class="ai-status" style="margin-left:auto"><span id="bCount">0</span> records stored</span>' +
     '</div>';
   host.parentNode.insertBefore(panel, host.nextSibling);
@@ -247,7 +247,7 @@
         ['avgRegret', 'AvgRegret'], ['avgLatencyMs', 'Latency'], ['games', 'Games'], ['winRate', 'Win']];
       var rateKeys = { optimalRate: 1, blunderRate: 1, fallbackRate: 1, winRate: 1 };
       var html = '<table style="border-collapse:collapse;width:100%;font-size:12px;margin-top:4px">';
-      html += '<tr style="opacity:.7;text-align:left">' + cols.map(function (c) { return '<th style="padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.15)">' + c[1] + '</th>'; }).join('') + '</tr>';
+      html += '<tr style="opacity:.7;text-align:left">' + cols.map(function (c) { return '<th style="padding:4px 8px;border-bottom:1px solid var(--grid)">' + c[1] + '</th>'; }).join('') + '</tr>';
       cells.forEach(function (r) {
         html += '<tr>' + cols.map(function (c) {
           var k = c[0], v = r[k];
@@ -255,7 +255,7 @@
           else if (k === 'avgRegret') v = (v == null ? '—' : v.toFixed(1));
           else if (k === 'avgLatencyMs') v = (v == null ? '—' : v + 'ms');
           else if (v == null) v = '—';
-          return '<td style="padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.06)">' + v + '</td>';
+          return '<td style="padding:4px 8px;border-bottom:1px solid var(--grid)">' + v + '</td>';
         }).join('') + '</tr>';
       });
       html += '</table>';

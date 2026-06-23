@@ -1,0 +1,163 @@
+/* ============================================================================
+ *  XenoXanadu — Sudoku — palette + board-specific styling.
+ *  Structural chrome (controls bar, segmented toggle, AI panel) comes from the
+ *  shared lib/arcade.css; this file only carries Sudoku's own identity:
+ *  the LED HUD, the 9x9 grid with thick box borders, given vs entered digits,
+ *  pencil-mark notes, and the detective hint / conflict highlights.
+ * ========================================================================== */
+:root {
+  --bg:        #0c0d0f;
+  --bg-2:      #131417;
+  --panel:     #131417;
+  --panel-2:   #1a1c20;
+  --grid:      #24262b;
+  --line:      #313338;
+  --text:      #e7e6e0;
+  --muted:     #8a8d93;
+  --accent:    #9b86c4;          /* muted violet — the detective hue */
+  --on-accent: #0c0d0f;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --wrap-max: 720px;
+
+  /* board surfaces */
+  --cell-bg:    #131417;
+  --cell-alt:   #1a1c20;          /* alternate boxes for a subtle checker */
+  --given:      #e7e6e0;          /* clue digits */
+  --entered:    #6f9bd1;          /* digits the player typed */
+  --thick:      #313338;          /* the heavy 3x3 box dividers */
+}
+
+body { background: var(--bg); }
+
+h1 {
+  text-align: center; margin: 4px 0 6px; font-size: clamp(30px, 6vw, 46px);
+  font-weight: 800; letter-spacing: 6px; text-transform: uppercase; color: var(--text);
+}
+.tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 24px; }
+
+/* ---------- LED HUD ---------- */
+.hud {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin: 0 auto 16px; max-width: 360px;
+}
+.hud-readout {
+  font-weight: 800; font-size: 18px; letter-spacing: 2px; color: var(--accent);
+  background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0;
+  padding: 7px 14px; min-width: 110px; text-align: center;
+}
+#timer { color: #6f9bd1; }
+
+/* ---------- board ---------- */
+.board-scroll { overflow: auto; padding: 6px; margin: 0 -6px 16px; display: flex; justify-content: center; }
+.board {
+  --cell: clamp(30px, 9.6vw, 48px);
+  display: grid; gap: 0; width: max-content; margin: 0 auto;
+  grid-template-columns: repeat(9, var(--cell));
+  border: 3px solid var(--thick); border-radius: 0;
+  background: var(--bg);
+  user-select: none; touch-action: manipulation;
+}
+
+.cell {
+  width: var(--cell); height: var(--cell);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: calc(var(--cell) * 0.56); line-height: 1;
+  cursor: pointer; box-sizing: border-box; position: relative;
+  background: var(--cell-bg); color: var(--entered);
+  border: 1px solid var(--grid);
+  transition: background .08s ease;
+}
+/* subtle checker over the nine boxes */
+.cell.box-alt { background: var(--cell-alt); }
+/* heavy 3x3 dividers */
+.cell.bt { border-top: 2px solid var(--thick); }
+.cell.bl { border-left: 2px solid var(--thick); }
+.cell.br { border-right: 2px solid var(--thick); }
+.cell.bb { border-bottom: 2px solid var(--thick); }
+
+.cell.given { color: var(--given); font-weight: 800; }
+.cell:hover { background: var(--panel-2); }
+
+/* selection + same-value / peer highlighting */
+.cell.peer { background: #1a1c20; }
+.cell.same { background: #1f2230; }
+.cell.sel  { background: #1a1c20; box-shadow: inset 0 0 0 2px var(--accent); z-index: 3; }
+.cell.sel.given { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* conflicting entry */
+.cell.conflict { color: #cf5a52 !important; }
+.cell.conflict::after {
+  content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px #cf5a52;
+  pointer-events: none;
+}
+
+/* pencil marks */
+.cell .notes {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  width: 100%; height: 100%; font-size: calc(var(--cell) * 0.24); font-weight: 600;
+  color: var(--muted); line-height: 1;
+}
+.cell .notes span { display: flex; align-items: center; justify-content: center; }
+.cell .notes span.hl { color: var(--accent); }
+
+/* detective hint highlights */
+.cell.hint-target {
+  animation: pulseTarget 1.1s ease-in-out infinite; z-index: 4;
+}
+.cell.hint-house  { box-shadow: inset 0 0 0 2px #c7a24a; z-index: 2; }
+.cell.hint-elim   { animation: pulseElim 1.1s ease-in-out infinite; z-index: 3; }
+@keyframes pulseTarget { 0%,100% { box-shadow: inset 0 0 0 2px #9ec27a; } 50% { box-shadow: inset 0 0 0 3px #9ec27a; } }
+@keyframes pulseElim   { 0%,100% { box-shadow: inset 0 0 0 2px #c06a9b; } 50% { box-shadow: inset 0 0 0 3px #c06a9b; } }
+
+/* win wash + check error flash */
+.board.won { box-shadow: inset 0 0 0 2px #9ec27a; animation: winPulse .6s ease; }
+@keyframes winPulse { 0%,100% { } 50% { box-shadow: inset 0 0 0 3px #9ec27a; } }
+.cell.wrong { animation: shakeWrong .4s ease; color: #cf5a52 !important; }
+.cell.wrong::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px #cf5a52; pointer-events: none; }
+@keyframes shakeWrong { 0%,100% { transform: none; } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+
+/* ---------- number pad ---------- */
+.pad { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 520px; margin: 0 auto 16px; }
+.pad-btn {
+  cursor: pointer; border: 1px solid var(--grid); border-radius: 0;
+  width: 46px; height: 46px; font-family: var(--mono); font-weight: 800; font-size: 20px;
+  color: var(--text); background: var(--panel-2);
+  transition: color .12s, border-color .12s, background .12s, transform .06s;
+}
+.pad-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pad-btn:active { transform: translateY(2px); }
+.pad-erase { font-size: 18px; color: #c06a9b; }
+.pad-btn.done { opacity: .3; }            /* digit already placed nine times */
+
+/* ---------- assistant bar (tools — visible even on the hosted site) ---------- */
+.assist {
+  max-width: 620px; margin: 0 auto 14px; display: flex; flex-direction: column;
+  gap: 10px; align-items: center;
+}
+.assist-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.assist-btn {
+  cursor: pointer; border: 1px solid var(--grid); border-radius: 0; padding: 8px 14px;
+  font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text); background: var(--panel-2);
+  transition: color .12s, border-color .12s, background .12s;
+}
+.assist-btn:hover { border-color: var(--accent); color: var(--accent); }
+.assist-btn:disabled { opacity: .4; cursor: not-allowed; }
+.assist-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pencil-toggle.on { background: #c7a24a; border-color: #c7a24a; color: var(--on-accent); }
+.assist-msg {
+  text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5;
+  min-height: 20px; max-width: 600px;
+}
+.assist-msg b { color: var(--text); }
+.assist-msg.good b { color: #9ec27a; }
+.assist-msg.bad b { color: #cf5a52; }
+.assist-msg.good { color: #9ec27a; }
+.assist-msg.bad { color: #cf5a52; }
+.assist-msg code { color: var(--accent); font-weight: 700; }
+
+/* ---------- AI panel extras (rest comes from arcade.css .xeno-ai) ---------- */
+.xeno-ai { max-width: 620px; }
+.ai-explain { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); cursor: pointer; }
+.ai-explain input { accent-color: var(--accent); }

@@ -9,19 +9,25 @@
 <style>
   html.hosted #aiPanel { display: none !important; }
   :root {
-    --bg: #14111d;
-    --panel: #1e1a2b;
-    --panel-edge: #2e2840;
-    --ink: #e8e2f4;
-    --ink-dim: #9a92b5;
-    --accent: #ffd97a;
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --panel-edge: #24262b;
+    --grid: #24262b;
+    --line: #313338;
+    --ink: #e7e6e0;
+    --ink-dim: #8a8d93;
+    --accent: #c7a24a;
+    --on-accent: #0c0d0f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
-    background: radial-gradient(ellipse at 50% -10%, #211b33 0%, var(--bg) 60%);
+    background: var(--bg);
     color: var(--ink);
-    font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
+    font-family: var(--mono);
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -32,7 +38,7 @@
     display: flex;
     align-items: stretch;
     justify-content: center;
-    background: radial-gradient(ellipse at 50% -10%, #211b33 0%, var(--bg) 60%);
+    background: var(--bg);
   }
 
   /* The entire sandbox (controls + canvas) lives inside one big framed area.
@@ -45,9 +51,8 @@
     display: flex;
     flex-direction: column;
     border: 1px solid var(--panel-edge);
-    border-radius: 10px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), inset 0 0 48px rgba(0, 0, 0, 0.35);
-    background: #16131f;
+    border-radius: 0;
+    background: var(--bg-2);
     overflow: hidden;
     touch-action: none;
   }
@@ -56,11 +61,10 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    box-shadow: inset 0 0 60px rgba(10, 6, 20, 0.5);
-    border-radius: 10px;
+    border-radius: 0;
   }
   #stage.paused::after {
-    box-shadow: inset 0 0 60px rgba(10, 6, 20, 0.5), inset 0 0 0 999px rgba(12, 9, 22, 0.3);
+    box-shadow: inset 0 0 0 999px rgba(12, 9, 22, 0.3);
   }
 
   /* Controls strip mounted right at the top inside the frame */
@@ -72,9 +76,8 @@
     column-gap: 14px;
     row-gap: 10px;
     padding: 10px 16px;
-    background: linear-gradient(180deg, #2a243b 0%, var(--panel) 55%, #181425 100%);
-    border-bottom: 2px solid #3a3352;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    background: var(--panel);
+    border-bottom: 1px solid var(--grid);
     min-height: 64px;
     z-index: 3;
   }
@@ -120,14 +123,14 @@
      so the shared floating pill would sit on top of the brand) */
   .ctrl-home {
     display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
-    padding: 6px 12px 6px 10px; border: 1px solid var(--panel-edge); border-radius: 999px;
+    padding: 6px 12px 6px 10px; border: 1px solid var(--grid); border-radius: 0;
     color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 700;
-    letter-spacing: 0.3px; white-space: nowrap; background: rgba(0,0,0,0.18);
+    letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; background: var(--bg-2);
     transition: color .15s, background .15s, border-color .15s, transform .08s;
   }
   .ctrl-home .xa { font-size: 14px; line-height: 1; }
-  .ctrl-home:hover { color: #0b140d; background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
-  .ctrl-home:active { transform: translateY(0); }
+  .ctrl-home:hover { color: var(--accent); border-color: var(--accent); }
+  .ctrl-home:active { transform: translateY(1px); }
 
 
   .inkicon { display:inline-block; background:currentColor;
@@ -144,11 +147,11 @@
   .sandBtn {
     position: relative;
     padding: 5px 4px 4px;
-    border-radius: 11px;
-    border: 1px solid var(--panel-edge);
-    background: #252033;
+    border-radius: 0;
+    border: 1px solid var(--grid);
+    background: var(--bg-2);
     color: var(--ink-dim);
-    font-family: inherit;
+    font-family: var(--mono);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.1;
@@ -158,8 +161,7 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    transition: transform 0.1s cubic-bezier(0.2, 0.85, 0.25, 1),
-                border-color 0.1s ease, box-shadow 0.1s ease, background 0.1s;
+    transition: border-color 0.1s ease, background 0.1s, color 0.1s;
     flex: 0 0 76px;
     height: 73px;
     min-width: 0;
@@ -167,17 +169,15 @@
   .sandBtn .em { line-height: 0; filter: saturate(0.6); opacity: 0.85; }
   .sandBtn .em svg, .sandBtn .em .inkicon { width: 36px; height: 36px; }
   .sandBtn:hover {
-    transform: translateY(-1px) scale(1.03);
-    border-color: #51476b;
-    background: #2a263a;
+    border-color: var(--line);
+    background: var(--panel-2);
   }
-  .sandBtn:active { transform: scale(0.96); }
+  .sandBtn:active { transform: translateY(1px); }
   .sandBtn.sel {
     color: var(--ink);
     border-color: var(--btnAccent, var(--accent));
-    background: #2f2a40;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--btnAccent, var(--accent)) 50%, transparent) inset,
-                0 0 8px color-mix(in srgb, var(--btnAccent, var(--accent)) 30%, transparent);
+    background: var(--panel-2);
+    box-shadow: inset 0 0 0 1px var(--btnAccent, var(--accent));
   }
   .sandBtn.sel .em { filter: none; opacity: 1; }
 
@@ -187,9 +187,9 @@
     align-items: center;
     gap: 7px;
     padding: 0 12px;
-    border-radius: 999px;
-    background: #181524;
-    border: 1px solid var(--panel-edge);
+    border-radius: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
     color: var(--ink);
     font-size: 14px;
     flex-shrink: 0;
@@ -213,43 +213,43 @@
     gap: 6px;
   }
   .toolbar-group + .toolbar-group {
-    border-left: 1px solid #3a3352;
+    border-left: 1px solid var(--grid);
     padding-left: 12px;
   }
   .tbtn {
-    border: 1px solid var(--panel-edge);
-    background: #252033;
+    border: 1px solid var(--grid);
+    background: var(--panel);
     color: var(--ink);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 7px 12px;
-    font-family: inherit;
+    font-family: var(--mono);
     font-size: 14px;
     cursor: pointer;
-    transition: border-color 0.1s, box-shadow 0.1s, background .1s, transform .1s;
+    transition: border-color 0.1s, background .1s, color .1s, transform .1s;
     display: inline-flex;
     align-items: center;
     gap: 5px;
   }
-  .tbtn:active { transform: scale(0.94); }
+  .tbtn:active { transform: translateY(1px); }
   .tbtn svg, .ticon svg { width: 18px; height: 18px; display: block; }
   .ticon { line-height: 0; color: var(--ink-dim); }
-  .tbtn:hover { border-color: #4a4068; background: #2a263a; }
+  .tbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-2); }
   .tbtn.on {
     border-color: var(--accent);
-    box-shadow: 0 0 10px rgba(255, 217, 122, 0.35);
-    background: #2f2a40;
+    color: var(--accent);
+    background: var(--panel-2);
   }
   .tbtn.help {
     width: 32px; height: 32px;
     padding: 0;
-    border-radius: 50%;
+    border-radius: 0;
     justify-content: center;
     font-weight: 700;
     font-size: 16px;
   }
   #brushWrap { display: flex; align-items: center; gap: 6px; }
   #speedWrap { display: flex; align-items: center; gap: 6px; }
-  .groupLabel { font-size: 10px; color: #8076a0; text-transform: uppercase; letter-spacing: .6px; margin-right: 2px; }
+  .groupLabel { font-size: 10px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .6px; margin-right: 2px; }
   input[type=range] {
     accent-color: var(--accent);
     width: 110px;
@@ -264,9 +264,8 @@
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: radial-gradient(circle at 38% 32%, #3a3450, #1a1626 70%);
-    border: 1px solid var(--panel-edge);
-    box-shadow: inset 0 1px 2px rgba(255,255,255,0.08), 0 1px 3px rgba(0,0,0,0.5);
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
     cursor: grab;
     touch-action: none;
     flex: 0 0 auto;
@@ -279,10 +278,9 @@
     width: 2.5px;
     height: 14px;
     background: var(--accent);
-    border-radius: 2px;
+    border-radius: 0;
     transform-origin: 50% 100%;
     transform: translate(-50%, -100%) rotate(0deg);
-    box-shadow: 0 0 4px var(--accent);
   }
   #speedVal { font-variant-numeric: tabular-nums; min-width: 44px; color: var(--ink); font-size: 13px; }
 
@@ -295,7 +293,7 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    background: #16131f;
+    background: var(--bg-2);
   }
   canvas { display: block; cursor: none; max-width: 100%; max-height: 100%; }
 
@@ -306,10 +304,10 @@
     font-size: 10px;
     letter-spacing: 2px;
     padding: 1px 8px 0;
-    border-radius: 999px;
-    background: rgba(16, 13, 24, 0.78);
-    border: 1px solid #463d5a;
-    color: #a69ec7;
+    border-radius: 0;
+    background: var(--panel);
+    border: 1px solid var(--grid);
+    color: var(--ink-dim);
     pointer-events: none;
     opacity: 0;
     transition: opacity .12s ease;
@@ -323,13 +321,12 @@
     top: 78px;
     left: 50%;
     transform: translateX(-50%);
-    background: #181524;
-    border: 1px solid #463d5a;
-    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 10px 13px;
     font-size: 11px;
-    color: #c8bfd9;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    color: var(--ink);
     max-width: 300px;
     z-index: 20;
     display: none;
@@ -338,7 +335,7 @@
   #helpPop .title { font-size: 10px; color: var(--accent); font-weight: 600; margin-bottom: 3px; letter-spacing: .4px; }
   #helpPop ul { margin: 0; padding-left: 14px; }
   #helpPop li { margin: 1px 0; }
-  #helpPop .hint { color: #8a82a8; }
+  #helpPop .hint { color: var(--ink-dim); }
 </style>
 </head>
 <body>
@@ -386,7 +383,7 @@
           <div class="toolbar-group">
             <button class="tbtn" id="pauseBtn" title="Space"></button>
             <button class="tbtn" id="clearBtn" title="C"></button>
-            <button class="tbtn" id="aiToggleBtn" title="Collapse / expand AI panel" aria-label="AI player">🤖</button>
+            <button class="tbtn" id="aiToggleBtn" title="Collapse / expand AI panel" aria-label="AI player"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4.5V8"/><circle cx="12" cy="4" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.4" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.6" cy="13" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 16h5"/></svg></button>
             <button class="tbtn help" id="helpBtn" title="Help" aria-label="Help">?</button>
           </div>
         </div>
@@ -407,13 +404,13 @@
         <select id="aiModelSel" title="switch model"><option value="">—</option></select>
         <button id="aiBtnRun">▶ Start AI</button>
         <span id="aiStatus">connecting…</span>
-        <a id="aiSetupLink" href="../../ai-setup.html" title="connect your local model" style="color:#9fd1ff;font-size:11px;text-decoration:none;margin-left:6px">connect a model ↗</a>
+        <a id="aiSetupLink" href="../../ai-setup.html" title="connect your local model" style="color:#6f9bd1;font-size:11px;text-decoration:none;margin-left:6px">connect a model ↗</a>
         <button id="aiCollapseBtn" title="collapse / expand">▾</button>
       </div>
       <div class="ai-body">
         <div class="ai-col">
           <div class="ai-sub">live thoughts</div>
-          <div id="aiOutput">Idle. Bring your own model — <a href="../../ai-setup.html" style="color:#9fd1ff">connect one</a> and press Start. (Or run the <code>node server.js</code> bridge locally for stats + Claude.)</div>
+          <div id="aiOutput">Idle. Bring your own model — <a href="../../ai-setup.html" style="color:#6f9bd1">connect one</a> and press Start. (Or run the <code>node server.js</code> bridge locally for stats + Claude.)</div>
         </div>
         <div class="ai-col">
           <div class="ai-sub">transcript</div>
@@ -437,54 +434,58 @@
     <li><strong>Watch the reactions:</strong> everything talks to its neighbors. Fire, lightning, plants, void, etc create chains.</li>
     <li><strong>Tip:</strong> C clears walls too. Build new barriers with brick/wood/stone if you want to contain the fun.</li>
   </ul>
-  <div style="margin-top:5px; font-size:9.5px; color:#766d8f;">Esc or click ? to close • edges = void</div>
+  <div style="margin-top:5px; font-size:9.5px; color:#8a8d93;">Esc or click ? to close • edges = void</div>
 </div>
 
 <style>
   /* AI player docked as a strip beneath the play area */
   #aiPanel {
     flex: 0 0 auto;
-    border-top: 2px solid #3a3352;
-    background: linear-gradient(180deg, #181425, var(--panel));
-    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.4);
+    border-top: 1px solid var(--grid);
+    background: var(--panel);
     color: var(--ink);
-    font-family: ui-rounded, system-ui, sans-serif; font-size: 12px;
+    font-family: var(--mono); font-size: 12px;
     padding: 10px 16px 12px;
   }
   #aiPanel .ai-head { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
   #aiPanel .ai-dot { width: 10px; height: 10px; border-radius: 50%; background: #6a6280; flex: 0 0 auto; }
-  #aiPanel.live .ai-dot { background: #58d68d; box-shadow: 0 0 8px #58d68d; animation: aiPulse 1.4s ease-in-out infinite; }
+  #aiPanel.live .ai-dot { background: #9ec27a; animation: aiPulse 1.4s ease-in-out infinite; }
   @keyframes aiPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
   #aiPanel .ai-title { font-weight: 700; letter-spacing: .3px; font-size: 14px; }
   #aiBtnRun {
-    padding: 7px 16px; border: none; border-radius: 8px;
-    background: linear-gradient(180deg, #ffe08a, #f1b94a); color: #2a2030;
-    font-weight: 700; font-size: 13px; cursor: pointer;
+    padding: 7px 16px; border: 1px solid var(--grid); border-radius: 0;
+    background: var(--accent); color: var(--on-accent);
+    font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
   }
-  #aiBtnRun.stop { background: linear-gradient(180deg, #f0837a, #d65a4a); color: #fff; }
-  #aiBtnRun:disabled { opacity: .5; cursor: default; }
+  #aiBtnRun:hover { background: var(--bg-2); color: var(--accent); border-color: var(--accent); }
+  #aiBtnRun.stop { background: #cf5a52; color: var(--on-accent); border-color: #cf5a52; }
+  #aiBtnRun.stop:hover { background: var(--bg-2); color: #cf5a52; }
+  #aiBtnRun:disabled { opacity: .4; cursor: default; }
   #aiCollapseBtn {
-    margin-left: auto; width: 28px; height: 28px; border-radius: 7px;
-    border: 1px solid var(--panel-edge); background: #252033; color: var(--ink-dim);
+    margin-left: auto; width: 28px; height: 28px; border-radius: 0;
+    border: 1px solid var(--grid); background: var(--bg-2); color: var(--ink-dim);
     cursor: pointer; font-size: 13px; line-height: 1; transition: transform .15s ease;
   }
   #aiPanel.collapsed #aiCollapseBtn { transform: rotate(-90deg); }
-  #aiStatus { font-size: 11px; color: #766d8f; }
+  #aiStatus { font-size: 11px; color: var(--ink-dim); }
   #aiModelSel {
-    max-width: 170px; background: rgba(0,0,0,0.3);
-    color: var(--ink-dim); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px; font-size: 11px; padding: 4px 6px; cursor: pointer;
+    max-width: 170px; background: var(--bg-2);
+    color: var(--ink-dim); border: 1px solid var(--grid);
+    border-radius: 0; font-family: var(--mono); font-size: 11px; padding: 4px 6px; cursor: pointer;
   }
+  #aiModelSel:focus { outline: none; border-color: var(--accent); }
   #aiPanel .ai-body { display: flex; gap: 14px; align-items: stretch; }
   #aiPanel.collapsed .ai-body { display: none; }
   #aiPanel .ai-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
   #aiPanel .ai-sub {
     font-size: 9.5px; text-transform: uppercase; letter-spacing: .8px;
-    color: #6f6790; margin: 0 1px 4px;
+    color: var(--ink-dim); margin: 0 1px 4px;
   }
   #aiOutput {
-    background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 8px; padding: 8px 9px; line-height: 1.4; color: #e4dcf6;
+    background: var(--bg-2); border: 1px solid var(--grid);
+    border-radius: 0; padding: 8px 9px; line-height: 1.4; color: var(--ink);
     flex: 1 1 auto; min-height: 72px; max-height: 150px; overflow-y: auto; white-space: pre-wrap;
     word-break: break-word; font-size: 12px;
   }
@@ -494,14 +495,14 @@
   @keyframes aiBlink { 50% { opacity: 0; } }
   #aiTranscript, #aiLog {
     flex: 1 1 auto; min-height: 72px; max-height: 150px; overflow-y: auto;
-    background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.04);
-    border-radius: 8px; padding: 4px 8px;
+    background: var(--bg-2); border: 1px solid var(--grid);
+    border-radius: 0; padding: 4px 8px;
   }
   #aiLog div { color: var(--ink-dim); font-size: 10.5px; padding: 1px 0; }
   #aiLog div:first-child { color: var(--accent); }
   #aiTranscript .turn {
-    border-top: 1px solid rgba(255,255,255,0.06); padding: 5px 1px 4px;
-    color: #b9b0d4; font-size: 11px; line-height: 1.35; white-space: pre-wrap; word-break: break-word;
+    border-top: 1px solid var(--grid); padding: 5px 1px 4px;
+    color: var(--ink); font-size: 11px; line-height: 1.35; white-space: pre-wrap; word-break: break-word;
   }
   #aiTranscript .turn:first-child { border-top: none; }
   #aiTranscript .turn .move { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; }
@@ -2292,9 +2293,9 @@ function aiParseScene() {
     const near = nbrTypes[i];
     const wet = near.has(WATER) || near.has(SALTWATER);
     if (bl.type === FISH && !wet)
-      reactions.add(`⚠ fish at (${aiCX(bl.cx)},${aiCY(bl.cy)}) are on DRY LAND — no water adjacent, they will die`);
+      reactions.add(`fish at (${aiCX(bl.cx)},${aiCY(bl.cy)}) are on DRY LAND — no water adjacent, they will die`);
     if (bl.type === SEED && !wet && !near.has(MUD))
-      reactions.add(`⚠ seed at (${aiCX(bl.cx)},${aiCY(bl.cy)}) has no water or soil nearby — it won't sprout`);
+      reactions.add(`seed at (${aiCX(bl.cx)},${aiCY(bl.cy)}) has no water or soil nearby — it won't sprout`);
   });
 
   // 3) describe the notable blobs
@@ -2463,7 +2464,7 @@ function aiReportWish(text) {
   // bridge mode: the server logs wishes to WISHES.jsonl. browser mode: no server,
   // so just surface it to the console (the panel already shows the no-op move).
   if (aiWS && aiWS.readyState === 1) aiWS.send(JSON.stringify({ type: 'wish', text }));
-  else console.info('✨ wish:', text);
+  else console.info('wish:', text);
 }
 
 function aiExecute(a) {
@@ -2476,7 +2477,7 @@ function aiExecute(a) {
     tool = a.points ? 'stroke' : (a.x2 != null ? 'line' : 'paint');
   }
 
-  if (tool === 'clear') { clearAll(); return aiLog('🧹 cleared the canvas'); }
+  if (tool === 'clear') { clearAll(); return aiLog('cleared the canvas'); }
   if (tool === 'wait' || tool === 'observe' || tool === 'none') return aiLog('…watches the board');
   if (tool === 'pause') { aiSetPaused(true); return aiLog('⏸ paused time'); }
   if (tool === 'play' || tool === 'resume') { aiSetPaused(false); return aiLog('▶ resumed time'); }
@@ -2490,7 +2491,7 @@ function aiExecute(a) {
     aiSelect(BIRD);
     const c = Math.max(1, Math.min(120, Math.round(+a.count || 12)));
     for (let k = 0; k < c; k++) spawnBird(fx + ri(10) - 5, fy + ri(10) - 5);
-    return aiLog(`🐦 released ${c} birds near (${a.x},${a.y})`);
+    return aiLog(`released ${c} birds near (${a.x},${a.y})`);
   }
 
   // paint / stroke / line / erase: choose material + brush, then dab or trace a path
@@ -2501,21 +2502,21 @@ function aiExecute(a) {
       mat = aiNameToId[String(a.material || '').toLowerCase()];
       if (mat === undefined) {
         aiReportWish(`wanted to use a "${a.material}" material, but the game has no such element`);
-        return aiLog(`⚠ no "${a.material}" — logged as a wish`);
+        return aiLog(`no "${a.material}" — logged as a wish`);
       }
     }
     aiSelect(mat);                     // selection visibly changes in the palette
     aiSetBrush(a.r);
     const pts = aiPoints(a);
-    if (!pts.length) return aiLog('⚠ no points to draw');
+    if (!pts.length) return aiLog('no points to draw');
     aiStrokePts(pts);
     const what = isErase ? 'erased' : a.material;
-    if (pts.length > 1) return aiLog(`🖌 ${what} stroke · ${pts.length} pts · r${brushR}`);
-    return aiLog(`🖌 ${what} at (${pts[0][0]},${pts[0][1]}) r${brushR}`);
+    if (pts.length > 1) return aiLog(`${what} stroke · ${pts.length} pts · r${brushR}`);
+    return aiLog(`${what} at (${pts[0][0]},${pts[0][1]}) r${brushR}`);
   }
 
   aiReportWish(`tried to use a "${a.tool}" tool, but the game has no such action`);
-  return aiLog(`⚠ no "${a.tool}" tool — logged as a wish`);
+  return aiLog(`no "${a.tool}" tool — logged as a wish`);
 }
 
 // ---- panel + websocket plumbing ----

@@ -17,7 +17,7 @@
   var $ = function (id) { return document.getElementById(id); };
 
   // move tables (Lizard-Spock is a superset; the classic subset uses the first 3)
-  var EMOJI = { rock: '✊', paper: '✋', scissors: '✌️', lizard: '🦎', spock: '🖖' };
+  var EMOJI = { rock: 'ROCK', paper: 'PAPER', scissors: 'SCISSORS', lizard: 'LIZARD', spock: 'SPOCK' };
   var BEATS = {
     rock:     ['scissors', 'lizard'],
     paper:    ['rock', 'spock'],
@@ -49,7 +49,7 @@
     MOVES.forEach(function (m) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'throw'; b.dataset.move = m;
-      b.innerHTML = '<span class="em">' + EMOJI[m] + '</span><span class="nm">' + m + '</span>';
+      b.innerHTML = '<span class="nm">' + m + '</span>';
       b.addEventListener('click', function () { play(m); });
       host.appendChild(b);
     });
@@ -75,8 +75,8 @@
     if (aiController) { try { aiController.abort(); } catch (e) {} aiController = null; }
     scores = { you: 0, cpu: 0, draw: 0 }; history = []; streak = 0; rounds = 0;
     renderScores();
-    $('youHand').className = 'hand mine'; $('youHand').textContent = '✊';
-    $('cpuHand').className = 'hand theirs'; $('cpuHand').textContent = '✊';
+    $('youHand').className = 'hand mine'; $('youHand').textContent = '';
+    $('cpuHand').className = 'hand theirs'; $('cpuHand').textContent = '';
     setResult('Make your throw ▾', '');
     $('streak').textContent = '';
     $('throws').classList.remove('busy');
@@ -90,8 +90,8 @@
 
     // shake both hands while we (and maybe the model) decide
     var you = $('youHand'), cpu = $('cpuHand');
-    you.className = 'hand mine shake'; you.textContent = '✊';
-    cpu.className = 'hand theirs shake'; cpu.textContent = '✊';
+    you.className = 'hand mine shake'; you.textContent = '';
+    cpu.className = 'hand theirs shake'; cpu.textContent = '';
     setResult('Rock… Paper… Scissors…', '');
     $('streak').textContent = '';
 
@@ -222,8 +222,8 @@
   function renderScores() { $('scoreYou').textContent = scores.you; $('scoreDraw').textContent = scores.draw; $('scoreCpu').textContent = scores.cpu; }
   function renderStreak() {
     var s = '';
-    if (streak >= 3) s = '🔥 ' + streak + '-win streak!';
-    else if (streak <= -3) s = '❄️ ' + (-streak) + '-loss streak…';
+    if (streak >= 3) s = streak + '-win streak!';
+    else if (streak <= -3) s = (-streak) + '-loss streak…';
     else if (rounds) s = 'Round ' + rounds + ' · win rate ' + Math.round(scores.you / rounds * 100) + '%';
     $('streak').textContent = s;
   }

@@ -11,41 +11,38 @@
 <style>
   /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
   :root {
-    --bg: #140a1f;
-    --bg-2: #1d1030;
-    --panel: #20143a;
-    --panel-2: #2c1c4d;
-    --grid: #4a3a73;
-    --line: #6a52a8;
-    --text: #f1e9ff;
-    --muted: #a594cc;
-    --x: #ff2e88;            /* neon magenta */
-    --x-soft: #ff2e8826;
-    --o: #2bf0e0;            /* neon cyan */
-    --o-soft: #2bf0e026;
-    --accent: #ffd23f;        /* arcade amber */
-    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+    /* shared house surfaces (identical across the arcade) */
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    /* game identity */
+    --x: #e0648f;            /* muted magenta */
+    --x-soft: #e0648f22;
+    --o: #5fb6b0;            /* muted teal */
+    --o-soft: #5fb6b022;
+    --accent: #c7a24a;        /* muted amber */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     /* shared-chrome knobs (see lib/arcade.css) */
     --wrap-max: 620px;
-    --on-accent: #1a1030;
-    --seg-bg: #160c28;
-    --seg-active-bg: #1d1136;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
     --ai-on: var(--o);
     --ai-err: var(--x);
   }
 
   html, body {
     background: var(--bg);
-    background-image:
-      radial-gradient(900px 600px at 80% -15%, #3a2160 0%, rgba(58,33,96,0) 55%),
-      radial-gradient(900px 600px at 0% 110%, #2a164a 0%, rgba(42,22,74,0) 55%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   }
 
   h1 {
     text-align: center; font-size: clamp(26px, 6vw, 50px); margin: 0 0 6px;
-    letter-spacing: 4px; font-weight: 800; color: var(--accent);
-    text-shadow: 0 0 6px rgba(255,210,63,0.6), 3px 3px 0 var(--x), 6px 6px 0 var(--o);
+    letter-spacing: 4px; font-weight: 700; color: var(--text);
   }
   .subtitle {
     text-align: center; color: var(--muted); margin: 10px 0 26px;
@@ -66,35 +63,35 @@
   /* board */
   .board-area { display: flex; justify-content: center; }
   .board {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
     width: min(82vw, 420px); height: min(82vw, 420px);
-    background: var(--line); padding: 10px; border-radius: 10px;
-    box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0004;
+    background: var(--grid); padding: 1px; border-radius: 0;
+    border: 1px solid var(--grid);
     touch-action: manipulation;
   }
   .cell {
-    position: relative; background: linear-gradient(145deg, #1a1030 0%, #130b24 100%);
-    border-radius: 8px; cursor: default; display: flex; align-items: center; justify-content: center;
-    transition: background .12s ease, box-shadow .12s ease;
+    position: relative; background: var(--panel);
+    border-radius: 0; cursor: default; display: flex; align-items: center; justify-content: center;
+    transition: background .12s ease;
   }
   .cell.playable { cursor: pointer; }
-  .cell.playable:hover { background: linear-gradient(145deg, #241543 0%, #1a1030 100%); box-shadow: inset 0 0 0 2px var(--grid); }
+  .cell.playable:hover { background: var(--panel-2); }
 
-  /* X and O drawn with SVG for crisp neon strokes */
+  /* X and O drawn with SVG for crisp strokes */
   .cell svg { width: 64%; height: 64%; overflow: visible; }
   .mark path, .mark circle {
     fill: none; stroke-width: 9; stroke-linecap: round;
     stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
     animation: draw .26s ease forwards;
   }
-  .mark.x path { stroke: var(--x); filter: drop-shadow(0 0 6px var(--x-soft)); }
-  .mark.o circle { stroke: var(--o); filter: drop-shadow(0 0 6px var(--o-soft)); }
+  .mark.x path { stroke: var(--x); }
+  .mark.o circle { stroke: var(--o); }
   .mark.x path:nth-child(2) { animation-delay: .12s; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
 
-  .cell.win { box-shadow: inset 0 0 0 2px var(--accent), 0 0 18px var(--accent); }
-  .cell.win.x { box-shadow: inset 0 0 0 2px var(--x), 0 0 20px var(--x-soft); }
-  .cell.win.o { box-shadow: inset 0 0 0 2px var(--o), 0 0 20px var(--o-soft); }
+  .cell.win { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.win.x { box-shadow: inset 0 0 0 2px var(--x); }
+  .cell.win.o { box-shadow: inset 0 0 0 2px var(--o); }
 
   @media (max-width: 480px) { .name-field input { width: 96px; } }
 </style>

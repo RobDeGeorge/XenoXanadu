@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GOMOKU // RETRO</title>
+<meta name="description" content="Gomoku (Five-in-a-Row) rebuilt by hand in neon — first to five on a 15x15 grid. Play a friend, a threat-detecting heuristic AI, or a local LLM." />
+<!-- hide the BYO-model panel on the public site (AI only works when run locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* Palette + game-specific rules only; shared chrome lives in lib/arcade.css */
+  :root {
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --board-wood: #131417;
+    --board-wood-2: #0c0d0f;
+    --line: #313338;            /* the grid lines */
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --x: #1a1a1a;               /* the "black" stone */
+    --x-edge: #c06a9b;          /* muted magenta rim */
+    --x-soft: #c06a9b26;
+    --o: #d8d6d0;               /* the "white" stone */
+    --o-edge: #5fb6b0;          /* muted teal rim */
+    --o-soft: #5fb6b026;
+    --accent: #c7a24a;          /* muted amber */
+    --win: #6dbf95;             /* winning-line highlight */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    /* shared-chrome knobs (see lib/arcade.css) */
+    --wrap-max: 760px;
+    --on-accent: #0c0d0f;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
+    --ai-on: var(--o-edge);
+    --ai-err: var(--x-edge);
+  }
+
+  html, body {
+    background: var(--bg);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(28px, 6vw, 52px);
+    margin: 0 0 6px;
+    letter-spacing: 6px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .subtitle {
+    text-align: center; color: var(--muted);
+    margin: 10px 0 26px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* name swatch is a round stone chip */
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 50%; flex: none; border: 2px solid; }
+  .name-field input { width: 118px; }
+
+  .scoreboard { gap: 14px; }
+  .score-card { flex: 1 1 150px; max-width: 230px; padding: 12px 16px; }
+  .score-card .name { font-size: 14px; }
+  .score-card .stone-marker { width: 15px; height: 15px; border-radius: 50%; flex: none; border: 2px solid; }
+  .score-card .score { font-size: 42px; line-height: 1.15; }
+
+  /* ---------- the board ---------- */
+  .board-area { display: flex; justify-content: center; }
+  .board-frame {
+    position: relative; background: var(--board-wood);
+    border: 1px solid var(--grid); border-radius: 0;
+    padding: 14px;
+  }
+  /* The actual lines are drawn on a canvas; stones are positioned over it. */
+  #board {
+    position: relative;
+    width: min(86vw, 560px); height: min(86vw, 560px);
+    touch-action: manipulation; cursor: pointer;
+  }
+  #lines { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* stones are absolutely-positioned circles centered on intersections */
+  .stone {
+    position: absolute; border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0); transform-origin: center;
+    transition: transform .16s ease, box-shadow .16s ease;
+    pointer-events: none; z-index: 2;
+  }
+  .stone.show { transform: translate(-50%, -50%) scale(1); }
+  .stone.x {
+    background: var(--x);
+    border: 2px solid var(--x-edge);
+  }
+  .stone.o {
+    background: var(--o);
+    border: 2px solid var(--o-edge);
+  }
+  .stone.lastmove { outline: 2px dashed var(--accent); outline-offset: 2px; }
+  .stone.winning { box-shadow: inset 0 0 0 2px var(--win); border-color: var(--win); }
+
+  /* ghost preview of the hovered intersection (for the side to move) */
+  .ghost {
+    position: absolute; border-radius: 50%; pointer-events: none; z-index: 1;
+    transform: translate(-50%, -50%); opacity: .32; display: none;
+    border: 2px dashed var(--win); background: transparent;
+  }
+  #board.show-ghost .ghost { display: block; }
+
+  .rules { max-width: 580px; margin: 26px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+
+  @media (max-width: 520px) {
+    .name-field input { width: 100px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GOMOKU</h1>
+    <p class="subtitle">&#9632; Insert Coin &#9632; Five In A Row &#9632;</p>
+
+    <div class="controls">
+      <div class="field ai-only">
+        <label>Opponent</label>
+        <div class="seg" id="gmOppSeg">
+          <button type="button" class="seg-btn active" data-opp="humans">Humans</button>
+          <button type="button" class="seg-btn" data-opp="ai">vs AI</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Difficulty</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn" data-diff="easy">Easy</button>
+          <button type="button" class="seg-btn active" data-diff="medium">Medium</button>
+          <button type="button" class="seg-btn" data-diff="hard">Hard</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <div class="names" id="nameFields">
+      <div class="name-field"><span class="swatch" style="background:var(--x);border-color:var(--x-edge)"></span><input id="name0" value="Black" maxlength="14" /></div>
+      <div class="name-field"><span class="swatch" style="background:var(--o);border-color:var(--o-edge)"></span><input id="name1" value="White" maxlength="14" /></div>
+    </div>
+
+    <!-- ---------- AI opponent (local only) — filled by lib/board-ai.js ---------- -->
+    <div id="gmAi" class="ai-only"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="status" id="status"></div>
+
+    <div class="board-area">
+      <div class="board-frame">
+        <div id="board">
+          <canvas id="lines"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="winner-banner" id="winner"></div>
+
+    <p class="rules">
+      Take turns placing a stone on any empty intersection. The first player to line up
+      <b>five or more</b> of their own stones in an unbroken row &mdash; horizontally, vertically,
+      or diagonally &mdash; wins. Free-style rules: no forbidden moves, overlines count. If the
+      board fills with no five, it's a draw. Black moves first.
+    </p>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="../../lib/board-ai.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const N = 15;                 // 15x15 board
+  const X = 0, O = 1;           // X = Black (first), O = White
+  const EMPTY = -1;
+  const WIN = 5;                // five-in-a-row
+  // the four line directions (we scan each once, both ends)
+  const LINES = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+  const boardEl = document.getElementById("board");
+  const canvas = document.getElementById("lines");
+  const ctx = canvas.getContext("2d");
+  const statusEl = document.getElementById("status");
+  const winnerEl = document.getElementById("winner");
+
+  // ---- game state ----
+  let board, current, gameOver, lastMove, winLine, moveCount, difficulty;
+  let stoneEls;                 // stoneEls[r][c] -> DOM node or null
+  let ghostEl, cellPx;          // hover preview + pixel spacing
+  const PAD = 0.5;              // half-cell padding so edge stones aren't clipped (in cells)
+
+  const inBounds = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+  const stoneClass = (p) => (p === X ? "x" : "o");
+  const colLabel = (c) => "ABCDEFGHJKLMNOP"[c];           // skip "I" (Go convention)
+  const coordOf = (r, c) => colLabel(c) + (N - r);         // A1 bottom-left-ish, classic look
+
+  function names() {
+    return [0, 1].map((i) => document.getElementById("name" + i).value.trim() || (i === 0 ? "Black" : "White"));
+  }
+
+  // ---- core rules ----
+  function emptyCells(b) {
+    b = b || board;
+    const out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (b[r][c] === EMPTY) out.push({ r, c });
+    return out;
+  }
+
+  // Length of the run of `player` through (r,c) along (dr,dc), counting both ways.
+  // Returns { count, cells } including (r,c). Assumes b[r][c] === player.
+  function runAt(b, r, c, dr, dc, player) {
+    const cells = [{ r, c }];
+    let rr = r + dr, cc = c + dc;
+    while (inBounds(rr, cc) && b[rr][cc] === player) { cells.push({ r: rr, c: cc }); rr += dr; cc += dc; }
+    rr = r - dr; cc = c - dc;
+    while (inBounds(rr, cc) && b[rr][cc] === player) { cells.unshift({ r: rr, c: cc }); rr -= dr; cc -= dc; }
+    return { count: cells.length, cells };
+  }
+
+  // Did `player` just make five (or more) in a row through (r,c)? Returns the winning cells or null.
+  function winningLine(b, r, c, player) {
+    for (const [dr, dc] of LINES) {
+      const run = runAt(b, r, c, dr, dc, player);
+      if (run.count >= WIN) return run.cells;
+    }
+    return null;
+  }
+
+  // ---- geometry (canvas grid + intersection pixel positions) ----
+  function layout() {
+    const size = boardEl.clientWidth || boardEl.getBoundingClientRect().width;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cellPx = size / (N - 1 + 2 * PAD);
+    drawGrid(size);
+    repositionStones(size);
+  }
+
+  function px(c) { return (PAD + c) * cellPx; }   // intersection -> pixel coordinate
+
+  function drawGrid(size) {
+    ctx.clearRect(0, 0, size, size);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--line").trim() || "#5a47a8";
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      ctx.moveTo(px(0), px(i)); ctx.lineTo(px(N - 1), px(i));      // rows
+      ctx.moveTo(px(i), px(0)); ctx.lineTo(px(i), px(N - 1));      // cols
+    }
+    ctx.stroke();
+    // star points (hoshi) — classic 15x15 markers at 3,7,11
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#ffd23f";
+    [3, 7, 11].forEach((r) => [3, 7, 11].forEach((c) => {
+      ctx.beginPath(); ctx.arc(px(c), px(r), Math.max(2, cellPx * 0.07), 0, Math.PI * 2); ctx.fill();
+    }));
+  }
+
+  function stoneSize() { return Math.max(10, cellPx * 0.82); }
+
+  function repositionStones() {
+    const sz = stoneSize();
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const el = stoneEls[r][c];
+      if (el) {
+        el.style.left = px(c) + "px"; el.style.top = px(r) + "px";
+        el.style.width = sz + "px"; el.style.height = sz + "px";
+      }
+    }
+    if (ghostEl) { ghostEl.style.width = sz + "px"; ghostEl.style.height = sz + "px"; }
+  }
+
+  // ---- rendering ----
+  function placeStoneEl(r, c, player) {
+    const sz = stoneSize();
+    const el = document.createElement("div");
+    el.className = "stone " + stoneClass(player);
+    el.style.left = px(c) + "px"; el.style.top = px(r) + "px";
+    el.style.width = sz + "px"; el.style.height = sz + "px";
+    boardEl.appendChild(el);
+    void el.offsetWidth;          // reflow so the scale-in plays
+    el.classList.add("show");
+    stoneEls[r][c] = el;
+  }
+
+  function clearStones() {
+    boardEl.querySelectorAll(".stone").forEach((e) => e.remove());
+    stoneEls = [];
+    for (let r = 0; r < N; r++) stoneEls.push(new Array(N).fill(null));
+  }
+
+  function markLastMove() {
+    boardEl.querySelectorAll(".stone.lastmove").forEach((e) => e.classList.remove("lastmove"));
+    if (lastMove) { const el = stoneEls[lastMove.r][lastMove.c]; if (el) el.classList.add("lastmove"); }
+  }
+
+  function markWinningLine() {
+    if (!winLine) return;
+    for (const { r, c } of winLine) { const el = stoneEls[r][c]; if (el) el.classList.add("winning"); }
+  }
+
+  function buildScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    const nm = names();
+    sb.innerHTML = "";
+    [X, O].forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "score-card";
+      card.id = "card" + p;
+      const edge = p === X ? "--x-edge" : "--o-edge";
+      const fill = p === X ? "--x" : "--o";
+      card.innerHTML =
+        '<div class="name"><span class="stone-marker" style="background:var(' + fill + ');border-color:var(' + edge + ')"></span>' +
+        '<span id="label' + p + '"></span></div>' +
+        '<div class="score" id="score' + p + '" style="color:var(' + edge + ')">&mdash;</div>';
+      sb.appendChild(card);
+      document.getElementById("label" + p).textContent = nm[p];
+    });
+    updateScoreboard();
+  }
+
+  function updateScoreboard() {
+    const nm = names();
+    [X, O].forEach((p) => {
+      document.getElementById("label" + p).textContent = nm[p];
+      const card = document.getElementById("card" + p);
+      const edge = p === X ? "--x-edge" : "--o-edge";
+      const soft = p === X ? "--x-soft" : "--o-soft";
+      const active = !gameOver && current === p;
+      document.getElementById("score" + p).innerHTML = active ? "&#9679;" : "&middot;";
+      card.style.transform = active ? "translateY(-3px)" : "";
+      card.style.borderColor = active ? "var(" + edge + ")" : "var(--grid)";
+      card.style.boxShadow = active
+        ? "inset 0 0 0 1px var(" + edge + ")"
+        : "inset 0 -3px 0 var(" + edge + ")";
+    });
+  }
+
+  function updateStatus(msg) {
+    if (gameOver) return;
+    const nm = names();
+    statusEl.innerHTML = msg || `<b style="color:var(${current === X ? "--x-edge" : "--o-edge"})">${nm[current]}</b>'s move`;
+  }
+
+  // ---- pointer -> nearest intersection ----
+  function eventCell(e) {
+    const rect = boardEl.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const c = Math.round(x / cellPx - PAD);
+    const r = Math.round(y / cellPx - PAD);
+    if (!inBounds(r, c)) return null;
+    return { r, c };
+  }
+
+  function onBoardMove(e) {
+    if (gameOver || isAITurn()) { boardEl.classList.remove("show-ghost"); return; }
+    const cell = eventCell(e);
+    if (!cell || board[cell.r][cell.c] !== EMPTY) { boardEl.classList.remove("show-ghost"); return; }
+    ghostEl.className = "ghost";
+    ghostEl.style.borderColor = current === X ? "var(--x-edge)" : "var(--o-edge)";
+    ghostEl.style.left = px(cell.c) + "px"; ghostEl.style.top = px(cell.r) + "px";
+    boardEl.classList.add("show-ghost");
+  }
+
+  function onBoardLeave() { boardEl.classList.remove("show-ghost"); }
+
+  function onBoardClick(e) {
+    if (gameOver || isAITurn()) return;
+    const cell = eventCell(e);
+    if (!cell || board[cell.r][cell.c] !== EMPTY) return;
+    placeMove(cell.r, cell.c);
+  }
+
+  // ---- turn flow ----
+  function placeMove(r, c) {
+    if (board[r][c] !== EMPTY) return false;
+    board[r][c] = current;
+    moveCount++;
+    placeStoneEl(r, c, current);
+    lastMove = { r, c };
+    boardEl.classList.remove("show-ghost");
+    markLastMove();
+
+    const line = winningLine(board, r, c, current);
+    if (line) { winLine = line; return endGame(current); }
+    if (moveCount >= N * N) return endGame(null);   // board full = draw
+
+    current = 1 - current;
+    updateScoreboard();
+    updateStatus();
+    maybeAIMove();
+    return true;
+  }
+
+  function endGame(winner) {
+    gameOver = true;
+    markWinningLine();
+    const nm = names();
+    if (winner === null) {
+      winnerEl.innerHTML = "&#9878; Draw &mdash; board full, no five.";
+      winnerEl.style.color = "var(--accent)";
+    } else {
+      const edge = winner === X ? "--x-edge" : "--o-edge";
+      winnerEl.innerHTML = "&#9733; " + nm[winner] + " wins &mdash; five in a row! &#9733;";
+      winnerEl.style.color = "var(" + edge + ")";
+    }
+    updateScoreboard();
+    statusEl.innerHTML = "Game over &mdash; press <b>New Game</b> to play again.";
+    return true;
+  }
+
+  function startGame() {
+    board = [];
+    for (let r = 0; r < N; r++) board.push(new Array(N).fill(EMPTY));
+    current = X; gameOver = false; lastMove = null; winLine = null; moveCount = 0;
+    winnerEl.textContent = "";
+    clearStones();
+    // (re)create the hover ghost
+    if (ghostEl) ghostEl.remove();
+    ghostEl = document.createElement("div");
+    ghostEl.className = "ghost";
+    boardEl.appendChild(ghostEl);
+    buildScoreboard();
+    layout();
+    updateStatus();
+    if (typeof gmOnNewGame === "function") gmOnNewGame();
+  }
+
+  /* ============================================================
+   *  Built-in threat-detecting heuristic AI (fully offline)
+   *  Scores every candidate intersection by the value of the lines it
+   *  extends for me and the lines it denies the opponent. It always
+   *  takes an immediate win, always blocks an immediate enemy win, and
+   *  on Hard does a shallow look-ahead to find/deny double-threats.
+   * ============================================================ */
+
+  // pattern values for a run of `len` open on `ends` sides (0,1,2). Used for both attack & defense.
+  function runScore(len, ends) {
+    if (len >= 5) return 1000000;            // already winning
+    if (len === 4) return ends >= 1 ? (ends === 2 ? 100000 : 12000) : 0;  // open four wins; closed four is a threat
+    if (len === 3) return ends === 2 ? 4000 : (ends === 1 ? 400 : 0);     // open three is strong
+    if (len === 2) return ends === 2 ? 200 : (ends === 1 ? 30 : 0);
+    if (len === 1) return ends === 2 ? 12 : (ends === 1 ? 4 : 0);
+    return 0;
+  }
+
+  // Evaluate, for a hypothetical stone of `player` at (r,c) on board b, the total
+  // pattern value of all four lines through that point (the gain from playing there).
+  function pointValue(b, r, c, player) {
+    let total = 0;
+    for (const [dr, dc] of LINES) {
+      // count my consecutive stones each way + whether the far end is open
+      let len = 1;
+      let a = 1; let openA = false;
+      let rr = r + dr, cc = c + dc;
+      while (inBounds(rr, cc) && b[rr][cc] === player) { len++; rr += dr; cc += dc; }
+      openA = inBounds(rr, cc) && b[rr][cc] === EMPTY;
+      rr = r - dr; cc = c - dc;
+      while (inBounds(rr, cc) && b[rr][cc] === player) { len++; rr -= dr; cc -= dc; }
+      const openB = inBounds(rr, cc) && b[rr][cc] === EMPTY;
+      const ends = (openA ? 1 : 0) + (openB ? 1 : 0);
+      total += runScore(len, ends);
+    }
+    return total;
+  }
+
+  // Candidate moves: only empties adjacent (within `radius`) to an existing stone,
+  // which keeps the search local and fast. First move -> center.
+  function candidateCells(b, radius) {
+    radius = radius || 2;
+    if (moveCountOf(b) === 0) return [{ r: (N - 1) >> 1, c: (N - 1) >> 1 }];
+    const seen = new Set(); const out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] === EMPTY) continue;
+      for (let dr = -radius; dr <= radius; dr++) for (let dc = -radius; dc <= radius; dc++) {
+        const nr = r + dr, nc = c + dc;
+        if (inBounds(nr, nc) && b[nr][nc] === EMPTY) {
+          const k = nr * N + nc;
+          if (!seen.has(k)) { seen.add(k); out.push({ r: nr, c: nc }); }
+        }
+      }
+    }
+    return out.length ? out : emptyCells(b);
+  }
+
+  function moveCountOf(b) {
+    let n = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (b[r][c] !== EMPTY) n++;
+    return n;
+  }
+
+  // Static score of placing `player` at (r,c): my gain + a weighted block of the opponent's gain.
+  function scoreMove(b, r, c, player, defenseWeight) {
+    const mine = pointValue(b, r, c, player);
+    const theirs = pointValue(b, r, c, 1 - player);
+    return mine + theirs * defenseWeight;
+  }
+
+  // Does placing `player` at (r,c) make an immediate five?
+  function isWinningMove(b, r, c, player) {
+    b[r][c] = player;
+    const w = winningLine(b, r, c, player);
+    b[r][c] = EMPTY;
+    return !!w;
+  }
+
+  // The heuristic move chooser. `depth` controls look-ahead: easy=0, medium=0 (wider eval),
+  // hard=1 (find moves that create a double-threat / refute the opponent's).
+  function chooseHeuristicMove(player, level) {
+    const b = board;
+    const cands = candidateCells(b, level === "easy" ? 1 : 2);
+
+    // 1. take an immediate win.
+    for (const m of cands) if (isWinningMove(b, m.r, m.c, player)) return m;
+    // 2. block the opponent's immediate win.
+    for (const m of cands) if (isWinningMove(b, m.r, m.c, 1 - player)) return m;
+
+    const defenseWeight = level === "easy" ? 0.6 : 1.05;
+    // static scores
+    const scored = cands.map((m) => ({ m, s: scoreMove(b, m.r, m.c, player, defenseWeight) }));
+    scored.sort((a, b2) => b2.s - a.s);
+
+    if (level !== "hard") {
+      // easy adds a dash of randomness among the top few so it's beatable.
+      if (level === "easy") {
+        const top = scored.slice(0, Math.min(4, scored.length));
+        return top[Math.floor(Math.random() * top.length)].m;
+      }
+      return scored[0].m;
+    }
+
+    // 3. HARD: shallow look-ahead over the strongest candidates. For each, play it,
+    //    then check whether the OPPONENT has a forced win/strong reply; prefer moves
+    //    that create our own double threat (an open four, or two open threes).
+    const top = scored.slice(0, Math.min(12, scored.length));
+    let best = top[0].m, bestVal = -Infinity;
+    for (const { m } of top) {
+      b[m.r][m.c] = player;
+      let val = scoreMove(b, m.r, m.c, player, defenseWeight);
+      // bonus: did this create a winning-or-open-four threat we can follow up?
+      val += threatBonus(b, player);
+      // penalty: opponent's best immediate reply value (they'll take it)
+      let oppBest = 0, oppWins = false;
+      const replies = candidateCells(b, 2);
+      for (const rm of replies) {
+        if (isWinningMove(b, rm.r, rm.c, 1 - player)) { oppWins = true; break; }
+        const sv = pointValue(b, rm.r, rm.c, 1 - player);
+        if (sv > oppBest) oppBest = sv;
+      }
+      b[m.r][m.c] = EMPTY;
+      if (oppWins) val -= 500000;          // never hand over a forced win
+      val -= oppBest * 0.9;
+      if (val > bestVal) { bestVal = val; best = m; }
+    }
+    return best;
+  }
+
+  // Count "open four" / "double open three" style threats for `player` on board b.
+  function threatBonus(b, player) {
+    let opens3 = 0, fours = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (b[r][c] !== player) continue;
+      for (const [dr, dc] of LINES) {
+        // only count from the leading end of a run to avoid double-counting
+        const pr = r - dr, pc = c - dc;
+        if (inBounds(pr, pc) && b[pr][pc] === player) continue;
+        let len = 0, rr = r, cc = c;
+        while (inBounds(rr, cc) && b[rr][cc] === player) { len++; rr += dr; cc += dc; }
+        const endOpen = inBounds(rr, cc) && b[rr][cc] === EMPTY;
+        const startOpen = inBounds(pr, pc) && b[pr][pc] === EMPTY;
+        const ends = (endOpen ? 1 : 0) + (startOpen ? 1 : 0);
+        if (len === 4 && ends >= 1) fours++;
+        else if (len === 3 && ends === 2) opens3++;
+      }
+    }
+    return fours * 8000 + (opens3 >= 2 ? 9000 : opens3 * 600);
+  }
+
+  // ---- control panel ----
+  function wireSegment(id, attr, onPick) {
+    const container = document.getElementById(id);
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn"); if (!btn) return;
+      container.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      onPick(btn.getAttribute(attr));
+    });
+  }
+  wireSegment("diffSeg", "data-diff", (v) => { difficulty = v; });
+  difficulty = "medium";
+  document.getElementById("newGame").addEventListener("click", startGame);
+  [0, 1].forEach((i) => document.getElementById("name" + i).addEventListener("input", () => { if (!gameOver) updateScoreboard(); else buildScoreboard(); }));
+
+  boardEl.addEventListener("click", onBoardClick);
+  boardEl.addEventListener("mousemove", onBoardMove);
+  boardEl.addEventListener("mouseleave", onBoardLeave);
+  window.addEventListener("resize", () => { if (board) layout(); });
+
+  /* ============================================================
+   *  AI opponent — Bring Your Own Model (local only)
+   *  Shared controller in lib/board-ai.js owns the panel, model list and
+   *  observe→ask→move loop. We supply only the Gomoku hooks: the engine
+   *  ranks candidate intersections (threat-scored, best first) and the
+   *  model picks one by number. A bad reply falls back to the engine's
+   *  top pick, so the model can never play illegally.
+   * ============================================================ */
+
+  function rankedMoves() {
+    const seat = aiCtl.seat;
+    // 1) forced win, 2) forced block, then 3) the heuristic's static ranking.
+    const cands = candidateCells(board, 2);
+    const win = cands.find((m) => isWinningMove(board, m.r, m.c, seat));
+    const block = cands.find((m) => isWinningMove(board, m.r, m.c, 1 - seat));
+    const scored = cands.map((m) => {
+      const mine = pointValue(board, m.r, m.c, seat);
+      const theirs = pointValue(board, m.r, m.c, 1 - seat);
+      return Object.assign({}, m, { mine, theirs, score: mine + theirs * 1.05 });
+    }).sort((a, b) => b.score - a.score);
+    // hoist win/block to the front (deduped)
+    const front = [];
+    if (win) front.push(Object.assign({}, win, { tag: "WINS — completes five", mine: 1e6, theirs: 0, score: 1e6 }));
+    if (block) front.push(Object.assign({}, block, { tag: "BLOCK — stops their five", mine: 0, theirs: 1e6, score: 9e5 }));
+    const key = (m) => m.r + "," + m.c;
+    const have = new Set(front.map(key));
+    for (const m of scored) { if (!have.has(key(m))) { front.push(m); have.add(key(m)); } }
+    return front.slice(0, 24);   // cap the list the model sees
+  }
+
+  function tagFor(m) {
+    if (m.tag) return m.tag;
+    const tags = [];
+    if (m.mine >= 100000) tags.push("makes an OPEN FOUR");
+    else if (m.mine >= 4000) tags.push("makes an open three");
+    if (m.theirs >= 100000) tags.push("blocks their open four");
+    else if (m.theirs >= 4000) tags.push("blocks their open three");
+    if (!tags.length) tags.push("attack " + Math.round(m.mine) + " / defend " + Math.round(m.theirs));
+    return tags.join(", ");
+  }
+
+  function buildMessages() {
+    const ranked = rankedMoves();
+    const nm = names();
+    const seat = aiCtl.seat;
+    const me = nm[seat], opp = nm[1 - seat];
+    const lines = ranked.map((m, i) => `${i + 1}. ${coordOf(m.r, m.c)}  [${tagFor(m)}]`).join("\n");
+    const last = lastMove ? coordOf(lastMove.r, lastMove.c) : "—";
+    const system =
+`You are a strong Gomoku (Five-in-a-Row) player ("${me}") on a 15x15 board. You win by getting FIVE of your stones in an unbroken line — horizontal, vertical, or diagonal.
+Strategy, in priority order: (1) if a move WINS (completes five), take it; (2) if the opponent threatens five next turn, BLOCK it; (3) build your own double-threats — an open four (unstoppable) or two open threes at once; (4) block the opponent's open threes before they become open fours; (5) keep your stones connected near the center.
+You get a numbered list of the engine's best candidate intersections, each tagged. Pick exactly ONE by NUMBER from the list.
+Reply with at most one short sentence, then a FINAL line exactly: MOVE: <number>. Nothing after it.`;
+    const user =
+`You are ${me}; opponent is ${opp}. Opponent's last move: ${last}. Stones on board: ${moveCount}.
+Coordinates are column letter (A–P, no I) + row number (rows numbered from the bottom).
+Your best candidate moves:
+${lines}
+
+Pick the strongest move and give your MOVE: line.`;
+    return { messages: [{ role: "system", content: system }, { role: "user", content: user }], ranked };
+  }
+
+  function parseMove(reply, ranked) {
+    const i = reply.toUpperCase().lastIndexOf("MOVE:");
+    const seg = i >= 0 ? reply.slice(i + 5) : reply;
+    const num = seg.match(/\d+/);
+    if (num) { const k = +num[0] - 1; if (k >= 0 && k < ranked.length) return ranked[k]; }
+    // model gave a coordinate (e.g. "H8") directly?
+    const cm = seg.match(/\b([A-HJ-P])\s*([0-9]{1,2})\b/i);
+    if (cm) {
+      const c = "ABCDEFGHJKLMNOP".indexOf(cm[1].toUpperCase());
+      const r = N - (+cm[2]);
+      const hit = ranked.find((m) => m.r === r && m.c === c);
+      if (hit) return hit;
+      if (inBounds(r, c) && board[r][c] === EMPTY) return { r, c };   // legal even if off-list
+    }
+    return null;
+  }
+
+  const aiCtl = XenoBoardAI.create({
+    mount: document.getElementById("gmAi"),
+    oppSeg: document.getElementById("gmOppSeg"),
+    defaultSeat: O,            // AI plays White by default (human is Black, moves first)
+    temperature: 0.4,
+    maxTokens: 600,
+    thinkPlaceholder: "The AI's reasoning streams here as it picks an intersection…",
+    hintText:
+      'Play against a model on <em>your</em> machine &mdash; ' +
+      '<a href="../../ai-setup.html">connect a model &#9656;</a>. ' +
+      "It only ever picks from the engine's list of <em>legal</em> intersections (each tagged with the " +
+      "threats it makes or blocks), so it always plays by the rules. No model? The built-in threat AI plays.",
+    seats: () => { const nm = names(); return [X, O].map((p) => ({ value: p, label: nm[p] + (p === X ? " (first)" : "") })); },
+    seatName: (seat) => names()[seat],
+    current: () => current,
+    gameOver: () => gameOver,
+    rankedMoves,
+    buildMessages,
+    parseMove,
+    moveStale: (m) => board[m.r][m.c] !== EMPTY,
+    applyMove: (m) => placeMove(m.r, m.c),
+    moveLabel: (m) => coordOf(m.r, m.c),
+    describeMove: (m) => "played " + coordOf(m.r, m.c),
+    repaint: () => { boardEl.classList.remove("show-ghost"); },
+  });
+
+  // ---- the "vs AI" turn driver ----
+  // When it's the AI seat's turn we either let board-ai.js run the model (it calls
+  // applyMove) OR, when no model is usable, fall back to the built-in heuristic.
+  // notify() returns early if a model is reachable+selected; we detect that by checking
+  // isLocal()+a chosen model. Simpler: always offer the model first via aiCtl.notify();
+  // if it's not going to fire (no model / hosted), run the heuristic ourselves.
+  let aiThinkTimer = null;
+
+  function modelWillPlay() {
+    // board-ai.js only drives the model when local AND a model is selected.
+    if (!XenoBYOM.isLocal()) return false;
+    const sel = document.querySelector("#gmAi .ai-model");
+    return !!(sel && sel.value && !sel.disabled);
+  }
+
+  function isAITurn() {
+    return aiCtl.mode === "ai" && !gameOver && current === aiCtl.seat;
+  }
+
+  function maybeAIMove() {
+    if (!isAITurn()) return;
+    boardEl.classList.remove("show-ghost");
+    if (modelWillPlay()) { aiCtl.notify(); return; }   // let the LLM pick from the legal list
+    // built-in heuristic plays
+    if (aiThinkTimer) clearTimeout(aiThinkTimer);
+    aiThinkTimer = setTimeout(() => {
+      if (!isAITurn()) return;
+      const m = chooseHeuristicMove(aiCtl.seat, difficulty);
+      if (m) placeMove(m.r, m.c);
+    }, 360);
+  }
+
+  function gmOnNewGame() {
+    if (aiThinkTimer) clearTimeout(aiThinkTimer);
+    aiCtl.newGame();
+    // if the AI holds the first seat, kick it off
+    maybeAIMove();
+  }
+
+  startGame();
+  if (XenoBYOM.isLocal()) aiCtl.start();
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

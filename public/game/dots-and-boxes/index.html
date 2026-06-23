@@ -9,27 +9,28 @@
 <style>
   html.hosted .ai-only { display: none !important; }
   :root {
-    --bg: #160f29;
-    --bg-2: #241b3c;
-    --panel: #1d1535;
-    --panel-2: #2a1f49;
-    --grid: #4a3f73;
-    --line-empty: #5a4d86;
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --line-empty: #313338;
     /* Dots deliberately LOW-contrast vs background to defeat the
        Hermann / scintillating grid illusion (no bright discs on a dark grid). */
-    --dot: #6c5f95;
-    --text: #f3e9ff;
-    --muted: #9d8fc7;
-    --p1: #ff2e88;            /* neon magenta */
-    --p1-soft: #ff2e8826;
-    --p2: #2bf0e0;            /* neon cyan */
-    --p2-soft: #2bf0e026;
-    --p3: #b6ff3d;            /* neon lime */
-    --p3-soft: #b6ff3d26;
-    --p4: #ff9f1c;            /* neon orange */
-    --p4-soft: #ff9f1c26;
-    --accent: #ffd23f;        /* arcade amber */
-    --mono: "Courier New", "Lucida Console", Consolas, monospace;
+    --dot: #3a3c42;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --p1: #c06a9b;            /* muted magenta */
+    --p1-soft: #c06a9b26;
+    --p2: #5fb6b0;            /* muted teal/cyan */
+    --p2-soft: #5fb6b026;
+    --p3: #a6c46a;            /* muted lime */
+    --p3-soft: #a6c46a26;
+    --p4: #cf8a52;            /* muted orange */
+    --p4-soft: #cf8a5226;
+    --accent: #c7a24a;        /* muted amber */
+    --on-accent: #0c0d0f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -38,25 +39,9 @@
     margin: 0;
     padding: 0;
     background: var(--bg);
-    background-image:
-      radial-gradient(900px 600px at 80% -15%, #3a2a5e 0%, rgba(58,42,94,0) 55%),
-      radial-gradient(900px 600px at 0% 110%, #2a1a4a 0%, rgba(42,26,74,0) 55%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
     color: var(--text);
     font-family: var(--mono);
     min-height: 100vh;
-  }
-
-  /* CRT scanline overlay */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-      0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
-    mix-blend-mode: multiply;
-    z-index: 9999;
   }
 
   .wrap { max-width: 960px; margin: 0 auto; padding: 30px 20px 70px; }
@@ -66,12 +51,9 @@
     font-size: clamp(28px, 6vw, 52px);
     margin: 0 0 6px;
     letter-spacing: 4px;
-    font-weight: 800;
-    color: var(--accent);
-    text-shadow:
-      0 0 6px rgba(255,210,63,0.6),
-      3px 3px 0 var(--p1),
-      6px 6px 0 var(--p2);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text);
   }
   .subtitle {
     text-align: center;
@@ -89,65 +71,64 @@
     align-items: flex-end;
     justify-content: center;
     background: var(--panel);
-    border: 2px solid var(--grid);
-    border-radius: 4px;
-    box-shadow: 0 0 0 1px #0006, 0 10px 30px #0007, inset 0 0 30px #0003;
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 20px;
     margin-bottom: 20px;
   }
   .field { display: flex; flex-direction: column; gap: 8px; }
   .field > label {
-    font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+    font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
   }
 
   /* segmented option buttons */
   .seg { display: flex; gap: 6px; }
   .seg-btn {
     padding: 9px 15px;
-    border: 2px solid var(--grid);
-    background: #120c22;
+    border: 1px solid var(--grid);
+    background: var(--bg-2);
     color: var(--muted);
     font-family: var(--mono);
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 0;
     font-size: 13px;
-    transition: color .12s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+    transition: color .15s, border-color .15s, background .15s;
   }
-  .seg-btn:hover { color: var(--text); border-color: var(--muted); background: #120c22; box-shadow: none; }
-  .seg-btn.active { border-color: var(--accent); color: var(--accent); background: #1a1330; box-shadow: 0 0 8px var(--accent); }
+  .seg-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--bg-2); }
+  .seg-btn.active { border-color: var(--accent); color: var(--accent); background: var(--panel-2); }
 
   button#newGame {
     cursor: pointer;
-    border: 2px solid var(--accent);
-    border-radius: 3px;
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 11px 22px;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     font-family: var(--mono);
-    color: var(--accent);
-    background: transparent;
-    transition: transform .06s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+    color: var(--text);
+    background: var(--panel);
+    transition: background .15s, border-color .15s, color .15s, transform .08s;
   }
-  button#newGame:hover { background: var(--accent); color: #1a1228; box-shadow: 0 0 14px var(--accent); }
-  button#newGame:active { transform: translateY(2px); }
+  button#newGame:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  button#newGame:active { transform: translateY(1px); }
 
   /* player name inputs */
   .names { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
   .name-field {
     display: flex; align-items: center; gap: 9px;
-    background: var(--panel);
-    border: 2px solid var(--grid);
-    border-radius: 3px;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 8px 12px;
-    transition: border-color .12s ease;
+    transition: border-color .15s;
   }
   .name-field:focus-within { border-color: var(--accent); }
-  .name-field .swatch { width: 13px; height: 13px; border-radius: 2px; flex: none; }
+  .name-field .swatch { width: 13px; height: 13px; border-radius: 0; flex: none; }
   .name-field input {
     background: transparent; border: none; color: var(--text);
     font-family: var(--mono); font-size: 14px; width: 118px;
@@ -160,8 +141,8 @@
     flex: 1 1 150px;
     max-width: 210px;
     background: var(--panel);
-    border: 2px solid var(--grid);
-    border-radius: 4px;
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 14px 16px;
     text-align: center;
     transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
@@ -171,7 +152,7 @@
     display: flex; align-items: center; justify-content: center; gap: 8px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .score-card .dot-marker { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+  .score-card .dot-marker { width: 12px; height: 12px; border-radius: 0; flex: none; }
   .score-card .score { font-size: 40px; font-weight: 800; line-height: 1.15; }
 
   .status {
@@ -182,11 +163,10 @@
 
   .board-area { display: flex; justify-content: center; }
   .board-frame {
-    background: #130d24;
-    border: 2px solid var(--grid);
-    border-radius: 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--grid);
+    border-radius: 0;
     padding: 12px;
-    box-shadow: 0 0 0 1px #0007, 0 14px 40px #0008, inset 0 0 40px #0004;
   }
   svg { max-width: 100%; height: auto; touch-action: manipulation; display: block; }
 
@@ -220,26 +200,26 @@
   }
   /* ---- AI opponent (local only) ---- */
   #dbAi { max-width: 560px; margin: 4px auto 22px; padding: 14px 16px;
-          background: var(--panel); border: 1px solid var(--grid); border-radius: 12px;
+          background: var(--panel); border: 1px solid var(--grid); border-radius: 0;
           display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); }
   #dbAi .ai-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
   #dbAi .ai-label { width: 70px; flex: none; color: var(--muted); font-size: 11px;
                     text-transform: uppercase; letter-spacing: .08em; }
-  #dbAi .seg { display: inline-flex; border: 1px solid var(--grid); border-radius: 7px; overflow: hidden; }
+  #dbAi .seg { display: inline-flex; border: 1px solid var(--grid); border-radius: 0; overflow: hidden; }
   #dbAi .seg button { background: transparent; border: 0; color: var(--muted); padding: 5px 12px;
                       font-size: 12px; cursor: pointer; font-family: var(--mono); }
-  #dbAi .seg button.active { background: var(--accent); color: #1a1230; font-weight: 800; }
+  #dbAi .seg button.active { background: var(--accent); color: var(--on-accent); font-weight: 800; }
   #dbAi select, #dbAi input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text);
-                      border: 1px solid var(--grid); border-radius: 6px; padding: 5px 8px;
+                      border: 1px solid var(--grid); border-radius: 0; padding: 5px 8px;
                       font-size: 12px; font-family: var(--mono); }
-  #dbAi #dbRefresh { flex: none; background: var(--panel-2); color: var(--p2); border: 1px solid var(--grid);
-                      border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  #dbAi #dbRefresh { flex: none; background: var(--panel-2); color: var(--text); border: 1px solid var(--grid);
+                      border-radius: 0; padding: 5px 9px; cursor: pointer; }
   #dbAi .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
-  #dbAi .ai-dot { width: 9px; height: 9px; border-radius: 2px; background: #6c5f95; flex: none; }
-  #dbAi .ai-dot.on { background: var(--p2); box-shadow: 0 0 7px var(--p2); }
-  #dbAi .ai-dot.err { background: var(--p1); box-shadow: 0 0 7px var(--p1); }
+  #dbAi .ai-dot { width: 9px; height: 9px; border-radius: 0; background: var(--grid); flex: none; }
+  #dbAi .ai-dot.on { background: var(--p2); }
+  #dbAi .ai-dot.err { background: var(--p1); }
   #dbAi .ai-think { max-height: 120px; overflow: auto; background: var(--bg-2);
-                    border: 1px solid var(--grid); border-radius: 7px; padding: 9px; color: var(--text);
+                    border: 1px solid var(--grid); border-radius: 0; padding: 9px; color: var(--text);
                     white-space: pre-wrap; font-size: 12px; line-height: 1.45; }
   #dbAi .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.45; }
   #dbAi .ai-hint a { color: var(--accent); }
@@ -542,7 +522,7 @@
       card.style.transform = active ? "translateY(-3px)" : "";
       card.style.borderColor = active ? playerColor(i) : "var(--grid)";
       card.style.boxShadow = active
-        ? "0 0 16px " + playerSoft(i) + ", 0 0 6px " + playerColor(i)
+        ? "inset 0 0 0 1px " + playerColor(i) + ", inset 0 -3px 0 " + playerColor(i)
         : "inset 0 -3px 0 " + playerColor(i);
     }
   }

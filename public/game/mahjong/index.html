@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mahjong // XenoXanadu</title>
+<meta name="description" content="Neon Mahjong Solitaire — match free tiles in pairs to clear a classic turtle layout. Guaranteed-solvable boards, shuffle, undo, a logic solver for hints and stuck-detection, and an optional local LLM that narrates why a pair is safe." />
+<!-- hide BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+:root {
+  --bg:        #0c0d0f;
+  --bg-2:      #131417;
+  --panel:     #131417;
+  --panel-2:   #1a1c20;
+  --grid:      #24262b;
+  --line:      #313338;
+  --text:      #e7e6e0;
+  --muted:     #8a8d93;
+  --accent:    #6dbf95;          /* muted jade */
+  --on-accent: #0c0d0f;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --wrap-max: 1000px;
+  --seg-bg: #131417;
+  --seg-active-bg: #1a1c20;
+
+  /* ivory tile — flat tones, subtle depth */
+  --tile:      #e8e4d8;
+  --tile-2:    #ccc8bc;
+  --tile-hi:   #f0ece0;
+  --tile-lo:   #9a9482;
+  --tile-side: #a8a498;          /* the 3D right/bottom face */
+  --face:      #2a2e33;          /* the inked glyph colour */
+}
+
+body { background: var(--bg); }
+
+h1 {
+  text-align: center; margin: 4px 0 6px; font-size: clamp(30px, 6vw, 46px);
+  font-weight: 800; letter-spacing: 6px; text-transform: uppercase; color: var(--text);
+}
+.tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 22px; }
+
+/* ---------- HUD ---------- */
+.hud {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 0 auto 16px; flex-wrap: wrap;
+}
+.hud-readout {
+  font-weight: 800; font-size: 18px; letter-spacing: 1px; color: var(--accent);
+  background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0;
+  padding: 7px 12px; min-width: 92px; text-align: center;
+}
+#movesLeft { color: #6f9bd1; }
+#difficulty { color: #c7a24a; min-width: 130px; }
+
+/* ---------- board ---------- */
+.board-scroll { overflow: auto; padding: 10px 6px; margin: 0 -6px 16px; }
+.board {
+  --tw: 44px;     /* tile face width  */
+  --th: 60px;     /* tile face height */
+  --dx: 6px;      /* per-layer 3D x offset */
+  --dy: 7px;      /* per-layer 3D y offset */
+  position: relative; margin: 0 auto;
+  background: var(--bg-2);
+  border: 1px solid var(--grid); border-radius: 0;
+  user-select: none; touch-action: manipulation;
+}
+@media (max-width: 720px) { .board { --tw: 32px; --th: 44px; --dx: 4px; --dy: 5px; } }
+@media (max-width: 460px) { .board { --tw: 26px; --th: 36px; --dx: 3px; --dy: 4px; } }
+
+.tile {
+  position: absolute;
+  width: var(--tw); height: var(--th);
+  border-radius: 3px;
+  background: var(--tile);
+  border: 1px solid var(--tile-lo);
+  box-shadow:
+    /* the extruded 3D body (right + bottom faces) — keep depth cue, just flat colors */
+    var(--dx) var(--dy) 0 0 var(--tile-side),
+    calc(var(--dx) + 1px) calc(var(--dy) + 1px) 0 0 #00000030;
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(var(--tw) * 0.62); line-height: 1; color: var(--face);
+  cursor: default; overflow: hidden;
+}
+.tile .glyph { filter: saturate(1.2); pointer-events: none; }
+.tile .label { display: none; }
+
+/* a tile that is currently FREE (playable) gets a subtle interactive sheen */
+.tile.free { cursor: pointer; }
+.tile.free:hover { filter: brightness(1.04); }
+.tile.free::after {
+  content: ""; position: absolute; inset: 0; border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+/* a blocked tile is dimmed and inert */
+.tile.blocked { filter: brightness(.72) saturate(.6); }
+.tile.blocked::before {
+  content: ""; position: absolute; inset: 0; border-radius: 3px;
+  background: rgba(12,13,15,0.30);
+}
+
+/* selection + hint highlights */
+.tile.selected { z-index: 50; }
+.tile.selected::after {
+  content: ""; position: absolute; inset: 0; border-radius: 3px;
+  box-shadow: inset 0 0 0 3px #c7a24a;
+}
+.tile.hint { animation: pulseHint 1s ease-in-out infinite; }
+@keyframes pulseHint {
+  0%,100% { box-shadow: var(--dx) var(--dy) 0 0 var(--tile-side), inset 0 0 0 2px var(--accent); }
+  50%     { box-shadow: var(--dx) var(--dy) 0 0 var(--tile-side), inset 0 0 0 3px var(--accent); }
+}
+.tile.matchpop { animation: matchpop .32s ease; }
+@keyframes matchpop { 0% { transform: scale(1); } 55% { transform: scale(1.14); } 100% { transform: scale(.4); opacity: 0; } }
+
+/* suit tints so the glyphs read at a glance */
+.tile.suit-circle .glyph { color: #c0392b; }
+.tile.suit-bamboo .glyph { color: #1e7d4f; }
+.tile.suit-char   .glyph { color: #2b3a8a; }
+.tile.suit-wind   .glyph { color: #2b2b2b; }
+.tile.suit-dragon .glyph { color: #8a2be2; }
+.tile.suit-flower .glyph { color: #d6336c; }
+.tile.suit-season .glyph { color: #e8590c; }
+
+/* ---------- assistant bar (solver — visible even on the hosted site) ---------- */
+.assist { max-width: 720px; margin: 0 auto 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.assist-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.assist-btn {
+  cursor: pointer; border: 1px solid var(--grid); border-radius: 0; padding: 8px 14px;
+  font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text); background: var(--panel);
+  transition: color .12s, border-color .12s, background .12s;
+}
+.assist-btn:hover { border-color: var(--accent); color: var(--accent); }
+.assist-btn:disabled { opacity: .4; cursor: not-allowed; }
+.assist-msg { text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5; min-height: 20px; max-width: 680px; }
+.assist-msg b { color: var(--text); }
+.assist-msg.good b { color: var(--accent); }
+.assist-msg.warn b { color: #c7a24a; }
+.assist-msg.win  { color: var(--accent); }
+.assist-msg.dead { color: #cf5a52; }
+
+/* ---------- winner banner colours ---------- */
+.winner-banner.win  { color: var(--accent); }
+.winner-banner.dead { color: #cf5a52; }
+
+/* ---------- AI panel extras (rest comes from arcade.css .xeno-ai) ---------- */
+.xeno-ai { max-width: 720px; }
+.ai-explain { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); cursor: pointer; }
+.ai-explain input { accent-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MAHJONG</h1>
+    <p class="tagline">Match free tiles in pairs and clear the turtle. Every board is solvable — if you don't get stuck.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Layout difficulty</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn" data-diff="easy">Easy</button>
+          <button type="button" class="seg-btn active" data-diff="medium">Medium</button>
+          <button type="button" class="seg-btn" data-diff="hard">Hard</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New game</button>
+    </div>
+
+    <!-- ============ HUD ============ -->
+    <div class="hud">
+      <div class="hud-readout" id="tilesLeft" title="Tiles still on the board">144</div>
+      <div class="hud-readout" id="movesLeft" title="Free matching pairs available right now">0</div>
+      <div class="hud-readout" id="difficulty" title="Solver's read on this position">★ —</div>
+    </div>
+
+    <!-- ============ BOARD ============ -->
+    <div class="board-scroll">
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- ============ ASSISTANT (solver — works offline too) ============ -->
+    <div class="assist">
+      <div class="assist-btns">
+        <button type="button" class="assist-btn" id="hintBtn" title="Suggest one safe pair to remove next (pure logic — no model needed)">Hint</button>
+        <button type="button" class="assist-btn" id="shuffleBtn" title="Reshuffle the remaining tiles into a fresh solvable arrangement">Shuffle</button>
+        <button type="button" class="assist-btn" id="undoBtn" title="Take back the last pair you removed">↶ Undo</button>
+        <button type="button" class="assist-btn" id="restartBtn" title="Put every tile back and start this same board over">↺ Restart</button>
+      </div>
+      <div class="assist-msg" id="assistMsg">Click a free tile, then its match. Flowers match any flower; seasons match any season.</div>
+    </div>
+
+    <div class="winner-banner" id="banner"></div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <label class="ai-explain">
+        <input type="checkbox" id="explainChk" /> Have my model narrate each hint &amp; stuck-board out loud
+      </label>
+      <div class="ai-think" id="aiThink">The model's commentary streams here when you ask for a hint. The <em>pair</em> it talks about always comes from the built-in solver, so the model can never push an illegal or losing move — it just explains why the pair is free and safe.</div>
+      <div class="ai-hint">
+        Hints, shuffle, undo and stuck-detection are pure logic and work without any model. Connecting a local model only adds the
+        plain-English narration. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

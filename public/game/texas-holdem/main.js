@@ -420,7 +420,7 @@
       return '<div>' + (k + 1) + '. ' + monogram(t.seats[id].tag, t.seats[id].hue) + ' ' + t.seats[id].name +
         (t.seats[id].persona ? ' <span class="muted">(' + t.seats[id].persona.name + ')</span>' : '') + '</div>';
     }).join('');
-    $('ovTitle').innerHTML = '🏆 ' + monogram(champ.tag, champ.hue) + ' ' + champ.name + ' wins!';
+    $('ovTitle').innerHTML = monogram(champ.tag, champ.hue) + ' ' + champ.name + ' wins!';
     $('ovBody').innerHTML = body;
     var ctr = $('ovControls'); ctr.innerHTML = '';
     var again = document.createElement('button'); again.className = 'btn-primary'; again.textContent = 'New table';

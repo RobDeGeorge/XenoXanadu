@@ -6,71 +6,84 @@
   <title>Connect a Model — XenoXanadu</title>
   <meta name="description" content="Bring your own local LLM to XenoXanadu. Connect Ollama or any OpenAI-compatible server running on your own machine, test it live, and play the AI games." />
   <meta name="theme-color" content="#0b140d" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230c0d0f'/><rect x='26' y='40' width='48' height='36' rx='8' fill='none' stroke='%239ec27a' stroke-width='6'/><line x1='50' y1='26' x2='50' y2='40' stroke='%239ec27a' stroke-width='6'/><circle cx='50' cy='23' r='5' fill='%239ec27a'/><circle cx='40' cy='57' r='4.5' fill='%239ec27a'/><circle cx='60' cy='57' r='4.5' fill='%239ec27a'/></svg>" />
   <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
   <style>
+    :root {
+      --bg: #0c0d0f;
+      --bg-2: #131417;
+      --panel: #131417;
+      --panel-2: #1a1c20;
+      --grid: #24262b;
+      --text: #e7e6e0;
+      --muted: #8a8d93;
+      --accent: #9ec27a;
+      --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    }
     .hosted-note { display: none; }
     html.hosted .hosted-note { display: block; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      min-height: 100vh; background: radial-gradient(circle at 50% 0%, #16241a, #07090c);
-      color: #e8e6d9; font-family: "Trebuchet MS", system-ui, sans-serif;
-      display: flex; flex-direction: column; align-items: center; padding: 40px 20px 80px;
+      min-height: 100vh; background: var(--bg);
+      color: var(--text); font-family: var(--mono); font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; padding: 48px 20px 80px;
     }
-    a { color: #9be36b; }
+    a { color: var(--accent); }
     .wrap { width: 100%; max-width: 720px; }
-    .back { display: inline-block; margin-bottom: 18px; font-size: 13px; color: #7ab85a; text-decoration: none; }
-    .back:hover { text-decoration: underline; }
-    h1 { font-size: 34px; color: #9be36b; text-shadow: 0 2px 16px rgba(120,220,90,0.35); margin-bottom: 6px; }
-    p.sub { color: #a9c98b; font-style: italic; margin-bottom: 28px; }
-    h2 { font-size: 18px; color: #cfe9b6; margin: 28px 0 10px; border-bottom: 1px solid #243524; padding-bottom: 6px; }
-    p { line-height: 1.55; margin: 8px 0; color: #cdd6c2; font-size: 15px; }
-    ol { margin: 8px 0 8px 22px; line-height: 1.6; }
+    .back { display: inline-block; margin-bottom: 22px; font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 1px; text-transform: uppercase; }
+    .back:hover { color: var(--accent); }
+    h1 { font-size: 30px; color: var(--text); margin-bottom: 8px; letter-spacing: 4px; text-transform: uppercase; font-weight: 700; }
+    p.sub { color: var(--muted); margin-bottom: 30px; line-height: 1.6; }
+    h2 { font-size: 13px; color: var(--accent); margin: 30px 0 12px; border-bottom: 1px solid var(--grid); padding-bottom: 8px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+    p { line-height: 1.6; margin: 8px 0; color: var(--text); font-size: 14px; }
+    ol { margin: 8px 0 8px 22px; line-height: 1.7; }
     li { margin: 6px 0; }
-    .panel { background: rgba(255,255,255,0.04); border: 1px solid #2a3a2a; border-radius: 12px; padding: 20px; margin: 12px 0; }
-    label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8fae74; margin: 12px 0 4px; }
+    .panel { background: var(--panel); border: 1px solid var(--grid); border-radius: 0; padding: 20px; margin: 14px 0; }
+    label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 14px 0 5px; }
     input, select {
-      width: 100%; padding: 9px 11px; background: #0c150e; color: #e8e6d9;
-      border: 1px solid #2f432f; border-radius: 8px; font-size: 14px; font-family: inherit;
+      width: 100%; padding: 9px 11px; background: var(--bg-2); color: var(--text);
+      border: 1px solid var(--grid); border-radius: 0; font-size: 13px; font-family: var(--mono);
     }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
     .row { display: flex; gap: 12px; flex-wrap: wrap; }
     .row > div { flex: 1; min-width: 180px; }
     button {
-      margin-top: 16px; padding: 11px 20px; background: #9be36b; color: #0b140d;
-      border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;
-      font-family: inherit; transition: filter .12s;
+      margin-top: 16px; padding: 10px 20px; background: var(--accent); color: var(--bg);
+      border: 1px solid var(--accent); border-radius: 0; font-weight: 700; font-size: 13px; cursor: pointer;
+      font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; transition: background .12s, color .12s;
     }
-    button:hover { filter: brightness(1.08); }
-    button.ghost { background: transparent; color: #9be36b; border: 1px solid #3a5a3a; }
-    .status { margin-top: 16px; padding: 12px 14px; border-radius: 8px; font-size: 14px; line-height: 1.5; display: none; white-space: pre-wrap; }
+    button:hover { background: transparent; color: var(--accent); }
+    button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--grid); }
+    button.ghost:hover { border-color: var(--accent); }
+    .status { margin-top: 16px; padding: 12px 14px; border-radius: 0; font-size: 13px; line-height: 1.5; display: none; white-space: pre-wrap; border: 1px solid var(--grid); }
     .status.show { display: block; }
-    .status.ok { background: rgba(120,220,90,0.12); border: 1px solid #4f7d3a; color: #d6f4bf; }
-    .status.err { background: rgba(230,120,90,0.10); border: 1px solid #7d4a3a; color: #f3cbb8; }
-    .status.busy { background: rgba(120,160,220,0.10); border: 1px solid #3a567d; color: #c5d6f4; }
-    code, pre { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
-    code { background: #0c150e; border: 1px solid #243524; border-radius: 5px; padding: 1px 5px; font-size: 13px; }
+    .status.ok { background: var(--bg-2); border-color: var(--accent); color: var(--text); }
+    .status.err { background: var(--bg-2); border-color: #c75a4a; color: #f0c4ba; }
+    .status.busy { background: var(--bg-2); border-color: var(--grid); color: var(--muted); }
+    code, pre { font-family: var(--mono); }
+    code { background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0; padding: 1px 5px; font-size: 13px; }
     pre {
-      position: relative; background: #0a120c; border: 1px solid #243524; border-radius: 8px;
-      padding: 12px 14px; margin: 8px 0; overflow-x: auto; font-size: 13px; color: #cfe9b6;
+      position: relative; background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0;
+      padding: 12px 14px; margin: 8px 0; overflow-x: auto; font-size: 13px; color: var(--text);
     }
-    .copy { position: absolute; top: 8px; right: 8px; margin: 0; padding: 4px 10px; font-size: 11px; background: #1c2c1c; color: #9be36b; border: 1px solid #3a5a3a; }
-    .pill { display: inline-block; font-size: 11px; background: #1c2c1c; color: #9be36b; border: 1px solid #3a5a3a; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
-    .muted { color: #8a987f; font-size: 13px; }
+    .copy { position: absolute; top: 8px; right: 8px; margin: 0; padding: 4px 10px; font-size: 10px; background: var(--panel-2); color: var(--accent); border: 1px solid var(--grid); }
+    .pill { display: inline-block; font-size: 10px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--grid); border-radius: 0; padding: 2px 9px; margin-left: 6px; vertical-align: middle; letter-spacing: 1px; }
+    .muted { color: var(--muted); font-size: 13px; }
     details { margin: 8px 0; }
-    summary { cursor: pointer; color: #b8e08e; font-weight: bold; padding: 4px 0; }
+    summary { cursor: pointer; color: var(--accent); font-weight: 700; padding: 4px 0; }
     .games { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    .games a { background: rgba(155,227,107,0.08); border: 1px solid #2a3a2a; border-radius: 8px; padding: 8px 14px; text-decoration: none; }
-    .games a:hover { border-color: #9be36b; }
+    .games a { background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0; padding: 8px 14px; text-decoration: none; color: var(--text); }
+    .games a:hover { border-color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <a class="back" href="index.html">‹ back to the arcade</a>
-    <h1>🤖 Bring Your Own Model</h1>
+    <a class="back" href="index.html">← back to the arcade</a>
+    <h1>Bring Your Own Model</h1>
     <p class="sub">XenoXanadu's AI games run on a model <em>you</em> host. Nothing is sent to us — the browser talks straight to a model on your own machine.</p>
 
-    <div class="hosted-note panel" style="border-color:#7d6a3a;background:rgba(220,180,90,0.08)">
-      <strong style="color:#f0d48a">Heads up — you're on the public site.</strong>
+    <div class="hosted-note panel">
+      <strong style="color:var(--text)">Heads up — you're on the public site.</strong>
       <p style="margin:6px 0 0">Browsers block a public HTTPS page from reaching your <code>localhost</code> model
       (Private Network Access + CORS), so the AI opponents are available when you run XenoXanadu
       <strong>locally</strong>: <code>cd public &amp;&amp; python3 -m http.server 8000</code>, then open
@@ -109,10 +122,10 @@
     </div>
 
     <div id="playRow" class="panel" style="display:none">
-      <h2 style="margin-top:0;border:0;padding:0">✅ You're connected — go play</h2>
+      <h2 style="margin-top:0;border:0;padding:0">You're connected — go play</h2>
       <div class="games">
-        <a href="game/connect-four/index.html">🔴 Connect Four</a>
-        <a href="game/sand-falling/index.html">⏳ Sand Garden</a>
+        <a href="game/connect-four/index.html">Connect Four</a>
+        <a href="game/sand-falling/index.html">Sand Garden</a>
       </div>
     </div>
 
@@ -209,12 +222,12 @@
           modelEl.value = fav;
           modelHint.textContent = '— ' + res.models.length + ' available (' + res.provider + ')';
           XenoBYOM.saveConfig(currentCfg());
-          setStatus('ok', '✅ Connected via ' + res.provider + '. ' + res.models.length +
+          setStatus('ok', 'Connected via ' + res.provider + '. ' + res.models.length +
             ' model(s) ready. Pick one and start a game.');
           $('playRow').style.display = '';
         } else {
           var e = res.error;
-          var lines = ['❌ ' + e.message];
+          var lines = [e.message];
           (e.remedies || []).forEach(function (r) { lines.push('\n• ' + r); });
           setStatus('err', lines.join(''));
         }

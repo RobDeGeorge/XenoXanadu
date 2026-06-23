@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Pong // XenoXanadu</title>
+<meta name="description" content="Neon Pong on a canvas — real-time two-paddle rally with W/S, arrows, mouse or touch. The built-in AI is adaptive: it tracks the ball with a reaction lag and aim error and tunes its own difficulty on the fly to stay just barely beatable. Optional local LLM adds between-point trash-talk." />
+<!-- hide the BYO-model panel on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<style>
+  /* ---- calm arcade · signature hue: cyan/pink ---- */
+  :root {
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --accent: #5fb6b0;            /* muted teal */
+    --on-accent: #0c0d0f;
+    --foe: #c06a9b;              /* muted pink (CPU) */
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --seg-bg: #131417;
+    --seg-active-bg: #1a1c20;
+    --ai-on: var(--accent);
+    --ai-err: var(--foe);
+    --wrap-max: 760px;
+  }
+  body {
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center;
+    touch-action: manipulation;
+  }
+  h1 {
+    text-align: center; margin: 30px 0 6px; font-weight: 800;
+    letter-spacing: 8px; text-transform: uppercase; font-size: clamp(34px, 8vw, 64px);
+    color: var(--text);
+  }
+  .tagline {
+    text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; margin: 0 16px 18px;
+  }
+
+  /* scoreboard tweaks: colour the two seats */
+  .score-card.you { border-color: var(--accent); }
+  .score-card.you .name { color: var(--accent); }
+  .score-card.cpu { border-color: var(--foe); }
+  .score-card.cpu .name { color: var(--foe); }
+  .score-card .score { font-variant-numeric: tabular-nums; }
+
+  /* ---- the court ---- */
+  .court-wrap { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--grid); background: #02030a;
+    cursor: none;
+  }
+  .overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px; text-align: center;
+    background: rgba(4,6,15,0.86); padding: 18px;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 {
+    margin: 0; font-size: clamp(24px, 7vw, 40px); letter-spacing: 4px; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .overlay.lose h2 { color: var(--foe); }
+  .overlay p { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; line-height: 1.7; max-width: 420px; }
+  .overlay .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .overlay button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--grid);
+    padding: 10px 20px; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: var(--mono); cursor: pointer; border-radius: 0;
+    transition: background .15s, color .15s, border-color .15s, transform .06s;
+  }
+  .overlay button:hover { border-color: var(--accent); color: var(--accent); }
+  .overlay button:active { transform: translateY(1px); }
+
+  .help { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin: 14px 0 0; line-height: 1.8; }
+  .help b { color: var(--text); }
+
+  /* difficulty-mood readout (engine-driven, always present) */
+  .mood {
+    text-align: center; margin: 14px 0 4px; font-size: 12px; letter-spacing: 1px;
+    color: var(--muted); text-transform: uppercase; min-height: 18px;
+  }
+  .mood b { color: var(--foe); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PONG</h1>
+    <p class="tagline">The machine is reading you. It's also pretending to lose.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>First to</label>
+        <div class="seg" id="targetSeg">
+          <button type="button" class="seg-btn" data-t="5">5</button>
+          <button type="button" class="seg-btn active" data-t="7">7</button>
+          <button type="button" class="seg-btn" data-t="11">11</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>CPU base skill</label>
+        <div class="seg" id="skillSeg">
+          <button type="button" class="seg-btn" data-s="easy">Easy</button>
+          <button type="button" class="seg-btn active" data-s="adaptive">Adaptive</button>
+          <button type="button" class="seg-btn" data-s="brutal">Brutal</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New Game</button>
+    </div>
+
+    <!-- ============ SCOREBOARD ============ -->
+    <div class="scoreboard">
+      <div class="score-card you"><div class="name">You</div><div class="score" id="scoreYou">0</div></div>
+      <div class="score-card cpu"><div class="name" id="cpuName">CPU</div><div class="score" id="scoreCpu">0</div></div>
+    </div>
+
+    <!-- ============ COURT ============ -->
+    <div class="court-wrap">
+      <canvas id="cv"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="ovTitle">PONG</h2>
+        <p id="ovText">W / S or ↑ / ↓ — or drag with mouse / finger. Ball speeds up the longer you rally; the angle depends on where it strikes your paddle.</p>
+        <div class="row" id="ovRow"></div>
+      </div>
+    </div>
+
+    <div class="mood" id="mood"></div>
+    <div class="help">
+      <b>W / S</b> or <b>↑ / ↓</b> · drag with mouse / finger · <b>Space</b> to pause / serve
+    </div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <div class="ai-think" id="aiThink">Connect a model and it heckles you between points — reading the score and its own difficulty "mood" — streamed here. It is pure flavour: the paddle is driven by the built-in adaptive AI, never the model (too slow for real-time).</div>
+      <div class="ai-hint">
+        The adaptive paddle needs no model and plays anywhere. A local model just adds live trash-talk.
+        New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script>
+"use strict";
+/* ============================================================================
+ *  XenoXanadu — Pong — canvas, real-time, adaptive built-in AI (Pattern B2)
+ *  ----------------------------------------------------------------------------
+ *  Classic two-paddle Pong. The human drives the left paddle (W/S, arrows, or
+ *  mouse/touch drag); the right paddle is an ADAPTIVE bot. The ball speeds up on
+ *  long rallies and its bounce angle depends on where it strikes a paddle.
+ *
+ *  The CPU paddle is the differentiator: it tracks the ball with a tunable
+ *  reaction LAG + AIM ERROR, and it re-tunes those on the fly from the score
+ *  margin so it stays JUST BARELY BEATABLE — easing off when ahead, sharpening
+ *  when behind. "Easy" / "Brutal" pin the band; "Adaptive" rubber-bands around
+ *  an even match.
+ *
+ *  Pattern B2: a connected local model is OPTIONAL flavour only — between-point
+ *  trash-talk / mood commentary streamed to the .ai-think panel via XenoBYOM.
+ *  It NEVER drives per-frame physics. No model / a bad reply -> scripted lines.
+ * ========================================================================== */
+(function () {
+  var BYOM = window.XenoBYOM;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---- court geometry (logical units; canvas scales to fit) ---- */
+  var W = 800, H = 480;
+  var PAD_W = 12, PAD_H = 84, PAD_MARGIN = 22;
+  var BALL_R = 8;
+  var PAD_SPEED = 8.2;            // human paddle max px/step (keyboard)
+  var BASE_SPEED = 5.4;          // ball speed at serve
+  var MAX_SPEED = 13.5;         // rally speed cap
+  var SPEEDUP = 1.045;          // multiplier per paddle hit
+
+  var cv = $('cv'), ctx = cv.getContext('2d');
+
+  /* ---- tunables for the CPU "personality" bands ----
+   *  lag    : how many steps it delays before reacting to a new ball vector
+   *  err    : vertical aim error (px) sprinkled onto its target
+   *  speed  : its max travel speed (px/step) — caps how fast it can recover
+   *  Adaptive mode rubber-bands within [easy..brutal]; Easy/Brutal pin near an end. */
+  var BANDS = {
+    easy:     { lag: [14, 22], err: [70, 120], speed: [5.0, 6.0] },
+    adaptive: { lag: [3, 20],  err: [10, 110], speed: [6.0, 9.2] },
+    brutal:   { lag: [1, 4],   err: [0, 22],   speed: [10.5, 12.5] }
+  };
+
+  /* ---- state ---- */
+  var skill = 'adaptive', target = 7;
+  var state = 'idle';            // 'idle' | 'serving' | 'playing' | 'paused' | 'over'
+  var scoreYou = 0, scoreCpu = 0;
+  var rally = 0;                 // paddle hits this point (drives speedup)
+  var lastScorer = null;         // who serves next ('you' | 'cpu')
+  var raf = null, lastTs = 0, acc = 0;
+  var STEP = 1000 / 120;        // fixed physics step (ms)
+
+  // paddles & ball (left = human, right = cpu)
+  var youY = (H - PAD_H) / 2, youVel = 0, youTargetY = null;  // youTargetY set by mouse/touch
+  var cpuY = (H - PAD_H) / 2, cpuVel = 0;
+  var ball = { x: W / 2, y: H / 2, vx: 0, vy: 0, speed: BASE_SPEED };
+
+  // CPU adaptive brain
+  var cpuLag = 8, cpuErr = 40, cpuSpd = 8;     // current effective params
+  var cpuAim = H / 2;                          // its committed target (refreshed after lag)
+  var cpuLagTimer = 0, lastBallVx = 0;
+  var humanHitYs = [];          // where the human last returned the ball (paddle-relative), for "reading" flavour
+
+  // input
+  var keys = { up: false, down: false };
+  var pointerActive = false;
+
+  /* ============================ CANVAS SIZING ============================ */
+  function setupCanvas() {
+    var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.aspectRatio = W + ' / ' + H;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  setupCanvas();
+  window.addEventListener('resize', setupCanvas);
+
+  /* ============================ GAME FLOW ============================ */
+  function newGame() {
+    scoreYou = 0; scoreCpu = 0; rally = 0; lastScorer = null;
+    youY = cpuY = (H - PAD_H) / 2; youVel = cpuVel = 0; youTargetY = null;
+    renderScores(); renderMood();
+    serve(Math.random() < 0.5 ? 'you' : 'cpu');
+    hideOverlay();
+    startLoop();
+  }
+
+  function serve(toward) {
+    rally = 0;
+    ball.x = W / 2; ball.y = H / 2;
+    ball.speed = BASE_SPEED;
+    // serve toward whoever just got scored on (toward === side that receives)
+    var dir = toward === 'you' ? -1 : 1;
+    var ang = (Math.random() * 0.5 - 0.25) * Math.PI;   // -45°..45° spread
+    ball.vx = dir * Math.cos(ang) * ball.speed;
+    ball.vy = Math.sin(ang) * ball.speed;
+    cpuAim = H / 2; cpuLagTimer = cpuLag; lastBallVx = ball.vx;
+    retuneCpu();
+    state = 'serving';
+    serveAt = performance.now() + 700;   // brief pause before the ball flies
+  }
+  var serveAt = 0;
+
+  function point(scorer) {
+    if (scorer === 'you') scoreYou++; else scoreCpu++;
+    lastScorer = scorer;
+    renderScores();
+    retuneCpu();
+    renderMood();
+    if (scoreYou >= target || scoreCpu >= target) { endGame(); return; }
+    // model heckles between points (flavour only)
+    if (aiUsable()) modelTalk(scorer);
+    serve(scorer === 'you' ? 'cpu' : 'you');   // loser of the point receives
+  }
+
+  function endGame() {
+    state = 'over';
+    stopLoop();
+    var won = scoreYou > scoreCpu;
+    showOverlay(
+      won ? 'YOU WIN' : 'CPU WINS',
+      (won ? 'Final ' : 'Final ') + scoreYou + ' – ' + scoreCpu +
+        (won ? '. The machine let you have that one. Probably.' : '. Recalibrating its mercy settings…'),
+      !won,
+      [['New Game', newGame]]
+    );
+    if (aiUsable()) modelTalk(won ? 'you-win' : 'cpu-win');
+    draw();
+  }
+
+  /* ============================ LOOP ============================ */
+  function startLoop() { if (!raf) { lastTs = 0; acc = 0; raf = requestAnimationFrame(frame); } }
+  function stopLoop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(50, ts - lastTs); lastTs = ts;
+    if (state === 'serving') {
+      acc = 0;
+      if (performance.now() >= serveAt) state = 'playing';
+      stepPaddles(1);           // let paddles glide to position while serving
+    } else if (state === 'playing') {
+      acc += dt;
+      var guard = 0;
+      while (acc >= STEP && guard++ < 10) { acc -= STEP; tick(); if (state !== 'playing') break; }
+    } else { acc = 0; }
+    draw();
+    raf = requestAnimationFrame(frame);
+  }
+
+  /* one fixed physics step */
+  function tick() {
+    stepPaddles(1);
+    moveBall();
+  }
+
+  function stepPaddles(scale) {
+    // ----- human paddle -----
+    if (youTargetY != null) {
+      // pointer drag: ease toward target, capped by speed
+      var d = youTargetY - (youY + PAD_H / 2);
+      var mv = Math.max(-PAD_SPEED * 1.6, Math.min(PAD_SPEED * 1.6, d));
+      youY += mv * scale;
+    } else {
+      youVel = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+      youY += youVel * PAD_SPEED * scale;
+    }
+    youY = clamp(youY, 0, H - PAD_H);
+
+    // ----- CPU paddle (adaptive) -----
+    stepCpu(scale);
+  }
+
+  function stepCpu(scale) {
+    // refresh its committed aim only after the reaction lag has elapsed since the
+    // ball's x-direction last changed — this is the "reaction time" knob.
+    if (ball.vx !== lastBallVx) { cpuLagTimer = cpuLag; lastBallVx = ball.vx; }
+    if (cpuLagTimer > 0) cpuLagTimer -= scale;
+    else {
+      var aim;
+      if (ball.vx > 0) {
+        aim = predictBallY();                       // ball incoming — go to the predicted intercept
+        aim += (Math.random() * 2 - 1) * cpuErr;    // sprinkle aim error
+      } else {
+        aim = H / 2 + (Math.random() * 2 - 1) * 30; // ball leaving — drift toward center
+      }
+      // smooth the committed target a touch so it doesn't teleport
+      cpuAim = cpuAim * 0.7 + aim * 0.3;
+    }
+    var center = cpuY + PAD_H / 2;
+    var diff = cpuAim - center;
+    var step = clamp(diff, -cpuSpd, cpuSpd);
+    cpuY += step * scale;
+    cpuY = clamp(cpuY, 0, H - PAD_H);
+  }
+
+  // predict where the ball crosses the CPU paddle plane, reflecting off walls
+  function predictBallY() {
+    var x = ball.x, y = ball.y, vx = ball.vx, vy = ball.vy;
+    var planeX = W - PAD_MARGIN - PAD_W - BALL_R;
+    if (vx <= 0) return H / 2;
+    var guard = 0;
+    while (x < planeX && guard++ < 1000) {
+      var tX = (planeX - x) / vx;
+      // time to hit top/bottom wall
+      var tY = vy > 0 ? ((H - BALL_R) - y) / vy : vy < 0 ? (BALL_R - y) / vy : Infinity;
+      if (tY < tX && tY > 0) { x += vx * tY; y += vy * tY; vy = -vy; }
+      else { y += vy * tX; x = planeX; break; }
+    }
+    return clamp(y, PAD_H / 2, H - PAD_H / 2);
+  }
+
+  function moveBall() {
+    ball.x += ball.vx; ball.y += ball.vy;
+
+    // top / bottom walls
+    if (ball.y < BALL_R) { ball.y = BALL_R; ball.vy = -ball.vy; }
+    if (ball.y > H - BALL_R) { ball.y = H - BALL_R; ball.vy = -ball.vy; }
+
+    // left paddle (human)
+    var lx = PAD_MARGIN + PAD_W;
+    if (ball.vx < 0 && ball.x - BALL_R <= lx && ball.x - BALL_R >= PAD_MARGIN - 6) {
+      if (ball.y >= youY - BALL_R && ball.y <= youY + PAD_H + BALL_R) {
+        bounce(youY, +1);
+        // record where the human met the ball (for the model's "read" flavour)
+        var rel = (ball.y - (youY + PAD_H / 2)) / (PAD_H / 2);
+        humanHitYs.push(rel); if (humanHitYs.length > 8) humanHitYs.shift();
+      }
+    }
+    // right paddle (cpu)
+    var rx = W - PAD_MARGIN - PAD_W;
+    if (ball.vx > 0 && ball.x + BALL_R >= rx && ball.x + BALL_R <= W - PAD_MARGIN + 6) {
+      if (ball.y >= cpuY - BALL_R && ball.y <= cpuY + PAD_H + BALL_R) {
+        bounce(cpuY, -1);
+      }
+    }
+
+    // scoring
+    if (ball.x < -BALL_R) { point('cpu'); }
+    else if (ball.x > W + BALL_R) { point('you'); }
+  }
+
+  // reflect off a paddle: dir is the new x sign (+1 = rightward), angle from hit offset
+  function bounce(padY, dir) {
+    rally++;
+    ball.speed = Math.min(MAX_SPEED, ball.speed * SPEEDUP);
+    var rel = (ball.y - (padY + PAD_H / 2)) / (PAD_H / 2);   // -1..1
+    rel = clamp(rel, -1, 1);
+    var ang = rel * (Math.PI * 0.40);                        // up to ~72°
+    ball.vx = dir * Math.cos(ang) * ball.speed;
+    ball.vy = Math.sin(ang) * ball.speed;
+    // nudge out of the paddle to avoid sticking
+    ball.x += dir * (BALL_R + 1);
+    flash = { side: dir > 0 ? 'l' : 'r', t: 1 };
+  }
+  var flash = null;
+
+  /* ============================ ADAPTIVE CPU TUNING ============================ */
+  // Re-pick the CPU's effective lag/err/speed from its band, biased by the score
+  // margin so the match stays close (rubber-banding). Called after each point/serve.
+  function retuneCpu() {
+    var band = BANDS[skill];
+    var t;                      // 0 = hardest end of band, 1 = easiest end
+    if (skill === 'adaptive') {
+      // margin from CPU's perspective: + means CPU ahead -> ease off (t -> 1)
+      var margin = scoreCpu - scoreYou;
+      // map margin (-target..target) to a 0..1 ease factor around 0.5
+      t = clamp(0.5 + margin * 0.22, 0, 1);
+      // a little noise so it's not perfectly mechanical
+      t = clamp(t + (Math.random() * 0.16 - 0.08), 0, 1);
+    } else {
+      // Easy/Brutal: stay near their pinned end, tiny wander
+      t = (skill === 'easy' ? 0.78 : 0.16) + (Math.random() * 0.2 - 0.1);
+      t = clamp(t, 0, 1);
+    }
+    cpuLag = Math.round(lerp(band.lag[0], band.lag[1], t));
+    cpuErr = lerp(band.err[0], band.err[1], t);
+    cpuSpd = lerp(band.speed[1], band.speed[0], t);   // easier => slower (note swap)
+  }
+
+  function moodText() {
+    if (skill === 'easy') return 'CPU mood: <b>taking it easy</b>';
+    if (skill === 'brutal') return 'CPU mood: <b>merciless</b>';
+    var margin = scoreCpu - scoreYou;
+    if (margin >= 3) return 'CPU mood: <b>throttling back</b> — letting you breathe';
+    if (margin === 2) return 'CPU mood: <b>coasting</b>';
+    if (margin <= -3) return 'CPU mood: <b>locking in</b> — done playing nice';
+    if (margin <= -2) return 'CPU mood: <b>sharpening up</b>';
+    return 'CPU mood: <b>reading you</b> — staying just ahead';
+  }
+  function renderMood() { $('mood').innerHTML = moodText(); }
+
+  /* ============================ RENDER ============================ */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // center net
+    ctx.strokeStyle = 'rgba(125,140,196,0.30)'; ctx.lineWidth = 3;
+    ctx.setLineDash([10, 14]);
+    ctx.beginPath(); ctx.moveTo(W / 2, 6); ctx.lineTo(W / 2, H - 6); ctx.stroke();
+    ctx.setLineDash([]);
+    // faint border glow lines
+    ctx.strokeStyle = 'rgba(46,230,255,0.10)'; ctx.lineWidth = 2;
+    ctx.strokeRect(2, 2, W - 4, H - 4);
+
+    // paddles
+    drawPaddle(PAD_MARGIN, youY, getCss('--accent'), getCss('--accent'));
+    drawPaddle(W - PAD_MARGIN - PAD_W, cpuY, getCss('--foe'), getCss('--foe'));
+
+    // ball
+    ctx.save();
+    ctx.fillStyle = getCss('--text');
+    ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // big translucent score watermark
+    ctx.fillStyle = 'rgba(231,230,224,0.05)';
+    ctx.font = '800 120px ' + getCss('--mono');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(scoreYou, W * 0.27, H * 0.32);
+    ctx.fillText(scoreCpu, W * 0.73, H * 0.32);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+
+    if (flash && flash.t > 0) { flash.t -= 0.12; }
+  }
+
+  function drawPaddle(x, y, glow, fill) {
+    ctx.save();
+    ctx.fillStyle = fill;
+    roundRect(x, y, PAD_W, PAD_H, 0); ctx.fill();
+    ctx.restore();
+  }
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function getCss(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#fff'; }
+
+  function renderScores() { $('scoreYou').textContent = scoreYou; $('scoreCpu').textContent = scoreCpu; }
+
+  /* ============================ OVERLAYS ============================ */
+  function showOverlay(title, text, lose, buttons) {
+    var ov = $('overlay');
+    ov.className = 'overlay show' + (lose ? ' lose' : '');
+    $('ovTitle').textContent = title; $('ovText').textContent = text;
+    var row = $('ovRow'); row.innerHTML = '';
+    buttons.forEach(function (b) {
+      var el = document.createElement('button'); el.textContent = b[0]; el.onclick = b[1]; row.appendChild(el);
+    });
+  }
+  function hideOverlay() { $('overlay').className = 'overlay'; }
+
+  /* ============================ INPUT ============================ */
+  var KEY_UP = { ArrowUp: 1, w: 1, W: 1 };
+  var KEY_DN = { ArrowDown: 1, s: 1, S: 1 };
+  window.addEventListener('keydown', function (e) {
+    if (e.key === ' ') { e.preventDefault(); spaceAction(); return; }
+    if (KEY_UP[e.key]) { e.preventDefault(); keys.up = true; youTargetY = null; }
+    else if (KEY_DN[e.key]) { e.preventDefault(); keys.down = true; youTargetY = null; }
+  });
+  window.addEventListener('keyup', function (e) {
+    if (KEY_UP[e.key]) keys.up = false;
+    else if (KEY_DN[e.key]) keys.down = false;
+  });
+  function spaceAction() {
+    if (state === 'idle' || state === 'over') { newGame(); return; }
+    if (state === 'playing' || state === 'serving') pause();
+    else if (state === 'paused') resume();
+  }
+
+  // pointer (mouse + touch) drag steers the human paddle by y position
+  function pointerY(clientY) {
+    var r = cv.getBoundingClientRect();
+    var y = (clientY - r.top) / r.height * H;
+    return clamp(y, PAD_H / 2, H - PAD_H / 2);
+  }
+  function onPointerMove(clientY) {
+    if (state === 'idle' || state === 'over' || state === 'paused') return;
+    youTargetY = pointerY(clientY);
+  }
+  cv.addEventListener('mousemove', function (e) { onPointerMove(e.clientY); });
+  cv.addEventListener('mousedown', function (e) {
+    pointerActive = true;
+    if (state === 'idle' || state === 'over') { newGame(); }
+    onPointerMove(e.clientY);
+  });
+  window.addEventListener('mouseup', function () { pointerActive = false; });
+  cv.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    if (state === 'idle' || state === 'over') { newGame(); }
+    onPointerMove(e.touches[0].clientY);
+  }, { passive: false });
+  cv.addEventListener('touchmove', function (e) {
+    e.preventDefault(); onPointerMove(e.touches[0].clientY);
+  }, { passive: false });
+
+  function pause() {
+    if (state !== 'playing' && state !== 'serving') return;
+    state = 'paused';
+    showOverlay('PAUSED', 'Press Space or tap to resume.', false, [['Resume', resume]]);
+  }
+  function resume() {
+    if (state !== 'paused') return;
+    hideOverlay(); state = 'playing'; lastTs = 0; acc = 0;
+    if (!raf) startLoop();
+  }
+
+  // pause on blur (spec requirement)
+  window.addEventListener('blur', function () { if (state === 'playing' || state === 'serving') pause(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && (state === 'playing' || state === 'serving')) pause(); });
+
+  /* controls */
+  $('targetSeg').addEventListener('click', function (e) {
+    var b = e.target.closest('.seg-btn'); if (!b) return;
+    seg(this, b); target = +b.dataset.t; newGame();
+  });
+  $('skillSeg').addEventListener('click', function (e) {
+    var b = e.target.closest('.seg-btn'); if (!b) return;
+    seg(this, b); skill = b.dataset.s; retuneCpu(); renderMood();
+  });
+  $('newGame').addEventListener('click', newGame);
+  function seg(host, btn) { host.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('active', x === btn); }); }
+
+  /* ============================ HELPERS ============================ */
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  /* ============================================================================
+   *  LOCAL MODEL — Pattern B2 flavour ONLY. Between-point trash-talk streamed to
+   *  the .ai-think panel. It NEVER touches physics. Bad/absent model -> scripted.
+   * ========================================================================== */
+  var defaultModel = '', modelReady = false, talkGen = 0, talkController = null;
+  var endpointEl = $('endpoint'), modelSel = $('modelSel'), thinkEl = $('aiThink');
+  function endpoint() { return (endpointEl.value || (BYOM && BYOM.DEFAULT_ENDPOINT) || 'http://localhost:11434').replace(/\/$/, ''); }
+  var aiIsReasoning = function (m) { return /r1\b|deepseek-r1|qwq|reason|think|gpt-oss|o1|o3/i.test(m || ''); };
+  function aiUsable() { return BYOM && BYOM.isLocal() && modelReady && defaultModel; }
+  function setAiStatus(text, st) { $('aiStatus').textContent = text; $('aiDot').className = 'ai-dot' + (st ? ' ' + st : ''); }
+
+  // scripted fallback heckles, keyed by event
+  var SCRIPTED = {
+    'you':      ['Lucky bounce.', 'Enjoy it while it lasts.', 'Hm. Noted.', 'That one\'s on me.'],
+    'cpu':      ['Predictable.', 'You lean high — so I waited.', 'Too slow.', 'I gave you a chance there.'],
+    'you-win':  ['Fine. You win. This time.', 'I let you have it. Obviously.'],
+    'cpu-win':  ['GG. Adjusting mercy down to zero.', 'Better luck next reboot.']
+  };
+  function scripted(ev) { var a = SCRIPTED[ev] || SCRIPTED.you; return a[Math.floor(Math.random() * a.length)]; }
+
+  function readTendency() {
+    if (humanHitYs.length < 2) return 'no clear pattern yet';
+    var avg = humanHitYs.reduce(function (s, x) { return s + x; }, 0) / humanHitYs.length;
+    if (avg < -0.25) return 'tends to return the ball HIGH on the paddle';
+    if (avg > 0.25) return 'tends to return the ball LOW on the paddle';
+    return 'returns near the paddle center';
+  }
+
+  function modelTalk(ev) {
+    if (!aiUsable()) { thinkEl.textContent = scripted(ev); return; }
+    var g = ++talkGen;
+    if (talkController) { try { talkController.abort(); } catch (e) {} }
+    talkController = new AbortController();
+    thinkEl.textContent = '';
+    var moodPlain = moodText().replace(/<[^>]+>/g, '');
+    var sys = 'You are a cocky neon arcade Pong machine playing a human. Stay in character: smug, terse, ' +
+      'a little menacing but playful. ONE or TWO short sentences of trash-talk only — no lists, no meta. ' +
+      'Do NOT decide any moves; you only talk. This is the moment between points.';
+    var ctxLine =
+      'Score: you(CPU)=' + scoreCpu + ', human=' + scoreYou + ' (first to ' + target + '). ' +
+      (ev === 'you' ? 'The human just scored on you. ' :
+       ev === 'cpu' ? 'You just scored on the human. ' :
+       ev === 'you-win' ? 'The human just WON the match. ' :
+       ev === 'cpu-win' ? 'You just WON the match. ' : '') +
+      'Your current difficulty: ' + moodPlain + '. The human ' + readTendency() + '. ' +
+      'Heckle accordingly.';
+    BYOM.chat({
+      endpoint: endpoint(), model: defaultModel, temperature: 0.95,
+      maxTokens: aiIsReasoning(defaultModel) ? 900 : 90,
+      messages: [{ role: 'system', content: sys }, { role: 'user', content: ctxLine }],
+      onToken: function (d) { if (g === talkGen) { thinkEl.textContent += d; thinkEl.scrollTop = thinkEl.scrollHeight; } },
+      onThinking: function (d) { /* swallow reasoning tokens for terse banter */ },
+      signal: talkController.signal
+    }).then(function () { talkController = null; }).catch(function () {
+      talkController = null;
+      if (g === talkGen) thinkEl.textContent = scripted(ev);   // bad reply -> scripted line
+    });
+  }
+
+  /* ---- model connection (copied idiom from rps/snake) ---- */
+  async function loadModels() {
+    if (!BYOM || !BYOM.isLocal()) return;
+    BYOM.saveConfig({ endpoint: endpoint() });
+    modelSel.disabled = true; modelSel.innerHTML = '<option>loading…</option>'; modelReady = false;
+    var saved = BYOM.loadConfig().model;
+    var res = await BYOM.test({ endpoint: endpoint() });
+    if (!res.ok) {
+      modelSel.innerHTML = '<option value="">— not reachable —</option>';
+      setAiStatus(res.error.message + ' — the adaptive bot still plays offline.', 'err');
+      return;
+    }
+    modelSel.innerHTML = res.models.map(function (m) { return '<option value="' + m + '">' + m + '</option>'; }).join('');
+    modelSel.disabled = false;
+    var fav = res.models.indexOf(saved) >= 0 ? saved
+      : (res.models.find(function (m) { return /llama3\.2:3b|qwen2\.5|3b|7b|8b|mini|small/i.test(m); }) || res.models[0]);
+    modelSel.value = fav; defaultModel = fav; modelReady = true;
+    BYOM.saveConfig({ model: fav });
+    setAiStatus('Ready — ' + res.models.length + ' model(s) via ' + res.provider + '. It\'ll heckle between points.', 'on');
+  }
+
+  /* ============================ BOOT ============================ */
+  // overlay start buttons
+  showOverlay('PONG', 'W / S or ↑ / ↓ — or drag with mouse / finger. Ball speeds up the longer you rally; the angle depends on where it strikes your paddle.', false, [['Start', newGame]]);
+  renderScores(); renderMood();
+  draw();
+
+  if (BYOM && BYOM.isLocal()) {
+    endpointEl.value = BYOM.loadConfig().endpoint || BYOM.DEFAULT_ENDPOINT || 'http://localhost:11434';
+    modelSel.addEventListener('change', function () { defaultModel = this.value; BYOM.saveConfig({ model: this.value }); });
+    $('refresh').addEventListener('click', loadModels);
+    endpointEl.addEventListener('change', loadModels);
+    loadModels();
+  } else {
+    setAiStatus('Public site — runs offline against the adaptive bot. Run locally to add model trash-talk.', '');
+  }
+})();
+</script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

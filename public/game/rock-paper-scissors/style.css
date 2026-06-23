@@ -5,38 +5,40 @@
  *  the two-hand arena, the shake/reveal, the throw pad, and result colours.
  * ========================================================================== */
 :root {
-  --bg:        #0b0810;
-  --bg-2:      #15101d;
-  --panel:     #181221;
-  --panel-2:   #221830;
-  --grid:      #322543;
-  --line:      #322543;
-  --text:      #efe9f5;
-  --muted:     #9b8bb0;
-  --accent:    #e94bff;          /* electric magenta */
-  --on-accent: #190520;
-  --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --bg:        #0c0d0f;
+  --bg-2:      #131417;
+  --panel:     #131417;
+  --panel-2:   #1a1c20;
+  --grid:      #24262b;
+  --line:      #313338;
+  --text:      #e7e6e0;
+  --muted:     #8a8d93;
+  --accent:    #c06a9b;          /* muted magenta */
+  --on-accent: #0c0d0f;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --wrap-max: 720px;
 
-  --win:  #4ade80;
-  --lose: #ff4d6d;
-  --tie:  #ffcf33;
+  --seg-bg: #131417;
+  --seg-active-bg: #1a1c20;
+
+  --win:  #9ec27a;
+  --lose: #cf5a52;
+  --tie:  #c7a24a;
 }
 
-body { background:
-  radial-gradient(1100px 600px at 50% -10%, #1c1330 0%, var(--bg) 60%) fixed; }
+body { background: var(--bg); }
 
 h1 {
   text-align: center; margin: 4px 0 6px; font-size: clamp(24px, 5.2vw, 40px);
-  font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--accent);
-  text-shadow: 0 0 9px rgba(233,75,255,.55), 3px 3px 0 #2bf0e0, 6px 6px 0 #ffcf33;
+  font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--text);
+  font-family: var(--mono);
 }
 .tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2px;
-  text-transform: uppercase; margin-bottom: 24px; }
+  text-transform: uppercase; margin-bottom: 24px; font-family: var(--mono); }
 
 /* scoreboard accents per card */
-.score-card.you  { border-color: #2a5c3a; }
-.score-card.cpu  { border-color: #5c2a3a; }
+.score-card.you  { border-color: #253520; }
+.score-card.cpu  { border-color: #351e1e; }
 .score-card.you  .score { color: var(--win); }
 .score-card.draw .score { color: var(--tie); }
 .score-card.cpu  .score { color: var(--lose); }
@@ -48,50 +50,56 @@ h1 {
 }
 .hand-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .hand {
-  font-size: clamp(60px, 16vw, 104px); line-height: 1; width: 1.4em; height: 1.4em;
+  font-size: clamp(14px, 3.6vw, 22px); font-weight: 800; letter-spacing: 2px;
+  line-height: 1; width: clamp(90px, 20vw, 140px); height: clamp(60px, 13vw, 90px);
   display: flex; align-items: center; justify-content: center;
-  background: var(--panel); border: 2px solid var(--grid); border-radius: 18px;
-  box-shadow: inset 0 0 24px #0007, 0 10px 26px #0008;
+  background: var(--panel); border: 1px solid var(--grid); border-radius: 0;
+  text-transform: uppercase; font-family: var(--mono);
 }
 .hand.mine   { transform: scaleX(-1); }                 /* face the two hands at each other */
 .hand.shake  { animation: shake .22s ease-in-out infinite; }
-.hand.win    { border-color: var(--win);  box-shadow: 0 0 22px var(--win),  inset 0 0 24px #0007; }
-.hand.lose   { border-color: var(--lose); box-shadow: 0 0 22px var(--lose), inset 0 0 24px #0007; opacity: .7; }
-.hand.tie    { border-color: var(--tie);  box-shadow: 0 0 18px var(--tie),  inset 0 0 24px #0007; }
+.hand.win    { border-color: var(--win);  box-shadow: inset 0 0 0 1px var(--win); }
+.hand.lose   { border-color: var(--lose); box-shadow: inset 0 0 0 1px var(--lose); opacity: .7; }
+.hand.tie    { border-color: var(--tie);  box-shadow: inset 0 0 0 1px var(--tie); }
 @keyframes shake { 0%,100% { transform: translateY(-9%) rotate(-3deg); } 50% { transform: translateY(9%) rotate(3deg); } }
 .hand.mine.shake { animation: shakeM .22s ease-in-out infinite; }
 @keyframes shakeM { 0%,100% { transform: scaleX(-1) translateY(-9%) rotate(-3deg); } 50% { transform: scaleX(-1) translateY(9%) rotate(3deg); } }
 
-.hand-label { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.hand-label { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-family: var(--mono); }
 .versus {
   font-weight: 800; font-size: 18px; letter-spacing: 2px; color: var(--accent);
-  text-shadow: 0 0 10px var(--accent); flex: none;
+  flex: none; font-family: var(--mono);
 }
 
 .result {
   text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 2px;
   text-transform: uppercase; min-height: 30px; margin: 4px 0 4px; color: var(--text);
+  font-family: var(--mono);
 }
-.result.win  { color: var(--win);  text-shadow: 0 0 12px var(--win); }
-.result.lose { color: var(--lose); text-shadow: 0 0 12px var(--lose); }
-.result.tie  { color: var(--tie);  text-shadow: 0 0 12px var(--tie); }
+.result.win  { color: var(--win); }
+.result.lose { color: var(--lose); }
+.result.tie  { color: var(--tie); }
 .streak { text-align: center; font-size: 12px; letter-spacing: 1px; color: var(--muted);
-  text-transform: uppercase; min-height: 18px; margin-bottom: 18px; }
+  text-transform: uppercase; min-height: 18px; margin-bottom: 18px; font-family: var(--mono); }
 
 /* ---------- throw pad ---------- */
 .throws { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
 .throw {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; background: var(--panel-2); border: 2px solid var(--grid); border-radius: 14px;
+  cursor: pointer; background: var(--panel-2); border: 1px solid var(--grid); border-radius: 0;
   padding: 12px 16px 9px; min-width: 92px;
-  transition: transform .07s ease, border-color .12s, box-shadow .12s, background .12s;
+  transition: transform .07s ease, border-color .12s, background .12s;
 }
-.throw .em { font-size: 38px; line-height: 1; }
-.throw .nm { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
-.throw:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(233,75,255,.45); transform: translateY(-2px); }
+.throw .nm { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-weight: 700; font-family: var(--mono); padding: 6px 0; }
+.throw:hover { border-color: var(--accent); transform: translateY(-2px); }
 .throw:hover .nm { color: var(--accent); }
 .throw:active { transform: translateY(0); }
 .throws.busy .throw { opacity: .5; pointer-events: none; }
+
+/* scoreboard name emoji — game content, kept */
+.score-card .name { font-family: var(--mono); }
 
 /* ---------- AI panel (rest comes from arcade.css .xeno-ai) ---------- */
 .xeno-ai { max-width: 620px; }

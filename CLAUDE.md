@@ -30,6 +30,17 @@ public/                 Everything that ships (this folder IS the website)
     minesweeper/        Neon Minesweeper — built-in logic solver for hints/auto-solve; 🤖 model narrates each deduction
     rock-paper-scissors/  RPS (+ Lizard-Spock) — pattern-predicting bot offline; 🤖 model predicts your throw & trash-talks
     backgammon/         Full backgammon (dice, bar, bearing off, gammons) — built-in heuristic AI; 🤖 optional local-model opponent
+    risk/               ⭐ FLAGSHIP — Risk: Global Domination. Low-poly SVG board, dice combat, cards, continent bonuses, 2–6 players. MULTIPLE BOARDS — a map picker chooses from a registry: the classic 42-territory world plus hand-designed "fun" boards (Clash = fast 4×4 grid, Arena = symmetric wheel, Bridges = island choke-points, Starfall = themed star). Named AI "generals" with personalities. Built-in heuristic bots play fully offline; 🤖 a local model can PLAY the generals (Pattern A — model picks deploy/attack/fortify from engine-supplied legal options, heuristic fallback). Split: engine.js (pure rules; built-in CLASSIC_MAP + installMap to swap boards) / maps.js (board registry: window.RiskMaps, each board is data the engine installs) / generals.js / bots.js / ai-parse.js / main.js. ONLINE MULTIPLAYER (beta) lives in net/ — a zero-dependency authoritative match-server reusing engine.js under Node; friends create/join a room by code and play across browsers (see net/README.md)
+    go/                 Go (9/13/19) — captures, ko, area scoring; scalable heuristic bot; 🤖 model picks & explains territory (Pattern A)
+    gomoku/             Five-in-a-row (15×15) — threat-scan bot w/ depth control; 🤖 optional local-model opponent (Pattern A)
+    hex/                Hex connection game (no draws) — path-resistance bot, bridge flags; 🤖 optional local-model opponent (Pattern A)
+    mancala/            Mancala (Kalah) — minimax "elder" AI, extra-turn/capture; 🤖 optional local-model opponent (Pattern A)
+    sudoku/             Sudoku — unique-solution generator + constraint solver; 🤖 model narrates each deduction (Pattern B1, like minesweeper)
+    mahjong/            Mahjong solitaire — solvable turtle layouts, stuck/hint solver; 🤖 model narrates the hint (Pattern B1)
+    mastermind/         Mastermind — play either side; Knuth minimax solver; 🤖 model narrates how clues prune candidates (Pattern B1)
+    pong/               Pong — canvas real-time, adaptive "just-barely-beatable" paddle; 🤖 optional model trash-talk only (Pattern B2)
+    dominion/           Dominion-style deckbuilder (engine/strategies/main split) — big-money/engine/attack bots; 🤖 optional model seat (Pattern B2)
+    blackjack/          Blackjack — house-rule dealer + basic-strategy coach + count tell; 🤖 optional model dealer/coach voice (Pattern B2)
     sand-falling/       "Sand Garden" falling-sand sim + optional Node AI bridge
 .github/workflows/
   deploy.yml            Uploads public/ to GitHub Pages (no build)
@@ -98,6 +109,54 @@ Games:
   by letter, reasoning streamed to a panel. The model only ever returns a single legal letter / a
   validated word; offline (hosted site or no model) it falls back to `words.js` (themed word bank) for
   picking and a letter-frequency strategy for guessing, so all modes work without a model.
+- **risk** — the flagship. Classic Risk on a hand-built **low-poly neon world map** (42 territories / 6
+  continents, drawn as deterministic SVG polygons from each territory's layout anchor; adjacency edges
+  rendered under them, cross-continent links dashed as "sea routes", Alaska↔Kamchatka wraps the top edge).
+  Split like texas-holdem into a **pure, DOM-free** `engine.js` (topology = single source of truth for both
+  rules *and* map geometry; `node engine.js` runs a self-check + random self-play) / `generals.js` (the
+  named-general persona pool, each a strategy-weight profile + voice) / `bots.js` (heuristic planners:
+  `planReinforcements`/`planAttack`/`planFortify`, personality-weighted, **always legal**, used both as the
+  offline opponent and as the model's fallback) / `ai-parse.js` (pure, DOM-free reply parsing/allocation,
+  shared by main.js and the test) / `main.js` (SVG UI, dice, cards, phase flow, model-turn driver).
+  **🤖 When a local model is connected and set to "play", the MODEL makes the moves** — same legal-options
+  contract as chess/backgammon (Pattern A): for each phase the engine hands it a NUMBERED list of legal
+  options (deploy targets, assaults, fortifies) and it replies with a number / a deploy allocation; an
+  unreadable reply falls back to the heuristic planner, so it can never play illegally and a flaky model
+  can't wedge the turn. Its reasoning streams into the side panel, coloured by general. With no model (or
+  the box unticked) the heuristic bots play and the general just gets a canned taunt. Two Node harnesses:
+  `test-bots.js` self-plays full games with the real planners and asserts invariants; `test-ai.js` drives
+  a **real local model** through one of each phase decision using the shipping prompts + parsers and checks
+  every reply maps to a legal move. 2–6 players (mix of humans pass-&-play + AI generals).
+  **Starting armies**: by default they're auto-scattered, but ticking "Place troops manually" runs a
+  classic one-at-a-time **draft** (engine `phase:"setup"` + `setupRemaining[pid]` pool; `placeSetupArmy`
+  drops one army then passes to the next player with armies left; when all pools empty it `beginTurn(0)`
+  into reinforce). Humans click their territories one army at a time; AI players draft via
+  `RiskBots.planSetupPlacement` (always heuristic, even when a model is set to play — a per-army model
+  call would be far too slow). main.js drives it with `runSetupBots`/`postSetup`.
+  **Online multiplayer** (beta, `net/`): an authoritative **match-server** (`net/server.js`, zero-dependency
+  — hand-rolled WebSocket + the same `engine.js`/`bots.js` run under Node) holds the one real game per room,
+  validates every intent with the engine (illegal/out-of-turn → rejected), rolls all dice, and broadcasts a
+  **redacted** snapshot per player (your own hand in full; opponents' as a count; deck withheld). One person
+  runs it (`cd net && node server.js`, self-host/tunnel/deploy); friends Create/Join a room by 4-letter code
+  from the page's **Play Online** panel. Browser side: `net/client.js` (`window.RiskNet` ws wrapper) + an
+  online path in main.js — when `net.online`, `state` is the latest server snapshot, input gates on
+  `meActing()` (the current seat is mine), and the turn drivers **send intents** instead of mutating locally;
+  `applySnapshot`/`applyEvent` render state + dice. **Hardened** following `ws`/OWASP/RFC-6455 —
+  localhost-only bind by default (`HOST=lan` to expose), 64 KB frame cap (close 1009), Origin allowlist
+  (anti-CSWSH), per-IP + global connection caps, per-socket rate limit (close 1008), ping/pong heartbeat +
+  idle timeout, RFC frame validation, optional `ROOM_PASSWORD`; **no shell/file/eval surface at all**. Full
+  writeup in `net/SECURITY.md`. Tests: `net/test-net.js` (two simulated players → create/join/redaction/
+  turn-gating/sync; full browser↔server path validated e2e with a real headless browser during dev) and
+  `net/test-sec.js` (payload cap, rate-limit flood, safe bind). Supports **reconnection** (per-seat token in
+  `start`; `rejoin{code,token}` reclaims a seat; rooms survive drops until idle past `roomTtlMs`; the browser
+  auto-reconnects + offers a reconnect button), **spectators** (`join{spectate:true}` → fully-redacted watch-only
+  view, can't act), and **AI seats** (host `addAI`/`removeAI` heuristic generals; a paced server-side driver —
+  `driveAI`/`aiPlayTurn`, `AI_DELAY_MS` — plays each bot seat's full turn via `bots.js`). For internet
+  play the host fronts the local server with a **Cloudflare quick tunnel** — `net/play-online.sh` starts the
+  server + tunnel and prints a `wss://…trycloudflare.com` URL to share (free, no account; auto-allows the
+  `xenoxanadu.com` origin). Also deployable always-on to Fly.io (~$2/mo) via `net/Dockerfile` + `net/fly.toml`.
+  The Play Online address defaults to `ws://localhost:8790` (editable, remembered in localStorage). Still TODO: AI-seat *sponsorship*
+  (a player's own Ollama driving a seat over the net, reusing `runModelTurn`); one game per room.
 - **minesweeper** — single-player classic (three difficulties, first-click safety, flood fill, flag,
   chord, timer). The differentiator is a **constraint-propagation solver** in `main.js` (single-file
   game): trivial rule (all-mines-accounted → clear / need===size → all mines) + subset (1-2) rule, run

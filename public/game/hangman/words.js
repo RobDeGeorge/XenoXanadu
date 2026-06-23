@@ -33,12 +33,12 @@
   };
 
   var THEMES = [
-    { key: 'mixed', label: 'Surprise me', emoji: '🎲' },
-    { key: 'animals', label: 'Animals', emoji: '🦦' },
-    { key: 'food', label: 'Food', emoji: '🥨' },
-    { key: 'movies', label: 'Movies', emoji: '🎬' },
-    { key: 'places', label: 'Places', emoji: '🌋' },
-    { key: 'science', label: 'Science', emoji: '🔬' }
+    { key: 'mixed', label: 'Surprise me', emoji: '' },
+    { key: 'animals', label: 'Animals', emoji: '' },
+    { key: 'food', label: 'Food', emoji: '' },
+    { key: 'movies', label: 'Movies', emoji: '' },
+    { key: 'places', label: 'Places', emoji: '' },
+    { key: 'science', label: 'Science', emoji: '' }
   ];
 
   function themeLabel(key) {

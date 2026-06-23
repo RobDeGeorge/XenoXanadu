@@ -30,9 +30,9 @@
 
     <!-- ============ HUD ============ -->
     <div class="hud">
-      <div class="hud-readout" id="mineCount" title="Mines left (mines minus flags)">💣 010</div>
-      <button type="button" class="face" id="face" title="New game">🙂</button>
-      <div class="hud-readout" id="timer" title="Elapsed time">⏱ 000</div>
+      <div class="hud-readout" id="mineCount" title="Mines left (mines minus flags)">010</div>
+      <button type="button" class="face" id="face" title="New game"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M9 15h6"/></svg></button>
+      <div class="hud-readout" id="timer" title="Elapsed time">000</div>
     </div>
 
     <!-- ============ BOARD ============ -->
@@ -43,9 +43,9 @@
     <!-- ============ ASSISTANT (solver — works offline too) ============ -->
     <div class="assist">
       <div class="assist-btns">
-        <button type="button" class="assist-btn" id="hintBtn" title="Find one provably-safe square (pure logic — no model needed)">💡 Hint</button>
-        <button type="button" class="assist-btn" id="autoBtn" title="Let the logic solver play every certain move until it gets stuck">🤖 Auto-solve</button>
-        <button type="button" class="assist-btn flag-toggle" id="flagToggle" title="Toggle flag mode — handy on touchscreens (or right-click a square)">🚩 Flag: off</button>
+        <button type="button" class="assist-btn" id="hintBtn" title="Find one provably-safe square (pure logic — no model needed)">Hint</button>
+        <button type="button" class="assist-btn" id="autoBtn" title="Let the logic solver play every certain move until it gets stuck">Auto-solve</button>
+        <button type="button" class="assist-btn flag-toggle" id="flagToggle" title="Toggle flag mode — handy on touchscreens (or right-click a square)">Flag: off</button>
       </div>
       <div class="assist-msg" id="assistMsg">Left-click to reveal · right-click to flag · click a number to chord.</div>
     </div>

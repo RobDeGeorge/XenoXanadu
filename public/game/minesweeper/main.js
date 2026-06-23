@@ -21,6 +21,14 @@
   var BYOM = window.XenoBYOM;
   var $ = function (id) { return document.getElementById(id); };
 
+  // Inline monochrome SVG icons (game-content, set via .innerHTML).
+  var SVG_OPEN = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em">';
+  var ICON_BOMB = SVG_OPEN + '<circle cx="11" cy="14" r="6"/><path d="M16.5 8.5 19 6"/><path d="M18 4h3v3"/></svg>';
+  var ICON_FLAG = SVG_OPEN + '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>';
+  var ICON_FACE_NEUTRAL = SVG_OPEN + '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M9 15h6"/></svg>';
+  var ICON_FACE_WIN = SVG_OPEN + '<circle cx="12" cy="12" r="9"/><path d="M6.5 10H11M13 10h4.5"/><path d="M8.5 15c1.2 1.2 5.8 1.2 7 0"/></svg>';
+  var ICON_FACE_LOSE = SVG_OPEN + '<circle cx="12" cy="12" r="9"/><path d="M8 9.5l2 2M10 9.5l-2 2"/><path d="M14 9.5l2 2M16 9.5l-2 2"/><path d="M9 16h6"/></svg>';
+
   var LEVELS = {
     beginner:     { cols: 9,  rows: 9,  mines: 10 },
     intermediate: { cols: 16, rows: 16, mines: 40 },
@@ -89,7 +97,7 @@
       els.push(d); frag.appendChild(d);
     }
     boardEl.appendChild(frag);
-    faceEl.textContent = '🙂';
+    faceEl.innerHTML = ICON_FACE_NEUTRAL;
     renderMineCount();
     setMsg('Left-click to reveal · right-click to flag · click a number to chord.', '');
   }
@@ -170,25 +178,25 @@
 
   function lose(boomIdx) {
     over = true; won = false; stopTimer();
-    faceEl.textContent = '💀';
+    faceEl.innerHTML = ICON_FACE_LOSE;
     boardEl.classList.add('lost');
     cells.forEach(function (cell, i) {
       if (cell.mine && cell.state !== 'flagged') { cell.state = 'revealed'; paintCell(i, i === boomIdx); }
       else if (!cell.mine && cell.state === 'flagged') paintCell(i);   // mark the wrong flags
     });
-    setMsg('💥 <b>Boom.</b> ' + name(boomIdx) + ' was a mine. Hit <b>New game</b> (or the face) to try again.', 'lose');
+    setMsg('<b>Boom.</b> ' + name(boomIdx) + ' was a mine. Hit <b>New game</b> (or the face) to try again.', 'lose');
   }
 
   function checkWin() {
     if (over) return;
     if (revealedCount === COLS * ROWS - MINES) {
       over = true; won = true; stopTimer();
-      faceEl.textContent = '😎';
+      faceEl.innerHTML = ICON_FACE_WIN;
       boardEl.classList.add('won');
       // auto-flag the remaining mines for a tidy finish
       cells.forEach(function (cell, i) { if (cell.mine && cell.state !== 'flagged') { cell.state = 'flagged'; flagCount++; paintCell(i); } });
       renderMineCount();
-      setMsg('🎉 <b>Swept it!</b> Cleared in ' + elapsed + 's on ' + level + '. Nicely done.', 'win');
+      setMsg('<b>Swept it!</b> Cleared in ' + elapsed + 's on ' + level + '. Nicely done.', 'win');
     }
   }
 
@@ -200,16 +208,16 @@
     if (cell.state === 'hidden') { el.className = 'cell hidden'; el.textContent = ''; }
     else if (cell.state === 'flagged') {
       el.className = 'cell hidden flag' + (over && !cell.mine ? ' bad' : '');
-      el.textContent = '🚩';
+      el.innerHTML = ICON_FLAG;
     } else { // revealed
-      if (cell.mine) { el.className = 'cell open mine' + (boom ? ' boom' : ''); el.textContent = '💣'; }
+      if (cell.mine) { el.className = 'cell open mine' + (boom ? ' boom' : ''); el.innerHTML = ICON_BOMB; }
       else if (cell.adj > 0) { el.className = 'cell open'; el.dataset.n = cell.adj; el.textContent = cell.adj; }
       else { el.className = 'cell open'; el.textContent = ''; }
     }
   }
 
-  function renderMineCount() { mineCountEl.textContent = '💣 ' + pad(Math.max(-99, MINES - flagCount)); }
-  function renderTimer() { timerEl.textContent = '⏱ ' + pad(elapsed); }
+  function renderMineCount() { mineCountEl.textContent = pad(Math.max(-99, MINES - flagCount)); }
+  function renderTimer() { timerEl.textContent = pad(elapsed); }
   function pad(n) { var s = (n < 0 ? '-' : '') + ('00' + Math.abs(n)).slice(-3); return s; }
   function setMsg(html, cls) { assistMsg.className = 'assist-msg' + (cls ? ' ' + cls : ''); assistMsg.innerHTML = html; }
 
@@ -246,7 +254,7 @@
   flagToggle.addEventListener('click', function () {
     flagMode = !flagMode;
     flagToggle.classList.toggle('on', flagMode);
-    flagToggle.textContent = '🚩 Flag: ' + (flagMode ? 'on' : 'off');
+    flagToggle.textContent = 'Flag: ' + (flagMode ? 'on' : 'off');
   });
 
   /* ============================ SOLVER ============================ */
@@ -418,7 +426,7 @@
   }
 
   /* ============================ AUTO-SOLVE ============================ */
-  function updateAutoBtn() { autoBtn.classList.toggle('on', autoRunning); autoBtn.textContent = autoRunning ? '⏹ Stop' : '🤖 Auto-solve'; }
+  function updateAutoBtn() { autoBtn.classList.toggle('on', autoRunning); autoBtn.textContent = autoRunning ? 'Stop' : 'Auto-solve'; }
 
   async function autoSolve() {
     if (autoRunning) { autoRunning = false; updateAutoBtn(); return; }
@@ -430,18 +438,18 @@
       var res = solve();
       if (!res.safe.length && !res.mines.length) {
         clearHints();
-        if (res.guess) { var pct = Math.round(res.guess.prob * 100); setMsg('🤖 Stuck — no certain move. Safest gamble would be <b>' + name(res.guess.cell) + '</b> (~' + pct + '% mine). Your call.', ''); }
-        else setMsg('🤖 Stuck — no certain move available.', '');
+        if (res.guess) { var pct = Math.round(res.guess.prob * 100); setMsg('Stuck — no certain move. Safest gamble would be <b>' + name(res.guess.cell) + '</b> (~' + pct + '% mine). Your call.', ''); }
+        else setMsg('Stuck — no certain move available.', '');
         break;
       }
       // flag the certain mines first (so chords/counts read right), then sweep the safes
       res.mines.forEach(function (m) { if (cells[m].state === 'hidden') { cells[m].state = 'flagged'; flagCount++; paintCell(m); } });
       renderMineCount();
-      if (res.mines.length) { setMsg('🤖 Flagged ' + res.mines.length + ' certain mine(s).', 'mine'); await sleep(160, g); }
+      if (res.mines.length) { setMsg('Flagged ' + res.mines.length + ' certain mine(s).', 'mine'); await sleep(160, g); }
       if (!autoRunning || g !== gen) break;
       for (var k = 0; k < res.safe.length; k++) {
         if (!autoRunning || g !== gen || over) break;
-        if (cells[res.safe[k]].state === 'hidden') { setMsg('🤖 Revealing ' + name(res.safe[k]) + ' — proven safe.', 'safe'); reveal(res.safe[k]); await sleep(120, g); }
+        if (cells[res.safe[k]].state === 'hidden') { setMsg('Revealing ' + name(res.safe[k]) + ' — proven safe.', 'safe'); reveal(res.safe[k]); await sleep(120, g); }
       }
     }
     if (g === gen) { autoRunning = false; updateAutoBtn(); }

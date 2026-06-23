@@ -18,13 +18,11 @@
     'display:inline-flex;align-items:center;gap:7px;padding:7px 13px 7px 11px;' +
     'font:700 12px/1 var(--mono,"SF Mono",Menlo,Consolas,monospace);' +
     'letter-spacing:1.5px;text-transform:uppercase;' +
-    'color:var(--accent,#9be36b);text-decoration:none;background:rgba(8,16,10,.8);' +
-    'border:1px solid var(--accent,#3a5a32);border-radius:0;' +
-    '-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);' +
-    'box-shadow:0 2px 12px rgba(0,0,0,.45);' +
-    'transition:color .15s,background .15s,box-shadow .15s,transform .08s;}' +
-    '.xeno-home:hover{color:var(--on-accent,#0b140d);background:var(--accent,#9be36b);' +
-    'box-shadow:0 0 14px var(--accent,#9be36b);transform:translateY(-1px);}' +
+    'color:var(--accent,#9ec27a);text-decoration:none;background:rgba(12,13,15,.88);' +
+    'border:1px solid var(--grid,#2a2d33);border-radius:0;' +
+    'transition:color .15s,background .15s,border-color .15s,transform .08s;}' +
+    '.xeno-home:hover{color:var(--on-accent,#0c0d0f);background:var(--accent,#9ec27a);' +
+    'border-color:var(--accent,#9ec27a);transform:translateY(-1px);}' +
     '.xeno-home:active{transform:translateY(0);}' +
     '.xeno-home .xa{font-size:14px;line-height:1;}' +
     '@media print{.xeno-home{display:none;}}';

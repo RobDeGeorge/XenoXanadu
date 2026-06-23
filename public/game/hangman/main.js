@@ -48,7 +48,7 @@
   (function buildThemes() {
     var seg = $('themeSeg');
     seg.innerHTML = Words.THEMES.map(function (t, i) {
-      return '<button type="button" data-theme="' + t.key + '"' + (i === 0 ? ' class="active"' : '') + '>' + t.emoji + ' ' + t.label + '</button>';
+      return '<button type="button" data-theme="' + t.key + '"' + (i === 0 ? ' class="active"' : '') + '>' + (t.emoji ? t.emoji + ' ' : '') + t.label + '</button>';
     }).join('');
     seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; segPick(seg, b); theme = b.dataset.theme; });
   })();
@@ -88,7 +88,7 @@
   function openEntry() {
     secretInput.value = ''; $('hintInput').value = ''; $('entryErr').textContent = '';
     secretInput.type = 'password';                 // truly masked
-    eyeBtn.textContent = '👁';
+    eyeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
     $('lookawayWho').textContent = (mode === 'ai-guess') ? 'everyone (keep it from the AI!)' : guesserName;
     $('entryLabel').textContent = (mode === 'ai-guess') ? 'A word for the AI to crack' : 'Secret word or phrase';
     show('entryScreen');
@@ -97,7 +97,9 @@
   eyeBtn.addEventListener('click', function () {
     var showing = secretInput.type === 'text';
     secretInput.type = showing ? 'password' : 'text';
-    eyeBtn.textContent = showing ? '👁' : '🙈';
+    eyeBtn.innerHTML = showing
+      ? '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-0.15em"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/><path d="M9.9 5.2A9.6 9.6 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-2.4 3.2"/><path d="M6.1 6.1A17 17 0 0 0 2 12s4 7 10 7a9.5 9.5 0 0 0 4-.9"/></svg>';
     secretInput.focus();
   });
   $('entryBackBtn').addEventListener('click', function () { gen++; show('setupScreen'); });
@@ -250,7 +252,7 @@
     var give = hidden[Math.floor(Math.random() * hidden.length)];
     setTimeout(function () {
       if (status !== 'playing') return;
-      $('aiSays').textContent = '😈 You\'re sweating — here, have a ‘' + give + '’.';
+      $(‘aiSays’).textContent = ‘You\’re sweating — here, have a ‘’ + give + ‘’.’;
       guessed[give] = true;
       renderWord(); renderKeyboard(); renderWrong();
       checkEnd();
@@ -279,12 +281,12 @@
     var ov = $('overlay'), title, body;
     if (mode === 'ai-guess') {
       // guesser is the AI
-      if (guesserWon) { title = '🤖 Cracked it!'; body = 'The AI guessed your word with ' + (MAX_WRONG - wrongCount) + ' guess(es) to spare.'; }
-      else { title = '🎉 You stumped it!'; body = 'The AI ran out of guesses. Nicely hidden.'; }
+      if (guesserWon) { title = 'Cracked it!'; body = 'The AI guessed your word with ' + (MAX_WRONG - wrongCount) + ' guess(es) to spare.'; }
+      else { title = 'You stumped it!'; body = 'The AI ran out of guesses. Nicely hidden.'; }
       ov.classList.add(guesserWon ? 'lose' : 'win');
     } else {
-      if (guesserWon) { title = '🎉 ' + guesserName + ' got it!'; body = mode === 'ai-word' ? pickLine(SAY.hostLose) : 'Guessed with ' + (MAX_WRONG - wrongCount) + ' to spare.'; ov.classList.add('win'); }
-      else { title = '💀 The little guy swings'; body = mode === 'ai-word' ? pickLine(SAY.hostWin) : setterName + ' wins this round.'; ov.classList.add('lose'); }
+      if (guesserWon) { title = guesserName + ' got it!'; body = mode === 'ai-word' ? pickLine(SAY.hostLose) : 'Guessed with ' + (MAX_WRONG - wrongCount) + ' to spare.'; ov.classList.add('win'); }
+      else { title = 'The little guy swings'; body = mode === 'ai-word' ? pickLine(SAY.hostWin) : setterName + ' wins this round.'; ov.classList.add('lose'); }
     }
     $('ovTitle').textContent = title;
     $('ovBody').textContent = body;
@@ -300,7 +302,7 @@
     });
     c.appendChild(again);
     if (mode === '2p') {
-      c.appendChild(mkBtn('btn-ghost', '🔄 Swap roles', function () {
+      c.appendChild(mkBtn('btn-ghost', 'Swap roles', function () {
         $('overlay').classList.remove('show', 'win', 'lose'); nextRound(true);
       }));
     }
@@ -432,8 +434,8 @@
 
   var SAY = {
     hostHit: ['Hmph. Lucky.', '…fine, that one\'s in there.', 'Oh, you\'re good.', 'Tch. Yes.', 'A hit. Don\'t get cocky.'],
-    hostMiss: ['Nope! 😏', 'Not even close.', 'Wrong — tick, tick…', 'Heh. No.', 'The rope tightens…'],
-    hostWin: ['Mwahaha! Better luck next time. 😈', 'The gallows claim another. 💀', 'Too tough for you, hm?'],
+    hostMiss: ['Nope!', 'Not even close.', 'Wrong — tick, tick…', 'Heh. No.', 'The rope tightens…'],
+    hostWin: ['Mwahaha! Better luck next time.', 'The gallows claim another.', 'Too tough for you, hm?'],
     hostLose: ['Bah, you got it. This time.', 'Fine, fine — well guessed.', 'You win this round. I\'ll get you next time.']
   };
 

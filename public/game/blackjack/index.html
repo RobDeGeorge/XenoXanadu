@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blackjack // XenoXanadu</title>
+<meta name="description" content="Neon Blackjack vs a sly dealer — hit / stand / double / split, blackjack pays 3:2, configurable deck shoe and soft-17 rule. A built-in basic-strategy coach and card-counting tell work offline; a local model can optionally voice the dealer's banter and the coach." />
+<!-- hide the BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>BLACK<span class="j">JACK</span></h1>
+    <p class="tagline">3 to 2 · dealer stands on 17 · the house always remembers</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Decks (shoe)</label>
+        <div class="seg" id="deckSeg">
+          <button type="button" class="seg-btn" data-decks="1">1</button>
+          <button type="button" class="seg-btn" data-decks="2">2</button>
+          <button type="button" class="seg-btn active" data-decks="6">6</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Soft 17</label>
+        <div class="seg" id="s17Seg">
+          <button type="button" class="seg-btn active" data-h17="0">Dealer stands</button>
+          <button type="button" class="seg-btn" data-h17="1">Dealer hits</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Coach</label>
+        <div class="seg" id="coachSeg">
+          <button type="button" class="seg-btn active" data-coach="1">On</button>
+          <button type="button" class="seg-btn" data-coach="0">Off</button>
+        </div>
+      </div>
+      <div class="field ai-only">
+        <label>Dealer voice</label>
+        <div class="seg" id="voiceSeg">
+          <button type="button" class="seg-btn active" data-voice="script">Scripted</button>
+          <button type="button" class="seg-btn" data-voice="model">Your model</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">Reshuffle &amp; reset</button>
+    </div>
+
+    <!-- ============ SCOREBOARD ============ -->
+    <div class="scoreboard">
+      <div class="score-card bank"><div class="name">Bankroll</div><div class="score" id="scoreBank">500</div></div>
+      <div class="score-card bet"><div class="name">Bet</div><div class="score" id="scoreBet">0</div></div>
+      <div class="score-card shoe"><div class="name">Shoe</div><div class="score" id="scoreShoe">—</div></div>
+    </div>
+
+    <!-- ============ TABLE ============ -->
+    <div class="felt">
+      <div class="dealer-row">
+        <div class="hand-block">
+          <div class="hand-head"><span class="who">Dealer</span><span class="total" id="dealerTotal"></span></div>
+          <div class="cards" id="dealerCards"></div>
+        </div>
+      </div>
+
+      <div class="result-line" id="result">Place a bet to deal ▾</div>
+      <div class="dealer-talk" id="dealerTalk"></div>
+
+      <div class="player-row" id="playerRow">
+        <!-- player hand blocks injected here (one, or two after a split) -->
+      </div>
+    </div>
+
+    <!-- ============ BET PAD ============ -->
+    <div class="betpad" id="betpad">
+      <div class="chips" id="chips"></div>
+      <div class="bet-row">
+        <button type="button" class="bet-btn" id="clearBet">Clear</button>
+        <button type="button" class="bet-btn primary" id="dealBtn">Deal ▸</button>
+      </div>
+    </div>
+
+    <!-- ============ ACTION BAR ============ -->
+    <div class="actionbar" id="actionbar" hidden>
+      <button type="button" class="act-btn" id="btnHit">Hit</button>
+      <button type="button" class="act-btn" id="btnStand">Stand</button>
+      <button type="button" class="act-btn" id="btnDouble">Double</button>
+      <button type="button" class="act-btn" id="btnSplit">Split</button>
+    </div>
+
+    <!-- coach tip (model-free; works on the hosted site) -->
+    <div class="coach" id="coach" hidden>
+      <span class="coach-tag">COACH</span>
+      <span class="coach-body" id="coachBody"></span>
+    </div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <div class="ai-think" id="aiThink">Pick “Your model” as the dealer voice and a connected model will improvise the dealer's banter and explain the coach's call in its own words — streamed here. It never decides how the dealer plays (the house follows fixed rules) and never peeks at the hole card. Any hiccup falls back to the scripted lines and the deterministic coach.</div>
+      <div class="ai-hint">
+        The sly dealer and the basic-strategy coach need no model and work anywhere. A local model just gives the
+        dealer a real voice. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

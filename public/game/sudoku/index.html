@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sudoku // XenoXanadu</title>
+<meta name="description" content="Neon Sudoku — unique-solution puzzles across four difficulties with pencil marks, conflict highlighting, check/solve and a timer, plus a step-by-step detective hint engine that names the next logical deduction (and an optional local LLM that narrates it out loud)." />
+<!-- hide BYO-model bits on the public site (a local model is only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>SUDOKU</h1>
+    <p class="tagline">Fill every row, column and box with 1–9. No guessing required.</p>
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls">
+      <div class="field">
+        <label>Difficulty</label>
+        <div class="seg" id="diffSeg">
+          <button type="button" class="seg-btn active" data-diff="easy">Easy</button>
+          <button type="button" class="seg-btn" data-diff="medium">Medium</button>
+          <button type="button" class="seg-btn" data-diff="hard">Hard</button>
+          <button type="button" class="seg-btn" data-diff="expert">Expert</button>
+        </div>
+      </div>
+      <button type="button" id="newGame">New game</button>
+    </div>
+
+    <!-- ============ HUD ============ -->
+    <div class="hud">
+      <div class="hud-readout" id="diffReadout" title="Current difficulty">EASY</div>
+      <div class="hud-readout" id="timer" title="Elapsed time">00:00</div>
+    </div>
+
+    <!-- ============ BOARD ============ -->
+    <div class="board-scroll">
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- ============ NUMBER PAD ============ -->
+    <div class="pad" id="pad">
+      <button type="button" class="pad-btn" data-d="1">1</button>
+      <button type="button" class="pad-btn" data-d="2">2</button>
+      <button type="button" class="pad-btn" data-d="3">3</button>
+      <button type="button" class="pad-btn" data-d="4">4</button>
+      <button type="button" class="pad-btn" data-d="5">5</button>
+      <button type="button" class="pad-btn" data-d="6">6</button>
+      <button type="button" class="pad-btn" data-d="7">7</button>
+      <button type="button" class="pad-btn" data-d="8">8</button>
+      <button type="button" class="pad-btn" data-d="9">9</button>
+      <button type="button" class="pad-btn pad-erase" data-d="0" title="Erase">⌫</button>
+    </div>
+
+    <!-- ============ TOOL BAR ============ -->
+    <div class="assist">
+      <div class="assist-btns">
+        <button type="button" class="assist-btn pencil-toggle" id="pencilToggle" title="Toggle pencil-mark mode — entries become small candidate notes">Pencil: off</button>
+        <button type="button" class="assist-btn" id="conflictToggle" title="Highlight cells that clash with another entry in the same row, column or box">Conflicts: on</button>
+        <button type="button" class="assist-btn" id="hintBtn" title="Find the next provable deduction (pure logic — no model needed)">Hint</button>
+        <button type="button" class="assist-btn" id="checkBtn" title="Mark every filled cell that disagrees with the unique solution">✓ Check</button>
+        <button type="button" class="assist-btn" id="solveBtn" title="Fill in the complete solution">Solve</button>
+      </div>
+      <div class="assist-msg" id="assistMsg">Click a cell, then a number (or type 1–9). Backspace erases. Toggle pencil for candidate notes.</div>
+    </div>
+
+    <!-- ============ BRING YOUR OWN MODEL (local only) ============ -->
+    <div class="xeno-ai ai-only" id="aiPanel">
+      <div class="ai-row">
+        <span class="ai-label">Model</span>
+        <select class="ai-model" id="modelSel"><option>loading…</option></select>
+        <button class="ai-refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Endpoint</span>
+        <input type="text" class="ai-endpoint" id="endpoint" value="http://localhost:11434" />
+      </div>
+      <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+      <label class="ai-explain">
+        <input type="checkbox" id="explainChk" /> Let my model play detective — narrate each hint out loud
+      </label>
+      <div class="ai-think" id="aiThink">The model's reasoning streams here when you ask for a hint. The <em>cell and digit</em> always come from the built-in logic solver, so the model can never put a wrong number on the board — it only narrates the deduction the solver already proved.</div>
+      <div class="ai-hint">
+        Hints, check &amp; solve are pure logic and work without any model. Connecting a local model only adds the
+        plain-English detective narration. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+      </div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>

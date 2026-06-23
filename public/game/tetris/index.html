@@ -8,19 +8,21 @@
 <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
 <style>
   html.hosted .ai-only { display: none !important; }
-  /* ---- sharpened neon arcade · signature hue: cyan ---- */
+  /* ---- house style · signature hue: cyan ---- */
   :root {
-    --bg: #050a10;
-    --bg-2: #0a131d;
-    --panel: #0c1622;
-    --grid: #1d3142;
-    --board: #060d15;
-    --slot: #0e1c2a;
-    --text: #e9f4ff;
-    --muted: #7d96ad;
-    --accent: #2de2ff;        /* neon cyan */
-    --on-accent: #050a10;
-    --mono: "DejaVu Sans Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --bg: #0c0d0f;
+    --bg-2: #131417;
+    --panel: #131417;
+    --panel-2: #1a1c20;
+    --grid: #24262b;
+    --board: #131417;
+    --slot: #1a1c20;
+    --line: #313338;
+    --text: #e7e6e0;
+    --muted: #8a8d93;
+    --accent: #5fa8b8;        /* muted cyan */
+    --on-accent: #0c0d0f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -29,17 +31,11 @@
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
     padding: 26px 14px 50px; touch-action: manipulation;
   }
-  body::after {
-    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
-    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 4px);
-    mix-blend-mode: multiply;
-  }
 
   h1 {
-    text-align: center; margin: 0 0 6px; font-weight: 800;
+    text-align: center; margin: 0 0 6px; font-weight: 700;
     letter-spacing: 8px; text-transform: uppercase; font-size: clamp(28px, 7vw, 52px);
-    color: var(--accent);
-    text-shadow: 0 0 6px rgba(45,226,255,0.6), 3px 3px 0 #ff2e88, 6px 6px 0 #ffd23f;
+    color: var(--text);
   }
   .subtitle { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
 
@@ -49,42 +45,41 @@
   .col.side { width: 132px; }
 
   .panel {
-    background: var(--panel); border: 2px solid var(--grid); padding: 10px 12px;
-    box-shadow: inset 0 0 24px #0004;
+    background: var(--panel); border: 1px solid var(--grid); border-radius: 0; padding: 10px 12px;
   }
   .panel .lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
-  .panel .val { font-size: 24px; font-weight: 800; line-height: 1.15; }
+  .panel .val { font-size: 24px; font-weight: 700; line-height: 1.15; }
   .mini { display: block; width: 100%; image-rendering: pixelated; }
   .nextlist { display: flex; flex-direction: column; gap: 8px; }
 
   /* ---- board ---- */
   .boardwrap {
-    position: relative; padding: 8px; background: var(--board); border: 2px solid var(--grid);
-    box-shadow: 0 0 0 1px #0006, 0 14px 40px #0009, inset 0 0 34px #0005;
+    position: relative; padding: 8px; background: var(--board); border: 1px solid var(--grid); border-radius: 0;
   }
   #board { display: block; image-rendering: pixelated; }
 
   .overlay {
     position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
-    gap: 14px; text-align: center; background: rgba(5,10,16,0.88); z-index: 5;
+    gap: 14px; text-align: center; background: rgba(12,13,15,0.92); z-index: 5;
   }
   .overlay.show { display: flex; }
-  .overlay h2 { margin: 0; font-size: clamp(24px, 6vw, 38px); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px var(--accent); }
-  .overlay.over h2 { color: #ff2e88; text-shadow: 0 0 16px rgba(255,46,136,0.8); }
+  .overlay h2 { margin: 0; font-size: clamp(24px, 6vw, 38px); letter-spacing: 3px; text-transform: uppercase; color: var(--text); }
+  .overlay.over h2 { color: #cf5a52; }
   .overlay p { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; line-height: 1.6; }
 
   /* ---- buttons ---- */
   .btns { display: flex; flex-direction: column; gap: 8px; }
   button.act {
-    background: transparent; color: var(--accent); border: 2px solid var(--accent);
-    padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    font-family: var(--mono); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s, transform .06s; white-space: nowrap;
+    background: var(--panel); color: var(--text); border: 1px solid var(--grid); border-radius: 0;
+    padding: 10px 18px; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: var(--mono); cursor: pointer; transition: background .15s, border-color .15s, color .15s, transform .08s; white-space: nowrap;
   }
-  button.act:hover { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
-  button.act:active { transform: translateY(2px); }
+  button.act:hover { border-color: var(--accent); color: var(--accent); }
+  button.act:active { transform: translateY(1px); }
+  button.act:disabled { opacity: .4; cursor: default; }
   button.act.secondary { color: var(--muted); border-color: var(--grid); }
-  button.act.secondary:hover { background: var(--grid); color: var(--text); box-shadow: none; }
-  button.act.on { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 12px var(--accent); }
+  button.act.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  button.act.on { background: var(--panel-2); border-color: var(--accent); color: var(--accent); }
 
   .help { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 1px; margin-top: 18px; line-height: 1.8; max-width: 520px; }
   .help b { color: var(--text); }
@@ -92,25 +87,26 @@
   /* ---- touch d-pad (mobile) ---- */
   .touchpad { display: none; gap: 8px; margin-top: 16px; }
   .touchpad button {
-    width: 58px; height: 50px; font-size: 20px; background: var(--panel);
-    color: var(--accent); border: 2px solid var(--grid); font-family: var(--mono);
+    width: 58px; height: 50px; font-size: 20px; background: var(--panel); border-radius: 0;
+    color: var(--text); border: 1px solid var(--grid); font-family: var(--mono);
   }
-  .touchpad button:active { background: var(--accent); color: var(--on-accent); }
+  .touchpad button:active { background: var(--panel-2); border-color: var(--accent); color: var(--accent); }
   @media (pointer: coarse) { .touchpad { display: flex; } }
 
   /* ---- AI panel (local only) ---- */
-  #aiBox { width: 100%; max-width: 520px; margin: 18px auto 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--grid); display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+  #aiBox { width: 100%; max-width: 520px; margin: 18px auto 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--grid); border-radius: 0; display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
   #aiBox .ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   #aiBox .ai-label { width: 64px; flex: none; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
   #aiBox label.chk { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
   #aiBox label.chk input { accent-color: var(--accent); }
-  #aiBox select, #aiBox input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); padding: 5px 8px; font-size: 12px; font-family: var(--mono); }
-  #aiBox .ai-refresh { flex: none; background: var(--bg-2); color: var(--accent); border: 1px solid var(--grid); padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
-  #aiBox .ai-refresh:hover { background: var(--accent); color: var(--on-accent); }
+  #aiBox select, #aiBox input[type=text] { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); border-radius: 0; padding: 5px 8px; font-size: 12px; font-family: var(--mono); }
+  #aiBox select:focus, #aiBox input[type=text]:focus { outline: none; border-color: var(--accent); }
+  #aiBox .ai-refresh { flex: none; background: var(--bg-2); color: var(--text); border: 1px solid var(--grid); border-radius: 0; padding: 5px 9px; cursor: pointer; font-family: var(--mono); }
+  #aiBox .ai-refresh:hover { border-color: var(--accent); color: var(--accent); }
   #aiBox .ai-statusline { display: flex; align-items: center; gap: 8px; color: var(--muted); }
   #aiBox .ai-dot { width: 9px; height: 9px; background: #555; flex: none; }
-  #aiBox .ai-dot.on { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
-  #aiBox .ai-dot.err { background: #ff2e88; box-shadow: 0 0 7px #ff2e88; }
+  #aiBox .ai-dot.on { background: var(--accent); }
+  #aiBox .ai-dot.err { background: #cf5a52; }
   #aiBox .ai-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
   #aiBox .ai-hint a { color: var(--accent); }
 </style>
@@ -207,37 +203,37 @@ const $ = id => document.getElementById(id);
    Each piece: filled cells per rotation state (0,R,2,L) inside a box,
    a colour, and its bounding-box size. Coordinates are [row, col]. */
 const PIECES = {
-  I: { color: "#2de2ff", box: 4, cells: [
+  I: { color: "#5fa8b8", box: 4, cells: [
         [[1,0],[1,1],[1,2],[1,3]],
         [[0,2],[1,2],[2,2],[3,2]],
         [[2,0],[2,1],[2,2],[2,3]],
         [[0,1],[1,1],[2,1],[3,1]] ] },
-  O: { color: "#ffd23f", box: 2, cells: [
+  O: { color: "#c7a24a", box: 2, cells: [
         [[0,0],[0,1],[1,0],[1,1]],
         [[0,0],[0,1],[1,0],[1,1]],
         [[0,0],[0,1],[1,0],[1,1]],
         [[0,0],[0,1],[1,0],[1,1]] ] },
-  T: { color: "#c46bff", box: 3, cells: [
+  T: { color: "#9b86c4", box: 3, cells: [
         [[0,1],[1,0],[1,1],[1,2]],
         [[0,1],[1,1],[1,2],[2,1]],
         [[1,0],[1,1],[1,2],[2,1]],
         [[0,1],[1,0],[1,1],[2,1]] ] },
-  S: { color: "#5dff8f", box: 3, cells: [
+  S: { color: "#9ec27a", box: 3, cells: [
         [[0,1],[0,2],[1,0],[1,1]],
         [[0,1],[1,1],[1,2],[2,2]],
         [[1,1],[1,2],[2,0],[2,1]],
         [[0,0],[1,0],[1,1],[2,1]] ] },
-  Z: { color: "#ff4d6d", box: 3, cells: [
+  Z: { color: "#cf5a52", box: 3, cells: [
         [[0,0],[0,1],[1,1],[1,2]],
         [[0,2],[1,1],[1,2],[2,1]],
         [[1,0],[1,1],[2,1],[2,2]],
         [[0,1],[1,0],[1,1],[2,0]] ] },
-  J: { color: "#3a7bff", box: 3, cells: [
+  J: { color: "#6f9bd1", box: 3, cells: [
         [[0,0],[1,0],[1,1],[1,2]],
         [[0,1],[0,2],[1,1],[2,1]],
         [[1,0],[1,1],[1,2],[2,2]],
         [[0,1],[1,1],[2,0],[2,1]] ] },
-  L: { color: "#ff9f1c", box: 3, cells: [
+  L: { color: "#cf8a52", box: 3, cells: [
         [[0,2],[1,0],[1,1],[1,2]],
         [[0,1],[1,1],[2,1],[2,2]],
         [[1,0],[1,1],[1,2],[2,0]],
@@ -450,7 +446,7 @@ function roundedCell(c, x, y, s, color) {
   c.fillStyle = color;
   c.fillRect(x + 1, y + 1, s - 2, s - 2);
   // bevel
-  c.fillStyle = "rgba(255,255,255,0.22)";
+  c.fillStyle = "rgba(231,230,224,0.12)";
   c.fillRect(x + 1, y + 1, s - 2, Math.max(2, s * 0.14));
   c.fillStyle = "rgba(0,0,0,0.28)";
   c.fillRect(x + 1, y + s - Math.max(2, s * 0.14) - 1, s - 2, Math.max(2, s * 0.14));
@@ -460,9 +456,9 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   // grid
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-    ctx.fillStyle = "#0e1c2a";
+    ctx.fillStyle = "#1a1c20";
     ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
-    ctx.strokeStyle = "rgba(29,49,66,0.5)";
+    ctx.strokeStyle = "rgba(36,38,43,0.6)";
     ctx.lineWidth = 1;
     ctx.strokeRect(c * CELL + 0.5, r * CELL + 0.5, CELL - 1, CELL - 1);
   }

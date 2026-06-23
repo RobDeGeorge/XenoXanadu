@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dominion // XenoXanadu</title>
+<meta name="description" content="A neon deckbuilder: build your deck from a shifting kingdom of action cards and out-point an adaptive AI. Plays fully offline; connect a local model for a persona rival that explains its buys." />
+<!-- hide the BYO-model bits on the public site (local model only reachable locally) -->
+<script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+<link rel="stylesheet" href="../../lib/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>Dominion</h1>
+    <p class="tagline">Deckbuilder &middot; shifting kingdom &middot; out-point an adaptive AI</p>
+
+    <!-- ============ SETUP ============ -->
+    <div class="setup" id="setup">
+      <div class="setrow">
+        <div class="field">
+          <label>Opponent strategy</label>
+          <div class="seg" id="stratSeg">
+            <button type="button" class="seg-btn active" data-strat="bigmoney">Treasurer</button>
+            <button type="button" class="seg-btn" data-strat="engine">Architect</button>
+            <button type="button" class="seg-btn" data-strat="attack">Raider</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Kingdom</label>
+          <div class="seg" id="kingSeg">
+            <button type="button" class="seg-btn active" data-king="random">Random</button>
+            <button type="button" class="seg-btn" data-king="reroll">Re-roll ⟳</button>
+          </div>
+        </div>
+        <div class="field ai-only">
+          <label>Opponent brain</label>
+          <div class="seg" id="brainSeg">
+            <button type="button" class="seg-btn active" data-brain="bot">Built-in bot</button>
+            <button type="button" class="seg-btn" data-brain="model">Your model</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI connection (local only) -->
+      <div class="ai-conn ai-only" id="aiConn">
+        <div class="setrow">
+          <div class="field">
+            <label>Model (drives the opponent seat)</label>
+            <select id="modelSel"><option>loading…</option></select>
+          </div>
+          <div class="field">
+            <label>Endpoint</label>
+            <input type="text" id="endpoint" value="http://localhost:11434" />
+          </div>
+          <button type="button" class="refresh" id="refresh" title="Re-scan for installed models">&#8635;</button>
+        </div>
+        <div class="ai-statusline"><span class="ai-dot" id="aiDot"></span><span id="aiStatus">Checking for a local model…</span></div>
+        <div class="ai-hint">
+          Pick <strong>Your model</strong> and the AI seat is played by your local model, given a persona
+          to match the chosen strategy. The engine only ever offers it the <em>legal</em> plays and buys
+          (numbered), so it can never break a rule — an unparseable reply falls straight back to the
+          built-in bot. New here? <a href="../../ai-setup.html">connect a model ▸</a>
+        </div>
+      </div>
+
+      <div class="setup-foot">
+        <button type="button" class="btn-primary" id="startBtn">Start game ▸</button>
+      </div>
+
+      <div class="kingdom-preview">
+        <h2>The Kingdom</h2>
+        <p>Every game deals a fresh set of ~10 action cards alongside the basic Treasure and Victory
+          piles. The bots <em>adapt</em> their buys to whatever's on the table — so will you.</p>
+        <div class="piles" id="kingPreview"></div>
+      </div>
+    </div>
+
+    <!-- ============ TABLE ============ -->
+    <div class="stage hide" id="stage">
+      <div class="hud">
+        <span class="pill turn">Turn <b id="hudTurn">1</b></span>
+        <span class="pill">On move <b id="hudOn">You</b></span>
+        <span class="pill">Provinces left <b id="hudProv">8</b></span>
+        <span class="pill">Empty piles <b id="hudEmpty">0</b></span>
+      </div>
+
+      <div class="scoreboard">
+        <div class="score-card" id="scYou">
+          <div class="name">You</div>
+          <div class="score" id="scYouVP">3</div>
+          <div class="sub" id="scYouDeck">10 cards</div>
+        </div>
+        <div class="score-card" id="scAi">
+          <div class="name" id="scAiName">AI</div>
+          <div class="score" id="scAiVP">3</div>
+          <div class="sub" id="scAiDeck">10 cards</div>
+        </div>
+      </div>
+
+      <div class="status" id="status">Your turn — Action phase.</div>
+
+      <!-- phase + your action buttons -->
+      <div class="phasebar" id="phasebar">
+        <div class="res">
+          <span class="chip">Actions <b id="resA">1</b></span>
+          <span class="chip">Coins <b id="resC">0</b></span>
+          <span class="chip">Buys <b id="resB">1</b></span>
+        </div>
+        <div class="acts" id="acts">
+          <button type="button" class="act-btn" id="btnTreasures">Play all treasures</button>
+          <button type="button" class="act-btn primary" id="btnEndPhase">End action phase ▸</button>
+          <button type="button" class="act-btn" id="btnEndTurn">End turn</button>
+          <button type="button" class="act-btn primary" id="btnConfirmSift" style="display:none">Confirm discard</button>
+        </div>
+      </div>
+
+      <div class="felt" id="felt">
+        <div class="zone">
+          <h3>Your hand <span class="meta" id="handMeta"></span></h3>
+          <div class="hand-strip" id="hand"></div>
+        </div>
+        <div class="zone">
+          <h3>Supply <span class="meta" id="supplyMeta">click a card to buy in the buy phase</span></h3>
+          <div class="piles" id="supply"></div>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel ai-only">
+          <h3 id="thinkTitle">Opponent table-talk</h3>
+          <div class="ai-think" id="aiThink">The opponent's reasoning streams here when it's the model's turn…</div>
+        </div>
+        <div class="panel">
+          <h3>Game log</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <div class="setup-foot">
+        <button type="button" class="btn-ghost" id="newGame">New game / setup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- overlay for turn handoff + game over -->
+  <div class="overlay" id="overlay">
+    <div class="box">
+      <h2 id="ovTitle"></h2>
+      <div id="ovBody"></div>
+      <div class="setup-foot" id="ovControls"></div>
+    </div>
+  </div>
+
+<script src="../../lib/byom.js"></script>
+<script src="engine.js"></script>
+<script src="strategies.js"></script>
+<script src="main.js"></script>
+<script src="../../lib/home-button.js"></script>
+</body>
+</html>
