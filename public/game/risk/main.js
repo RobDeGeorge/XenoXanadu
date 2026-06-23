@@ -26,7 +26,8 @@
   var polyEls = {}, badgeText = {}, badgeBg = {};
   // online multiplayer (net/server.js). When net.online, `state` is a redacted
   // snapshot from the authority and we send intents instead of mutating locally.
-  var net = { online: false, mySeat: null, conn: null, code: null, you: null, host: false, members: [] };
+  var net = { online: false, mySeat: null, conn: null, code: null, you: null, host: false, members: [],
+              url: null, token: null, reconnecting: false, reconnectTries: 0, leaving: false };
 
   // ===============================================================
   //  Deterministic low-poly polygon for each territory (stable shape)
@@ -460,10 +461,12 @@
       var lands = E.ownedBy(state, p.id).length, armies = E.armyTotal(state, p.id);
       var conts = E.ownedContinents(state, p.id).length;
       var row = document.createElement("div");
-      row.className = "rrow" + (p.id === state.turn ? " active" : "") + (p.alive ? "" : " dead");
+      var dropped = net.online && p.isHuman && p.connected === false && p.alive;
+      row.className = "rrow" + (p.id === state.turn ? " active" : "") + (p.alive ? "" : " dead") + (dropped ? " dropped" : "");
       row.innerHTML =
         '<span class="chip" style="color:' + p.color + ';background:' + p.color + '"></span>' +
-        '<span class="who">' + (p.general ? p.general.emoji + " " : (p.isHuman ? "" : "")) + esc(p.name) + '</span>' +
+        '<span class="who">' + (p.general ? p.general.emoji + " " : (p.isHuman ? "" : "")) + esc(p.name) +
+          (dropped ? ' <span class="drop-tag" title="Disconnected — can rejoin with the room code">⚠ reconnecting…</span>' : '') + '</span>' +
         '<span class="nums"><b>' + lands + '</b>⬡ <b>' + armies + '</b>◆' + (conts ? ' <b>' + conts + '</b>★' : '') + '</span>';
       r.appendChild(row);
     });
@@ -1169,7 +1172,7 @@
       else openMoveModal("advance", c.from, c.to);
     }
     paint();
-    if (state.winner != null) checkGameEnd();
+    if (state.winner != null) { clearSession(); checkGameEnd(); }
   }
 
   function applyEvent(m) {
@@ -1215,17 +1218,63 @@
     try { localStorage.setItem(NET_URL_KEY, url); } catch (e) {}
     if (net.conn && net.conn.connected) { then(); return; }
     netStatus("Connecting to " + url + "…");
+    net.url = url;
     net.conn = RiskNet.connect(url);
     net.conn.on("@open", function () { netStatus("Connected.", "on"); then(); });
-    net.conn.on("@close", function () { netStatus("Disconnected from server.", "err"); });
+    net.conn.on("@close", function () { onNetClose(); });
     net.conn.on("@error", function () { netStatus("Can't reach " + url + " — is the match-server running? (cd net && node server.js)", "err"); });
     net.conn.on("created", function (m) { net.you = m.you; net.code = m.code; });
     net.conn.on("joined", function (m) { net.you = m.you; net.code = m.code; });
     net.conn.on("lobby", onLobby);
-    net.conn.on("start", function (m) { enterOnlineGame(m.mySeat, m.mapId); });
+    net.conn.on("start", function (m) {
+      net.code = m.code; net.token = m.token; net.reconnectTries = 0;
+      saveSession();                       // remember enough to rejoin after a drop
+      enterOnlineGame(m.mySeat, m.mapId);
+      netStatus(m.resumed ? "Reconnected — you're back in the game." : "Game on.", "on");
+    });
     net.conn.on("state", function (m) { applySnapshot(m.snapshot); });
     net.conn.on("event", applyEvent);
-    net.conn.on("error", function (m) { netStatus(m.msg, "err"); });
+    net.conn.on("error", function (m) {
+      netStatus(m.msg, "err");
+      // a failed rejoin (game ended / token expired) → stop retrying, clear stale session
+      if (net.reconnecting) { net.reconnecting = false; clearSession(); hideReconnectBar(); }
+    });
+  }
+
+  // ---- session persistence + reconnection ----
+  var SESSION_KEY = "xeno.risk.session";
+  function saveSession() {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify({ url: net.url, code: net.code, token: net.token, name: nameVal(), ts: Date.now() })); } catch (e) {}
+  }
+  function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+  function loadSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { return null; } }
+  function hideReconnectBar() { if ($("netReconnectBar")) $("netReconnectBar").style.display = "none"; }
+
+  // socket dropped: if we're mid-game and didn't leave on purpose, auto-reconnect.
+  function onNetClose() {
+    if (net.leaving || !net.token || !net.online || (state && state.winner != null)) { netStatus("Disconnected from server.", "err"); return; }
+    scheduleReconnect();
+  }
+  function scheduleReconnect() {
+    net.reconnecting = true;
+    net.reconnectTries = (net.reconnectTries || 0) + 1;
+    if (net.reconnectTries > 12) { net.reconnecting = false; netStatus("Lost connection. Use “Reconnect” to try again.", "err"); showReconnectBar(); return; }
+    netStatus("Connection lost — reconnecting… (" + net.reconnectTries + ")", "err");
+    setTimeout(function () {
+      netConnect(function () { net.conn.send({ t: "rejoin", code: net.code, token: net.token }); });
+    }, Math.min(1000 * net.reconnectTries, 5000));
+  }
+  function showReconnectBar() {
+    var s = loadSession(); if (!s || !s.token) return;
+    if ($("netReconnectCode")) $("netReconnectCode").textContent = s.code;
+    if ($("netReconnectBar")) $("netReconnectBar").style.display = "block";
+  }
+  function doManualReconnect() {
+    var s = loadSession(); if (!s || !s.token) { hideReconnectBar(); return; }
+    if ($("netUrl") && s.url) $("netUrl").value = s.url;
+    net.code = s.code; net.token = s.token; net.reconnectTries = 0; net.reconnecting = true;
+    hideReconnectBar();
+    netConnect(function () { net.conn.send({ t: "rejoin", code: s.code, token: s.token }); });
   }
 
   function onLobby(m) {
@@ -1254,6 +1303,12 @@
     netConnect(function () { net.conn.send({ t: "join", code: code, name: nameVal(), password: netPass() }); });
   });
   if ($("netStart")) $("netStart").addEventListener("click", function () { if (net.conn) net.conn.send({ t: "start" }); });
+  if ($("netCopy")) $("netCopy").addEventListener("click", function () {
+    var code = net.code || ($("netRoomCode") && $("netRoomCode").textContent) || "";
+    var done = function () { var b = $("netCopy"); if (!b) return; var o = b.textContent; b.textContent = "✓ copied"; setTimeout(function () { b.textContent = o; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, done); else done();
+  });
+  if ($("netReconnect")) $("netReconnect").addEventListener("click", doManualReconnect);
 
   // ===============================================================
   //  Boot
@@ -1261,6 +1316,8 @@
   buildAIPanel();
   clampCounts();
   populateMaps();
+  // offer to rejoin a game that was interrupted (e.g. a refresh / crash)
+  showReconnectBar();
   if (BYOM && BYOM.isLocal()) { /* models load when the user ticks the box */ }
   // Esc closes the modal (cancel = min advance)
   document.addEventListener("keydown", function (e) {

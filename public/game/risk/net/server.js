@@ -252,8 +252,13 @@ function lobbyMsg(room) {
 }
 function broadcastLobby(room) { room.members.forEach(function (m) { m.conn.sendJSON(lobbyMsg(room)); }); }
 
+// Is a seat currently held by a live connection? (used for presence + reconnection UI)
+function seatConnected(room, seat) { var c = room.seatConn[seat]; return !!(c && c.alive); }
+
 // Redacted per-recipient snapshot: your own hand in full, everyone else a count.
-function snapshotFor(state, seat) {
+// `connected` lets clients show who has dropped / is reconnecting.
+function snapshotFor(room, seat) {
+  var state = room.state;
   return {
     turn: state.turn, phase: state.phase, reinforcements: state.reinforcements,
     setupRemaining: state.setupRemaining, conqueredThisTurn: state.conqueredThisTurn,
@@ -266,13 +271,14 @@ function snapshotFor(state, seat) {
         general: p.general ? { name: p.general.name, emoji: p.general.emoji } : null,
         cardCount: p.cards.length,
         cards: p.id === seat ? p.cards : null,
+        connected: seatConnected(room, p.id),
       };
     }),
   };
 }
 function broadcastState(room) {
   room.seatConn.forEach(function (conn, seat) {
-    if (conn && conn.alive) conn.sendJSON({ t: "state", snapshot: snapshotFor(room.state, seat) });
+    if (conn && conn.alive) conn.sendJSON({ t: "state", snapshot: snapshotFor(room, seat) });
   });
 }
 function broadcastEvent(room, evt) {
@@ -290,7 +296,9 @@ function startGame(room) {
   room.seatConn = room.members.map(function (m) { return m.conn; });
   room.members.forEach(function (m, seat) {
     m.seat = seat;
-    m.conn.sendJSON({ t: "start", mySeat: seat, mapId: room.config.mapId, code: room.code });
+    // per-seat secret so a dropped player can prove ownership and reclaim the seat
+    m.token = crypto.randomBytes(16).toString("hex");
+    m.conn.sendJSON({ t: "start", mySeat: seat, mapId: room.config.mapId, code: room.code, token: m.token });
   });
   broadcastState(room);
 }
@@ -382,6 +390,19 @@ createServer(function (conn) {
       broadcastLobby(r);
       return;
     }
+    if (m.t === "rejoin") {
+      // reclaim a seat in a started game using the per-seat token from `start`.
+      var rj = rooms[(typeof m.code === "string" ? m.code : "").toUpperCase()];
+      if (!rj || !rj.started) return reject(conn, "No game to rejoin (it may have ended).");
+      var mem = rj.members.filter(function (x) { return x.token && x.token === m.token; })[0];
+      if (!mem) return reject(conn, "Couldn't rejoin — unknown or expired session.");
+      mem.conn = conn; conn.room = rj; rj.seatConn[mem.seat] = conn; touch(rj);
+      conn.sendJSON({ t: "start", mySeat: mem.seat, mapId: rj.config.mapId, code: rj.code, token: mem.token, resumed: true });
+      conn.sendJSON({ t: "state", snapshot: snapshotFor(rj, mem.seat) });
+      broadcastEvent(rj, { kind: "log", msg: mem.name + " reconnected." });
+      broadcastState(rj);            // refresh everyone's presence indicators
+      return;
+    }
     var room2 = conn.room;
     if (!room2) return;
     touch(room2);
@@ -405,10 +426,12 @@ createServer(function (conn) {
         if (!room.members.length) { delete rooms[room.code]; return; }
         broadcastLobby(room);
       } else {
-        // mid-game: free the seat; the turn may stall until they rejoin (slice-1 limit)
+        // mid-game: free the live connection but KEEP the seat + member (with its
+        // reconnection token) so the player can rejoin. The room is reaped only
+        // after it goes idle past roomTtlMs (see sweep) — that's the reconnect window.
         if (who.seat != null) room.seatConn[who.seat] = null;
-        broadcastEvent(room, { kind: "log", msg: who.name + " disconnected." });
-        if (!room.seatConn.some(function (c) { return c && c.alive; })) delete rooms[room.code];
+        broadcastEvent(room, { kind: "log", msg: who.name + " disconnected — can rejoin with the room code." });
+        broadcastState(room);   // update presence (connected:false) for everyone still here
       }
     }
   });
@@ -419,9 +442,15 @@ var sweep = setInterval(function () {
   var now = Date.now();
   Object.keys(rooms).forEach(function (code) {
     var r = rooms[code];
-    var live = r.started ? r.seatConn.some(function (c) { return c && c.alive; })
-                         : r.members.some(function (m) { return m.conn.alive; });
-    if (!live || now - (r.lastActivity || 0) > CONFIG.roomTtlMs) delete rooms[code];
+    var idle = now - (r.lastActivity || 0) > CONFIG.roomTtlMs;
+    if (r.started) {
+      // keep started rooms alive across drops so players can reconnect; reap only
+      // once the room has been idle (no intents) longer than the reconnect window.
+      if (idle) delete rooms[code];
+    } else {
+      var live = r.members.some(function (m) { return m.conn.alive; });
+      if (!live || idle) delete rooms[code];
+    }
   });
 }, 60000); sweep.unref();
 

@@ -20,7 +20,7 @@ function Client(name) {
   this.ws.onmessage = function (e) {
     var m = JSON.parse(e.data); self.msgs.push(m);
     if (m.t === "state") self.snap = m.snapshot;
-    if (m.t === "start") self.mySeat = m.mySeat;
+    if (m.t === "start") { self.mySeat = m.mySeat; self.token = m.token; }
     if (m.t === "created" || m.t === "joined") self.code = m.code;
     if (m.t === "error") self.errors.push(m.msg);
   };
@@ -117,6 +117,31 @@ function check(name, cond, detail) { cond ? (pass++, console.log("  ✓ " + name
   check("Bob's client agrees it's his turn", B.snap.turn === 1);
   // redaction now lets Bob (his turn) still only see his own hand
   check("redaction holds after handoff", B.snap.players[1].cards !== null && B.snap.players[0].cards === null);
+
+  // --- reconnection: Bob drops mid-game, then rejoins his seat with his token ---
+  var bobToken = B.token, bobCode = B.code;
+  check("Bob has a reconnection token", typeof bobToken === "string" && bobToken.length > 0);
+  B.ws.close();
+  await A.waitState(function (s) { return s.players[1].connected === false; })
+    .then(function () { check("Alice sees Bob as disconnected", true); })
+    .catch(function () { check("Alice sees Bob as disconnected", false); });
+
+  var B2 = new Client("Bob-rejoined"); await B2.open();
+  B2.send({ t: "rejoin", code: bobCode, token: bobToken });
+  var resumed = await B2.waitMsg(function (m) { return m.t === "start"; });
+  check("rejoin resumes the seat", resumed.resumed === true && resumed.mySeat === 1, "seat " + resumed.mySeat);
+  await B2.waitState(function (s) { return !!s; });
+  check("rejoined client gets current state", B2.snap.turn === 1 && B2.snap.phase === "reinforce", "turn " + B2.snap.turn);
+  check("rejoined client sees its own cards, opponent hidden", Array.isArray(B2.snap.players[1].cards) && B2.snap.players[0].cards === null);
+  await A.waitState(function (s) { return s.players[1].connected === true; })
+    .then(function () { check("Alice sees Bob reconnected", true); })
+    .catch(function () { check("Alice sees Bob reconnected", false); });
+
+  // a stale/unknown token can't reclaim a seat
+  var X = new Client("Imposter"); await X.open();
+  X.send({ t: "rejoin", code: bobCode, token: "deadbeef" });
+  await X.waitMsg(function (m) { return m.t === "error"; });
+  check("unknown token rejected on rejoin", X.errors.length > 0, X.errors[0]);
 
   console.log("\n" + (fail === 0 ? "✓ ALL PASS" : "✗ " + fail + " FAILED") + " (" + pass + " passed)");
   process.exit(fail === 0 ? 0 : 1);
