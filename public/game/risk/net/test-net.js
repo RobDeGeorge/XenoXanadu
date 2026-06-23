@@ -143,6 +143,24 @@ function check(name, cond, detail) { cond ? (pass++, console.log("  ✓ " + name
   await X.waitMsg(function (m) { return m.t === "error"; });
   check("unknown token rejected on rejoin", X.errors.length > 0, X.errors[0]);
 
+  // --- spectators: watch a started room, see no hands, can't act ---
+  var S = new Client("Spectator"); await S.open();
+  S.send({ t: "join", code: bobCode, name: "Watcher", spectate: true });
+  var sjoin = await S.waitMsg(function (m) { return m.t === "joined"; });
+  check("spectator joins a started room", sjoin.spectator === true);
+  await S.waitMsg(function (m) { return m.t === "start" && m.spectator === true; });
+  await S.waitState(function (s) { return !!s; });
+  check("spectator sees the board", Object.keys(S.snap.terr).length === E.TERRITORY_IDS.length);
+  check("spectator sees NO hands at all", S.snap.players.every(function (p) { return p.cards === null; }));
+  var sErr = S.errors.length;
+  S.send({ t: "intent", action: "endPhase" });
+  await sleep(120);
+  check("spectator intent is rejected", S.errors.length > sErr);
+  // a live state change reaches the spectator too
+  await A.waitState(function (s) { return s.turn === 1; }).catch(function () {});
+  var lobbyWithSpec = await A.waitMsg(function (m) { return m.t === "lobby" && m.spectators >= 1; }).then(function () { return true; }).catch(function () { return false; });
+  check("lobby reports spectator count", lobbyWithSpec);
+
   console.log("\n" + (fail === 0 ? "✓ ALL PASS" : "✗ " + fail + " FAILED") + " (" + pass + " passed)");
   process.exit(fail === 0 ? 0 : 1);
 })().catch(function (e) { console.error("✗ test crashed:", e.message); process.exit(1); });

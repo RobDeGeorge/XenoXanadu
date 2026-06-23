@@ -229,6 +229,7 @@ function newRoom(code) {
   return {
     code: code,
     members: [],                 // [{conn, name, id}] in join order; members[0] is host
+    spectators: [],              // [conn] — watch-only, no seat, never see any hand
     nextId: 1,
     config: { mapId: "classic", manualSetup: false },
     state: null,                 // engine state once started
@@ -246,11 +247,16 @@ function lobbyMsg(room) {
     t: "lobby", code: room.code,
     hostId: room.members.length ? room.members[0].id : null,
     members: room.members.map(function (m) { return { id: m.id, name: m.name }; }),
+    spectators: room.spectators.filter(function (c) { return c && c.alive; }).length,
     config: room.config,
     started: room.started,
   };
 }
-function broadcastLobby(room) { room.members.forEach(function (m) { m.conn.sendJSON(lobbyMsg(room)); }); }
+function broadcastLobby(room) {
+  var msg = lobbyMsg(room);
+  room.members.forEach(function (m) { m.conn.sendJSON(msg); });
+  room.spectators.forEach(function (c) { if (c && c.alive) c.sendJSON(msg); });
+}
 
 // Is a seat currently held by a live connection? (used for presence + reconnection UI)
 function seatConnected(room, seat) { var c = room.seatConn[seat]; return !!(c && c.alive); }
@@ -280,9 +286,16 @@ function broadcastState(room) {
   room.seatConn.forEach(function (conn, seat) {
     if (conn && conn.alive) conn.sendJSON({ t: "state", snapshot: snapshotFor(room, seat) });
   });
+  // spectators get a fully-redacted view (seat -1 → nobody's hand is revealed)
+  if (room.spectators.length) {
+    var specSnap = { t: "state", snapshot: snapshotFor(room, -1) };
+    room.spectators.forEach(function (c) { if (c && c.alive) c.sendJSON(specSnap); });
+  }
 }
 function broadcastEvent(room, evt) {
-  room.seatConn.forEach(function (conn) { if (conn && conn.alive) conn.sendJSON(Object.assign({ t: "event" }, evt)); });
+  var msg = Object.assign({ t: "event" }, evt);
+  room.seatConn.forEach(function (conn) { if (conn && conn.alive) conn.sendJSON(msg); });
+  room.spectators.forEach(function (c) { if (c && c.alive) c.sendJSON(msg); });
 }
 
 // ---- start the game from the current lobby ----
@@ -300,6 +313,7 @@ function startGame(room) {
     m.token = crypto.randomBytes(16).toString("hex");
     m.conn.sendJSON({ t: "start", mySeat: seat, mapId: room.config.mapId, code: room.code, token: m.token });
   });
+  room.spectators.forEach(function (c) { if (c && c.alive) c.sendJSON({ t: "start", mySeat: -1, mapId: room.config.mapId, code: room.code, spectator: true }); });
   broadcastState(room);
 }
 
@@ -381,8 +395,20 @@ createServer(function (conn) {
     if (m.t === "join") {
       var r = rooms[(typeof m.code === "string" ? m.code : "").toUpperCase()];
       if (!r) return reject(conn, "No room " + (m.code || ""));
-      if (r.started) return reject(conn, "That game already started");
-      if (r.members.length >= 6) return reject(conn, "Room is full (6 max)");
+      if (m.spectate) {
+        // watch-only — allowed even if the game is full or already underway.
+        if (r.spectators.length >= 20) return reject(conn, "Too many spectators on this room");
+        r.spectators.push(conn); conn.room = r; conn.spectator = true; touch(r);
+        conn.sendJSON({ t: "joined", code: r.code, you: null, spectator: true });
+        if (r.started) {
+          conn.sendJSON({ t: "start", mySeat: -1, mapId: r.config.mapId, code: r.code, spectator: true });
+          conn.sendJSON({ t: "state", snapshot: snapshotFor(r, -1) });
+        } else { conn.sendJSON(lobbyMsg(r)); }
+        broadcastLobby(r);
+        return;
+      }
+      if (r.started) return reject(conn, "That game already started — you can still join as a spectator.");
+      if (r.members.length >= 6) return reject(conn, "Room is full (6 max) — you can still join as a spectator.");
       var jid = r.nextId++;
       r.members.push({ conn: conn, name: sanitizeName(m.name), id: jid });
       conn.room = r; touch(r);
@@ -418,6 +444,12 @@ createServer(function (conn) {
 
   conn.on("close", function () {
     var room = conn.room; if (!room) return;
+    if (conn.spectator) {
+      var si = room.spectators.indexOf(conn);
+      if (si >= 0) room.spectators.splice(si, 1);
+      broadcastLobby(room);
+      return;
+    }
     var idx = room.members.findIndex(function (mm) { return mm.conn === conn; });
     if (idx >= 0) {
       var who = room.members[idx];

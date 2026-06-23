@@ -27,7 +27,7 @@
   // online multiplayer (net/server.js). When net.online, `state` is a redacted
   // snapshot from the authority and we send intents instead of mutating locally.
   var net = { online: false, mySeat: null, conn: null, code: null, you: null, host: false, members: [],
-              url: null, token: null, reconnecting: false, reconnectTries: 0, leaving: false };
+              url: null, token: null, reconnecting: false, reconnectTries: 0, leaving: false, spectator: false };
 
   // ===============================================================
   //  Deterministic low-poly polygon for each territory (stable shape)
@@ -1224,10 +1224,18 @@
     net.conn.on("@close", function () { onNetClose(); });
     net.conn.on("@error", function () { netStatus("Can't reach " + url + " — is the match-server running? (cd net && node server.js)", "err"); });
     net.conn.on("created", function (m) { net.you = m.you; net.code = m.code; });
-    net.conn.on("joined", function (m) { net.you = m.you; net.code = m.code; });
+    net.conn.on("joined", function (m) { net.you = m.you; net.code = m.code; net.spectator = !!m.spectator; });
     net.conn.on("lobby", onLobby);
     net.conn.on("start", function (m) {
-      net.code = m.code; net.token = m.token; net.reconnectTries = 0;
+      net.code = m.code; net.reconnectTries = 0;
+      if (m.spectator) {
+        net.spectator = true; net.token = null;
+        enterOnlineGame(-1, m.mapId);
+        if ($("specBanner")) $("specBanner").style.display = "block";
+        netStatus("Spectating room " + m.code + ".", "on");
+        return;
+      }
+      net.spectator = false; net.token = m.token;
       saveSession();                       // remember enough to rejoin after a drop
       enterOnlineGame(m.mySeat, m.mapId);
       netStatus(m.resumed ? "Reconnected — you're back in the game." : "Game on.", "on");
@@ -1287,10 +1295,13 @@
         esc(mm.name) + (mm.id === m.hostId ? ' <span style="color:var(--muted)">· host</span>' : '') +
         (mm.id === net.you ? ' <span style="color:var(--accent)">· you</span>' : '') + '</span></div>';
     }).join("");
-    if ($("netConfigLine")) $("netConfigLine").textContent = "Map: " + m.config.mapId + " · Manual draft: " + (m.config.manualSetup ? "on" : "off");
-    var canStart = net.host && m.members.length >= 2;
-    if ($("netStart")) { $("netStart").style.display = net.host ? "block" : "none"; $("netStart").disabled = !canStart; }
-    if ($("netWaiting")) $("netWaiting").style.display = net.host ? "none" : "block";
+    if ($("netConfigLine")) $("netConfigLine").textContent = "Map: " + m.config.mapId + " · Manual draft: " + (m.config.manualSetup ? "on" : "off") +
+      (m.spectators ? " · 👁 " + m.spectators + " watching" : "");
+    // spectators can't start; only the host (a seated member) sees the button
+    var canStart = net.host && !net.spectator && m.members.length >= 2;
+    if ($("netStart")) { $("netStart").style.display = (net.host && !net.spectator) ? "block" : "none"; $("netStart").disabled = !canStart; }
+    if ($("netWaiting")) $("netWaiting").style.display = (net.spectator || !net.host) ? "block" : "none";
+    if ($("netWaiting")) $("netWaiting").textContent = net.spectator ? "Watching — waiting for the host to start…" : "Waiting for the host to start…";
   }
 
   function netPass() { return (($("netPassword") && $("netPassword").value) || ""); }
@@ -1303,6 +1314,11 @@
     netConnect(function () { net.conn.send({ t: "join", code: code, name: nameVal(), password: netPass() }); });
   });
   if ($("netStart")) $("netStart").addEventListener("click", function () { if (net.conn) net.conn.send({ t: "start" }); });
+  if ($("netWatch")) $("netWatch").addEventListener("click", function () {
+    var code = ((($("netCode") && $("netCode").value) || "").trim().toUpperCase());
+    if (code.length !== 4) { netStatus("Enter the 4-letter room code to watch.", "err"); return; }
+    netConnect(function () { net.conn.send({ t: "join", code: code, name: nameVal(), password: netPass(), spectate: true }); });
+  });
   if ($("netCopy")) $("netCopy").addEventListener("click", function () {
     var code = net.code || ($("netRoomCode") && $("netRoomCode").textContent) || "";
     var done = function () { var b = $("netCopy"); if (!b) return; var o = b.textContent; b.textContent = "✓ copied"; setTimeout(function () { b.textContent = o; }, 1200); };

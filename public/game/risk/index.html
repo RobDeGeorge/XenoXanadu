@@ -268,6 +268,7 @@
         <span class="online-or">or</span>
         <input class="box code-in" id="netCode" placeholder="CODE" maxlength="4" />
         <button class="btn ghost online-btn" id="netJoin">Join</button>
+        <button class="btn ghost online-btn" id="netWatch" title="Watch this room without taking a seat">👁 Watch</button>
       </div>
       <div class="online-lobby" id="netLobby" style="display:none;">
         <div class="lobby-code">Room <b id="netRoomCode">—</b>
@@ -284,6 +285,7 @@
       </div>
       <div class="online-status" id="netStatus"></div>
     </div>
+    <div id="specBanner" style="display:none; margin:10px 0; padding:8px 12px; text-align:center; border:1px solid var(--accent); border-radius:6px; color:var(--accent); font-size:13px;">👁 Spectating — you're watching this game (no seat, hidden hands).</div>
 
     <!-- ===== game ===== -->
     <div class="layout" id="game" style="display:none; margin-top:16px;">
