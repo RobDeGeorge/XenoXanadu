@@ -1214,7 +1214,7 @@
   })();
 
   function netConnect(then) {
-    var url = ((($("netUrl") && $("netUrl").value) || "wss://risk-xenoxanadu.fly.dev").trim());
+    var url = ((($("netUrl") && $("netUrl").value) || "ws://localhost:8790").trim());
     try { localStorage.setItem(NET_URL_KEY, url); } catch (e) {}
     if (net.conn && net.conn.connected) { then(); return; }
     netStatus("Connecting to " + url + "…");

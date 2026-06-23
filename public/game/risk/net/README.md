@@ -34,21 +34,40 @@ Then open the Risk page (served locally, e.g. `cd public && python3 -m http.serv
 2. **Everyone else** enters the same server address + code and clicks **Join**.
 3. Host clicks **Start** (2–6 players). Play proceeds turn by turn, synced to all.
 
-## Playing across the internet
+## Playing across the internet — free, with a Cloudflare Tunnel ⭐
 
-Each browser only ever talks to the match-server (and, later, its *own* local Ollama).
-- **Same machine:** default `ws://localhost:8790` works.
-- **Same LAN:** run with `HOST=lan` and share `ws://<host-lan-ip>:8790`.
-- **Over the internet:** keep it on localhost and put a **TLS tunnel** in front (an
-  `https://` page can only open `wss://`) — `cloudflared tunnel --url http://localhost:8790`,
-  `ngrok http 8790`, or Tailscale — and share the resulting `wss://…` URL. Or deploy
-  `server.js` to an always-on host (see below). When exposing publicly,
-  set `ROOM_PASSWORD=…` (and `ORIGINS=` if your page has a real origin).
+For a friends-only game this is the easiest path: **$0, no account, no credit card.**
+One person hosts; the others just need the URL + room code. An `https://` page can only
+open a `wss://` (TLS) socket, and a Cloudflare quick tunnel gives you exactly that in
+front of your local server.
 
-## Deploy to the cloud (always-on, recommended)
+```bash
+cd public/game/risk/net
+./play-online.sh        # starts the server + tunnel, prints the wss://…trycloudflare.com URL
+```
+
+It needs `cloudflared` once:
+<https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/>
+(Arch: `yay -S cloudflared`). Then:
+
+1. **Host** runs `play-online.sh` and shares the printed `wss://…` **Server** address.
+2. **Everyone** (host included) opens the Risk page, pastes that address into **Play
+   Online**, and Create / Joins with the 4-letter room code.
+3. Keep the terminal open while you play; Ctrl-C ends it. The URL is fresh each run.
+
+The script allows the `https://xenoxanadu.com` origin automatically (set `ORIGINS=` to
+override if you host the page elsewhere). The trade-off vs. cloud hosting: it only works
+while your machine + the script are running.
+
+Other transports for the same idea: `ngrok http 8790`, Tailscale, or a LAN game
+(`HOST=lan node server.js`, share `ws://<your-lan-ip>:8790` — same Wi-Fi only).
+
+## Deploy to the cloud (always-on, ~$2/mo)
 
 So friends just click the page and play — no one has to run a server each time.
-The repo ships a zero-dependency **Fly.io** setup (`Dockerfile` + `fly.toml` in this
+Note **Fly.io is not free** (~$2/mo for a small always-on machine, card required); the
+Cloudflare Tunnel above is the free option. The repo ships a zero-dependency **Fly.io**
+setup (`Dockerfile` + `fly.toml` in this
 folder). Fly terminates TLS automatically, so the hosted `https://` arcade can open a
 `wss://` socket to it. **Build/deploy from the parent `risk/` directory** — the image
 needs `../engine.js`, `../maps.js`, `../generals.js`, `../bots.js`:

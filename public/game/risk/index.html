@@ -252,13 +252,14 @@
     <!-- ===== online multiplayer ===== -->
     <div class="online-box" id="onlineBox">
       <h3>Play Online <span class="beta">beta</span></h3>
-      <p class="online-help">Play with friends across the internet. By default you connect to the hosted
-        match-server below — enter a name and Create or Join a room. (Running your own? Point the address at it:
-        <code>ws://localhost:8790</code> on the same machine, <code>HOST=lan node server.js</code> for your Wi‑Fi,
-        or a <code>wss://…</code> URL for self-hosting over the internet — see <code>net/README.md</code>.)</p>
+      <p class="online-help">Play with friends across the internet. One person hosts the match-server and shares
+        an address + room code; everyone pastes them below. <b>Same machine?</b> <code>ws://localhost:8790</code>
+        just works. <b>Over the internet (free):</b> the host runs <code>net/play-online.sh</code> (server +
+        Cloudflare Tunnel) and shares the <code>wss://…trycloudflare.com</code> URL it prints — see
+        <code>net/README.md</code>.</p>
       <div class="online-row">
         <input class="box" id="netName" placeholder="Your name" maxlength="16" />
-        <input class="box" id="netUrl" value="wss://risk-xenoxanadu.fly.dev" title="match-server address" />
+        <input class="box" id="netUrl" value="ws://localhost:8790" title="match-server address — ws://localhost:8790 on the same machine, or the wss://…trycloudflare.com URL the host shares" />
       </div>
       <div class="online-row">
         <input class="box" id="netPassword" placeholder="Room password (if the server set one)" title="only needed if the host's server requires a password" />
