@@ -6,8 +6,9 @@ the one real game (using the same `engine.js` the browser uses), validates every
 move, rolls all dice, and sends each player a redacted view (you see only your own
 cards).
 
-> **Slice 1 — humans only.** AI-seat "sponsorship" (a player's local Ollama driving
-> a seat) is the next layer and reuses this same intent protocol.
+Now supports **reconnection** (drop and rejoin your seat), **spectators** (watch any
+room), and **AI seats** (the host can fill seats with heuristic generals played
+server-side) — so two friends can play a 4-player game against bots.
 
 ## Run it
 
@@ -97,11 +98,22 @@ browsers ──(intents)──▶  match-server  ──(redacted snapshots + dic
 - `test-sec.js` — security regression: payload cap, rate-limit flood, safe bind. `node test-sec.js`
 
 ### Protocol (JSON text frames)
-Client→server: `create`, `join`, `config`, `start`, `intent{action,…}`.
-Server→client: `created`/`joined`, `lobby`, `start{mySeat}`, `state{snapshot}`,
-`event{kind:"dice"|"log"}`, `error{msg}`.
+Client→server: `create`, `join{spectate?}`, `rejoin{code,token}`, `config`, `addAI`,
+`removeAI`, `start`, `intent{action,…}`.
+Server→client: `created`/`joined`, `lobby{members,bots,spectators}`,
+`start{mySeat,token}`, `state{snapshot}`, `event{kind:"dice"|"log"}`, `error{msg}`.
 
-## Known limits (slice 1)
-- Humans only (no AI seats yet).
-- No reconnection: if a player drops mid-game their seat is freed and the turn waits.
-- One game per room; no spectators.
+### Features
+- **Reconnection:** `start` hands each human a per-seat token; a dropped player sends
+  `rejoin{code,token}` to reclaim their seat. Rooms survive drops until idle past
+  `roomTtlMs` (the reconnect window). The browser auto-reconnects and also offers a
+  "Reconnect to room …" button after a refresh.
+- **Spectators:** `join{spectate:true}` watches any room (even full/started) with a
+  fully-redacted view (no hand is revealed); spectators can't send intents.
+- **AI seats:** the host `addAI`/`removeAI`s heuristic generals (from `bots.js`),
+  played server-side and paced by `AI_DELAY_MS`. Lets a couple of friends play a
+  larger game against bots.
+
+## Known limits
+- No AI-seat *sponsorship* yet (a player's local Ollama driving a seat over the net).
+- One game per room.

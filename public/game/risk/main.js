@@ -1289,16 +1289,26 @@
     net.members = m.members; net.host = (m.hostId === net.you); net.code = m.code;
     if ($("netLobby")) $("netLobby").style.display = "block";
     if ($("netRoomCode")) $("netRoomCode").textContent = m.code;
+    var bots = m.bots || [];
     if ($("netMembers")) $("netMembers").innerHTML = m.members.map(function (mm, i) {
       var col = E.PLAYER_COLORS[i] || "#888";
       return '<div class="rrow"><span class="chip" style="color:' + col + ';background:' + col + '"></span><span class="who">' +
         esc(mm.name) + (mm.id === m.hostId ? ' <span style="color:var(--muted)">· host</span>' : '') +
         (mm.id === net.you ? ' <span style="color:var(--accent)">· you</span>' : '') + '</span></div>';
-    }).join("");
+    }).concat(bots.map(function (b, j) {
+      var col = E.PLAYER_COLORS[m.members.length + j] || "#888";
+      return '<div class="rrow"><span class="chip" style="color:' + col + ';background:' + col + '"></span><span class="who">' +
+        (b.emoji ? b.emoji + " " : "") + esc(b.name) + ' <span style="color:var(--muted)">· AI</span></span></div>';
+    })).join("");
+    var total = m.members.length + bots.length;
     if ($("netConfigLine")) $("netConfigLine").textContent = "Map: " + m.config.mapId + " · Manual draft: " + (m.config.manualSetup ? "on" : "off") +
-      (m.spectators ? " · 👁 " + m.spectators + " watching" : "");
+      " · " + total + "/6 players" + (m.spectators ? " · 👁 " + m.spectators + " watching" : "");
+    // host-only AI seat controls
+    if ($("netAIRow")) $("netAIRow").style.display = (net.host && !net.spectator) ? "flex" : "none";
+    if ($("netAddAI")) $("netAddAI").disabled = total >= 6;
+    if ($("netRemoveAI")) $("netRemoveAI").disabled = bots.length === 0;
     // spectators can't start; only the host (a seated member) sees the button
-    var canStart = net.host && !net.spectator && m.members.length >= 2;
+    var canStart = net.host && !net.spectator && total >= 2;
     if ($("netStart")) { $("netStart").style.display = (net.host && !net.spectator) ? "block" : "none"; $("netStart").disabled = !canStart; }
     if ($("netWaiting")) $("netWaiting").style.display = (net.spectator || !net.host) ? "block" : "none";
     if ($("netWaiting")) $("netWaiting").textContent = net.spectator ? "Watching — waiting for the host to start…" : "Waiting for the host to start…";
@@ -1314,6 +1324,8 @@
     netConnect(function () { net.conn.send({ t: "join", code: code, name: nameVal(), password: netPass() }); });
   });
   if ($("netStart")) $("netStart").addEventListener("click", function () { if (net.conn) net.conn.send({ t: "start" }); });
+  if ($("netAddAI")) $("netAddAI").addEventListener("click", function () { if (net.conn) net.conn.send({ t: "addAI" }); });
+  if ($("netRemoveAI")) $("netRemoveAI").addEventListener("click", function () { if (net.conn) net.conn.send({ t: "removeAI" }); });
   if ($("netWatch")) $("netWatch").addEventListener("click", function () {
     var code = ((($("netCode") && $("netCode").value) || "").trim().toUpperCase());
     if (code.length !== 4) { netStatus("Enter the 4-letter room code to watch.", "err"); return; }

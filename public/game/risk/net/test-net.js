@@ -8,6 +8,7 @@
  */
 "use strict";
 process.env.PORT = process.env.PORT || "8791";
+process.env.AI_DELAY_MS = "0";                // run AI seats instantly in tests
 require("./server.js");                       // starts listening on PORT
 var E = globalThis.RiskEngine;
 var URL = "ws://127.0.0.1:" + process.env.PORT;
@@ -160,6 +161,33 @@ function check(name, cond, detail) { cond ? (pass++, console.log("  ✓ " + name
   await A.waitState(function (s) { return s.turn === 1; }).catch(function () {});
   var lobbyWithSpec = await A.waitMsg(function (m) { return m.t === "lobby" && m.spectators >= 1; }).then(function () { return true; }).catch(function () { return false; });
   check("lobby reports spectator count", lobbyWithSpec);
+
+  // --- online AI seats: host adds bots, they auto-play their turns ---
+  var C = new Client("Host"); await C.open();
+  C.send({ t: "create", name: "Host", map: "classic", manualSetup: false });
+  await C.waitMsg(function (m) { return m.t === "created"; });
+  C.send({ t: "addAI" }); C.send({ t: "addAI" });
+  var lob2 = await C.waitMsg(function (m) { return m.t === "lobby" && m.bots && m.bots.length === 2; });
+  check("host can add AI generals to the lobby", lob2.bots.length === 2, lob2.bots.map(function (b) { return b.name; }).join(", "));
+  C.send({ t: "start" });
+  await C.waitMsg(function (m) { return m.t === "start"; });
+  await C.waitState(function (s) { return !!s; });
+  check("3-seat game starts (1 human + 2 AI)", C.snap.players.length === 3 && C.snap.players[1].isHuman === false && C.snap.players[2].isHuman === false);
+  check("AI seats carry a general persona", !!C.snap.players[1].general && !!C.snap.players[1].general.name);
+
+  // Host plays a minimal turn, then the two AI seats should auto-play and bring it back.
+  var hl = E.ownedBy(C.snap, 0);
+  var hb = hl.find(function (id) { return E.T[id].adj.some(function (nb) { return C.snap.terr[nb].owner !== 0; }); }) || hl[0];
+  C.send({ t: "intent", action: "deploy", id: hb, count: C.snap.reinforcements });
+  await C.waitState(function (s) { return s.reinforcements === 0; });
+  C.send({ t: "intent", action: "endPhase" });              // → attack
+  await C.waitState(function (s) { return s.phase === "attack"; });
+  C.send({ t: "intent", action: "endPhase" });              // attack → fortify
+  await C.waitState(function (s) { return s.phase === "fortify"; });
+  C.send({ t: "intent", action: "skipFortify" });           // end turn → AI seats take over
+  var back = await C.waitState(function (s) { return (s.turn === 0 && s.phase === "reinforce") || s.winner != null; }, 6000)
+    .then(function () { return true; }).catch(function () { return false; });
+  check("AI seats auto-played their turns (control returned / game progressed)", back, "turn=" + C.snap.turn + " phase=" + C.snap.phase);
 
   console.log("\n" + (fail === 0 ? "✓ ALL PASS" : "✗ " + fail + " FAILED") + " (" + pass + " passed)");
   process.exit(fail === 0 ? 0 : 1);

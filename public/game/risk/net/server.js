@@ -30,6 +30,8 @@ var RiskMaps = require("../maps.js");
 require("../generals.js");
 require("../bots.js");
 var E = globalThis.RiskEngine;
+var B = globalThis.RiskBots;        // heuristic planners that drive online AI seats
+var G = globalThis.RiskGenerals;    // persona pool for AI seats
 
 // ==================================================================
 //  Config — all env-overridable. Safe-by-default.
@@ -53,6 +55,7 @@ var CONFIG = {
   allowedOrigins: (process.env.ORIGINS || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean),
   allowAnyOrigin: process.env.ALLOW_ANY_ORIGIN === "1",
   roomPassword: process.env.ROOM_PASSWORD || null,  // optional shared secret to create/join
+  aiDelayMs: envInt("AI_DELAY_MS", 700),            // pacing between AI-seat actions (so humans can watch)
 };
 function logSec() { try { console.log.apply(console, ["[sec]"].concat([].slice.call(arguments))); } catch (e) {} }
 
@@ -229,6 +232,7 @@ function newRoom(code) {
   return {
     code: code,
     members: [],                 // [{conn, name, id}] in join order; members[0] is host
+    bots: [],                    // [general] — AI seats the host added (filled after humans)
     spectators: [],              // [conn] — watch-only, no seat, never see any hand
     nextId: 1,
     config: { mapId: "classic", manualSetup: false },
@@ -247,6 +251,7 @@ function lobbyMsg(room) {
     t: "lobby", code: room.code,
     hostId: room.members.length ? room.members[0].id : null,
     members: room.members.map(function (m) { return { id: m.id, name: m.name }; }),
+    bots: room.bots.map(function (b) { return { name: b.name, emoji: b.emoji || "" }; }),
     spectators: room.spectators.filter(function (c) { return c && c.alive; }).length,
     config: room.config,
     started: room.started,
@@ -300,13 +305,16 @@ function broadcastEvent(room, evt) {
 
 // ---- start the game from the current lobby ----
 function startGame(room) {
-  var n = room.members.length;
+  var bots = room.bots || [];
+  var n = room.members.length + bots.length;
   if (n < 2 || n > 6) return;
   var mapDef = (RiskMaps.get(room.config.mapId)) || E.CLASSIC_MAP;
-  var defs = room.members.map(function (m) { return { name: m.name, isHuman: true }; });
+  // humans take seats 0..h-1, AI generals fill the rest
+  var defs = room.members.map(function (m) { return { name: m.name, isHuman: true }; })
+    .concat(bots.map(function (g) { return { name: g.name, isHuman: false, general: g }; }));
   room.state = E.newGame({ players: defs, map: mapDef, manualSetup: !!room.config.manualSetup });
   room.started = true;
-  room.seatConn = room.members.map(function (m) { return m.conn; });
+  room.seatConn = room.members.map(function (m) { return m.conn; }).concat(bots.map(function () { return null; }));
   room.members.forEach(function (m, seat) {
     m.seat = seat;
     // per-seat secret so a dropped player can prove ownership and reclaim the seat
@@ -315,6 +323,69 @@ function startGame(room) {
   });
   room.spectators.forEach(function (c) { if (c && c.alive) c.sendJSON({ t: "start", mySeat: -1, mapId: room.config.mapId, code: room.code, spectator: true }); });
   broadcastState(room);
+  driveAI(room);          // if an AI seat is first to act (e.g. setup), let it play
+}
+
+// ==================================================================
+//  Online AI seats — heuristic generals played server-side (Pattern A
+//  fallback planners from bots.js). Paced so humans/spectators can watch.
+// ==================================================================
+function weightsFor(p) {
+  return (p && p.general && p.general.weights) ||
+    { aggression: .6, bravado: .5, expansion: .6, continent: .6, vengeance: .4, targetCont: null };
+}
+function lastLog(s) { return s.log[s.log.length - 1]; }
+
+// kick the AI if it's an AI seat's turn; no-op (and returns) on a human's turn.
+function driveAI(room) {
+  if (!room || room._aiBusy) return;
+  var s = room.state;
+  if (!s || s.winner != null) return;
+  var p = s.players[s.turn];
+  if (!p || p.isHuman) return;                 // waiting on a human — stop
+  room._aiBusy = true;
+  setTimeout(function () { aiStep(room); }, CONFIG.aiDelayMs);
+}
+function aiStep(room) {
+  var s = room.state;
+  if (!rooms[room.code] || !s || s.winner != null) { room._aiBusy = false; return; }
+  var p = s.players[s.turn];
+  if (!p || p.isHuman) { room._aiBusy = false; return; }
+  if (s.phase === "setup") {                    // manual-draft: place one army, then continue
+    E.placeSetupArmy(s, B.planSetupPlacement(s, weightsFor(p)));
+    broadcastState(room);
+    room._aiBusy = false;
+    return driveAI(room);
+  }
+  aiPlayTurn(room);                             // a full reinforce→attack→fortify turn (keeps _aiBusy)
+}
+function aiPlayTurn(room) {
+  var s = room.state, p = s.players[s.turn], w = weightsFor(p);
+  B.planReinforcements(s, w);                   // applies trades + deploys all reinforcements
+  E.endPhase(s);                                // → attack
+  broadcastState(room);
+  function atk() {
+    if (!rooms[room.code] || !room.state) { room._aiBusy = false; return; }
+    if (s.winner != null) { broadcastEvent(room, { kind: "log", msg: lastLog(s) }); broadcastState(room); room._aiBusy = false; return; }
+    var m = B.planAttack(s, w);
+    if (!m) return endAttack();
+    var r = E.rollAttack(s, m.from, m.to);
+    if (r.ok) broadcastEvent(room, { kind: "dice", from: m.from, to: m.to, aRolls: r.aRolls, dRolls: r.dRolls, attackerLoss: r.attackerLoss, defenderLoss: r.defenderLoss, conquered: r.conquered });
+    if (s.lastConquest) E.moveAfterConquest(s, B.advanceCount(s, w));
+    broadcastState(room);
+    if (s.winner != null) { broadcastEvent(room, { kind: "log", msg: lastLog(s) }); room._aiBusy = false; return; }
+    setTimeout(atk, CONFIG.aiDelayMs);
+  }
+  function endAttack() {
+    E.endPhase(s);                              // → fortify
+    var f = B.planFortify(s, w);
+    if (f && E.canFortify(s, f.from, f.to)) E.fortify(s, f.from, f.to, f.count);
+    else E.skipFortify(s);                      // ends the turn
+    broadcastState(room);
+    room._aiBusy = false;
+    driveAI(room);                              // next seat may be another AI
+  }
+  setTimeout(atk, CONFIG.aiDelayMs);
 }
 
 // ==================================================================
@@ -345,6 +416,7 @@ function handleIntent(room, conn, m) {
   if (!res || !res.ok) return reject(conn, (res && res.error) || "Illegal move");
   if (s.winner != null) broadcastEvent(room, { kind: "log", msg: s.log[s.log.length - 1] });
   broadcastState(room);
+  driveAI(room);                 // the move may have passed the turn to an AI seat
 }
 
 // One attack intent → server rolls (optionally blitzes), emitting a dice event
@@ -364,7 +436,9 @@ function handleAttack(room, conn, m) {
     });
     conquered = res.conquered;
   } while (m.blitz && !conquered && E.canAttack(s, m.from, m.to) && ++rounds < 60);
+  if (s.winner != null) broadcastEvent(room, { kind: "log", msg: s.log[s.log.length - 1] });
   broadcastState(room);
+  driveAI(room);
 }
 
 // ==================================================================
@@ -437,6 +511,19 @@ createServer(function (conn) {
       if (m.manualSetup != null) room2.config.manualSetup = !!m.manualSetup;
       broadcastLobby(room2);
       return;
+    }
+    if (m.t === "addAI" && isHost(room2, conn) && !room2.started) {
+      if (room2.members.length + room2.bots.length < 6) {
+        var used = room2.bots.map(function (b) { return b.id; });
+        var avail = G.ALL.filter(function (g) { return used.indexOf(g.id) < 0; });
+        var pick = avail.length ? avail[crypto.randomInt(avail.length)] : G.pick(1)[0];
+        room2.bots.push(pick);
+        broadcastLobby(room2);
+      }
+      return;
+    }
+    if (m.t === "removeAI" && isHost(room2, conn) && !room2.started) {
+      room2.bots.pop(); broadcastLobby(room2); return;
     }
     if (m.t === "start" && isHost(room2, conn) && !room2.started) { startGame(room2); return; }
     if (m.t === "intent" && room2.started) { handleIntent(room2, conn, m); return; }
