@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Risk: Global Domination — XenoXanadu</title>
+  <meta name="description" content="Risk: Global Domination — conquer a low-poly neon world. Dice combat, continent bonuses, cards, and a table of named AI generals. Optionally voiced by your own local model." />
+  <meta name="theme-color" content="#07090c" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230c0d0f'/><text x='50' y='68' font-family='monospace' font-size='62' font-weight='700' text-anchor='middle' fill='%239ec27a'>R</text></svg>" />
+  <!-- Mark hosted (non-local) before paint, so BYO-model bits never flash on the public site -->
+  <script>try{var h=location.hostname;if(!(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])$/i.test(h)||/\.local$/i.test(h)))document.documentElement.className+=' hosted';}catch(e){}</script>
+  <link rel="stylesheet" href="../../lib/arcade.css" />
+  <style>
+    :root {
+      --bg: #0c0d0f; --bg-2: #131417; --panel: #131417; --panel-2: #1a1c20;
+      --grid: #24262b; --line: #313338;
+      --text: #e7e6e0; --muted: #8a8d93; --accent: #cf5a52;
+      --on-accent: #0c0d0f;
+      --ocean: #0c0d0f; --ocean-line: #24262b;
+      --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+      --ai-on: #9ec27a; --ai-err: #cf5a52;
+      --wrap-max: 1180px;
+    }
+    body { background: var(--bg); }
+    h1 {
+      text-align: center; font-size: clamp(26px, 5vw, 44px); font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .tagline { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 18px; }
+
+    /* ---------- setup ---------- */
+    .setup { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; justify-content: center; }
+    .setup .field > label { color: var(--accent); }
+    select.box, input.box {
+      background: var(--bg-2); color: var(--text); border: 1px solid var(--grid);
+      border-radius: 0; padding: 9px 12px; font-family: var(--mono); font-size: 14px; min-width: 90px;
+    }
+    select.box:focus, input.box:focus { outline: none; border-color: var(--accent); }
+    .manual-toggle {
+      display: flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;
+      background: var(--bg-2); color: var(--text); border: 1px solid var(--grid);
+      border-radius: 0; padding: 9px 12px; font-size: 13px; font-family: var(--mono);
+      transition: border-color .12s;
+    }
+    .manual-toggle:hover { border-color: var(--muted); }
+    .manual-toggle input { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+
+    /* ---------- online panel ---------- */
+    .online-box {
+      max-width: 640px; margin: 18px auto 0; padding: 16px 18px;
+      background: var(--panel); border: 1px solid var(--grid); border-radius: 0;
+    }
+    .online-box h3 { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .online-box .beta { font-size: 9px; color: var(--muted); border: 1px solid var(--grid); padding: 1px 5px; letter-spacing: 1px; }
+    .online-help { font-size: 11px; color: var(--muted); line-height: 1.55; margin-bottom: 12px; }
+    .online-help code { color: var(--text); background: var(--bg-2); padding: 1px 4px; }
+    .online-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .online-row .box { flex: 1; min-width: 120px; }
+    .online-row .code-in { flex: 0 0 92px; min-width: 0; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
+    .online-btn { width: auto; margin-top: 0; padding: 9px 16px; flex: 0 0 auto; }
+    .online-or { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+    .online-lobby { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); }
+    .online-lobby .lobby-code { font-size: 14px; margin-bottom: 10px; }
+    .online-lobby .lobby-code b { color: var(--accent); letter-spacing: 3px; font-size: 18px; }
+    .online-config { font-size: 11px; color: var(--muted); margin: 8px 0; }
+    .online-status { font-size: 12px; color: var(--muted); min-height: 16px; margin-top: 10px; }
+
+    /* ---------- main layout ---------- */
+    .layout { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 16px; align-items: start; }
+    @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
+
+    .board-wrap {
+      position: relative; background: var(--ocean);
+      border: 1px solid var(--grid); border-radius: 0; overflow: hidden;
+    }
+    svg#board { display: block; width: 100%; height: auto; touch-action: manipulation; }
+
+    /* setup map preview */
+    .map-preview-wrap {
+      max-width: 460px; margin: 12px auto 0; border: 1px solid var(--grid);
+      border-radius: 0; overflow: hidden; background: var(--bg);
+    }
+    #mapPreview { display: block; width: 100%; height: auto; }
+    #mapPreview .tlabel { display: none; } /* keep the thumbnail clean */
+
+    /* territory polygons */
+    .terr { stroke-width: 1; cursor: pointer; transition: fill .18s, stroke .18s; }
+    .terr.dim { opacity: .55; }
+    .terr.sel { stroke: #fff !important; stroke-width: 2.6; }
+    .terr.target { stroke: #fff !important; stroke-width: 2.2; stroke-dasharray: 4 3; }
+    .terr.reach { stroke: #fff !important; stroke-width: 2.2; }
+    .terr.pulse { animation: tpulse 1s ease-in-out infinite; }
+    @keyframes tpulse { 0%,100%{ stroke: #fff; } 50%{ stroke: var(--accent); } }
+
+    .regions { pointer-events: none; }
+    .edge { stroke: var(--ocean-line); stroke-width: 0.8; fill: none; }
+    .edge.sea { stroke: #313338; stroke-dasharray: 5 5; opacity: .8; }
+    .clabel { fill: #8a8d93; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: var(--mono); opacity: .82; pointer-events: none; paint-order: stroke; stroke: #0c0d0f; stroke-width: 3px; }
+    .tlabel { fill: #e7e6e0; font-size: 10px; font-family: var(--mono); text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #000a; stroke-width: 2.5px; }
+    .badge { font-size: 12.5px; font-weight: 800; font-family: var(--mono); text-anchor: middle; dominant-baseline: central; fill: #fff; pointer-events: none; paint-order: stroke; stroke: #000; stroke-width: 3px; }
+    .badge-bg { pointer-events: none; }
+
+    /* ---------- right rail ---------- */
+    .rail { display: flex; flex-direction: column; gap: 12px; }
+    .card-box { background: var(--panel); border: 1px solid var(--grid); border-radius: 0; padding: 12px 13px; }
+    .card-box h3 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; font-weight: 700; }
+
+    .turnbar { display: flex; align-items: center; gap: 10px; }
+    .turn-chip { width: 14px; height: 14px; border-radius: 0; flex: none; }
+    .turn-name { font-weight: 800; font-size: 16px; letter-spacing: 1px; }
+    .turn-gen { font-size: 11px; color: var(--muted); }
+    .phase-steps { display: flex; gap: 6px; margin-top: 11px; }
+    .pstep { flex: 1; text-align: center; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 6px 2px; border: 1px solid var(--grid); border-radius: 0; color: var(--muted); background: var(--bg-2); }
+    .pstep.on { color: var(--accent); background: var(--panel-2); border-color: var(--accent); font-weight: 800; }
+    .reinf { text-align: center; margin-top: 11px; font-size: 13px; color: var(--text); min-height: 20px; }
+    .reinf b { color: var(--accent); font-size: 18px; }
+
+    .btn {
+      display: block; width: 100%; cursor: pointer; border: 1px solid var(--accent); border-radius: 0;
+      padding: 11px; margin-top: 10px; font-family: var(--mono); font-weight: 700; font-size: 13px;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); background: var(--panel);
+      transition: background .15s, color .15s, border-color .15s, transform .08s, opacity .15s;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; border-color: var(--grid); color: var(--muted); }
+    .btn.ghost { border-color: var(--grid); color: var(--muted); }
+    .btn.ghost:hover:not(:disabled) { background: var(--panel-2); color: var(--text); }
+    .toggle-row { display: flex; align-items: center; gap: 9px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+    /* roster */
+    .roster { display: flex; flex-direction: column; gap: 7px; }
+    .rrow { display: flex; align-items: center; gap: 9px; font-size: 12px; padding: 4px 6px; border-radius: 0; }
+    .rrow.active { background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--grid); }
+    .rrow.dead { opacity: .4; text-decoration: line-through; }
+    .rrow .chip { width: 11px; height: 11px; border-radius: 0; flex: none; }
+    .rrow .who { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rrow .nums { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .rrow .nums b { color: var(--text); }
+
+    /* cards */
+    .cards { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pcard {
+      width: 52px; height: 70px; border: 1px solid var(--grid); border-radius: 0; background: var(--bg-2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; transition: border-color .12s, transform .08s; font-size: 22px; position: relative;
+    }
+    .pcard small { font-size: 7px; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; position: absolute; bottom: 3px; }
+    .pcard.sel { border-color: var(--accent); transform: translateY(-3px); }
+    .cards-empty { color: var(--muted); font-size: 11px; }
+
+    /* log + voice */
+    .log { max-height: 150px; overflow: auto; font-size: 11.5px; line-height: 1.55; color: var(--muted); display: flex; flex-direction: column-reverse; }
+    .log div { padding: 1px 0; }
+    .log div:first-child { color: var(--text); }
+
+    /* dice overlay */
+    #dice { position: absolute; pointer-events: none; display: none; gap: 14px; padding: 10px 14px;
+      background: var(--panel); border: 1px solid var(--grid); border-radius: 0; z-index: 6; }
+    #dice .col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    #dice .col .lab { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+    #dice .die { width: 30px; height: 30px; border-radius: 0; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; color: #11151b; background: #e7e6e0; }
+    #dice .die.lose { background: #cf5a52; color: #fff; }
+    #dice .row { display: flex; gap: 5px; }
+
+    /* move/fortify slider modal */
+    #moveModal { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 8; background: rgba(4,7,11,.72); }
+    #moveModal .mm {
+      background: var(--panel); border: 1px solid var(--accent); border-radius: 0; padding: 20px 22px; width: min(340px, 86%);
+      text-align: center;
+    }
+    #moveModal h4 { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    #moveModal .mmsub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    #moveModal .mmval { font-size: 40px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 10px; }
+    #moveModal input[type=range] { width: 100%; accent-color: var(--accent); margin-bottom: 16px; }
+    #moveModal .mmrow { display: flex; gap: 10px; }
+    #moveModal .mmrow .btn { margin-top: 0; }
+
+    /* winner */
+    .winner-banner { margin-top: 14px; }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+    .hint b { color: var(--text); }
+    .ai-hint a, .hint a { color: var(--ai-on); }
+
+    /* generals splash on setup */
+    .gen-splash { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 8px; margin-top: 6px; }
+    .gen-card { background: var(--bg-2); border: 1px solid var(--grid); border-radius: 0; padding: 9px 11px; }
+    .gen-card .gn { font-weight: 800; font-size: 12.5px; }
+    .gen-card .gb { font-size: 10.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Risk</h1>
+    <div class="tagline">Global Domination · rebuilt by hand</div>
+
+    <!-- ===== setup ===== -->
+    <div class="controls setup" id="setup">
+      <div class="field">
+        <label>Map</label>
+        <select class="box" id="mapPick"></select>
+      </div>
+      <div class="field">
+        <label>Humans</label>
+        <select class="box" id="humanCount">
+          <option value="1">1 (vs AI)</option>
+          <option value="2">2 (pass &amp; play)</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>AI Generals</label>
+        <select class="box" id="botCount">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Start</label>
+        <label class="manual-toggle" title="Draft your starting armies onto the board one at a time, in turn order — instead of having them scattered for you.">
+          <input type="checkbox" id="manualSetup" /> Place troops manually
+        </label>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button id="newGame">New Campaign</button>
+      </div>
+    </div>
+
+    <div class="hint" id="mapBlurb" style="text-align:center; max-width:640px; margin:8px auto 0; color:var(--text);"></div>
+    <div class="map-preview-wrap" id="mapPreviewWrap">
+      <svg id="mapPreview" preserveAspectRatio="xMidYMid meet" aria-label="Map preview"></svg>
+    </div>
+
+    <div class="hint" id="setupHint" style="text-align:center; max-width:640px; margin:10px auto 0;">
+      Conquer every territory on the map. Each turn: <b>reinforce</b> your borders, <b>attack</b> adjacent enemies with the dice,
+      then <b>fortify</b> one move. Hold a whole continent for a bonus. Trade matching card sets for armies.
+      <span class="ai-only">Connect a <a href="../../ai-setup.html">local model</a> to give the AI generals a living voice.</span>
+    </div>
+
+    <!-- ===== online multiplayer ===== -->
+    <div class="online-box" id="onlineBox">
+      <h3>Play Online <span class="beta">beta</span></h3>
+      <p class="online-help">Play with friends across the internet. By default you connect to the hosted
+        match-server below — enter a name and Create or Join a room. (Running your own? Point the address at it:
+        <code>ws://localhost:8790</code> on the same machine, <code>HOST=lan node server.js</code> for your Wi‑Fi,
+        or a <code>wss://…</code> URL for self-hosting over the internet — see <code>net/README.md</code>.)</p>
+      <div class="online-row">
+        <input class="box" id="netName" placeholder="Your name" maxlength="16" />
+        <input class="box" id="netUrl" value="wss://risk-xenoxanadu.fly.dev" title="match-server address" />
+      </div>
+      <div class="online-row">
+        <input class="box" id="netPassword" placeholder="Room password (if the server set one)" title="only needed if the host's server requires a password" />
+      </div>
+      <div class="online-row">
+        <button class="btn ghost online-btn" id="netCreate">Create Room</button>
+        <span class="online-or">or</span>
+        <input class="box code-in" id="netCode" placeholder="CODE" maxlength="4" />
+        <button class="btn ghost online-btn" id="netJoin">Join</button>
+      </div>
+      <div class="online-lobby" id="netLobby" style="display:none;">
+        <div class="lobby-code">Room <b id="netRoomCode">—</b> <span style="color:var(--muted)">— share this code</span></div>
+        <div class="roster" id="netMembers"></div>
+        <div class="online-config" id="netConfigLine"></div>
+        <button class="btn" id="netStart" style="display:none;">Start Game</button>
+        <div class="online-waiting" id="netWaiting" style="display:none; color:var(--muted); font-size:12px; text-align:center;">Waiting for the host to start…</div>
+      </div>
+      <div class="online-status" id="netStatus"></div>
+    </div>
+
+    <!-- ===== game ===== -->
+    <div class="layout" id="game" style="display:none; margin-top:16px;">
+      <div class="board-wrap" id="boardWrap">
+        <svg id="board" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" aria-label="Risk world map"></svg>
+        <div id="dice"></div>
+        <div id="moveModal">
+          <div class="mm">
+            <h4 id="mmTitle">Advance armies</h4>
+            <div class="mmsub" id="mmSub"></div>
+            <div class="mmval" id="mmVal">1</div>
+            <input type="range" id="mmRange" min="1" max="1" value="1" />
+            <div class="mmrow">
+              <button class="btn ghost" id="mmMin">Min</button>
+              <button class="btn" id="mmOk">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail">
+        <div class="card-box">
+          <div class="turnbar">
+            <span class="turn-chip" id="turnChip"></span>
+            <div style="min-width:0;">
+              <div class="turn-name" id="turnName">—</div>
+              <div class="turn-gen" id="turnGen"></div>
+            </div>
+          </div>
+          <div class="phase-steps">
+            <div class="pstep" data-p="reinforce">Reinforce</div>
+            <div class="pstep" data-p="attack">Attack</div>
+            <div class="pstep" data-p="fortify">Fortify</div>
+          </div>
+          <div class="reinf" id="reinfLine"></div>
+          <button class="btn" id="actionBtn">End Phase</button>
+          <div class="toggle-row" id="blitzRow" style="display:none;">
+            <input type="checkbox" id="blitzChk" checked /><label for="blitzChk">Blitz — keep rolling until I take it or can't</label>
+          </div>
+          <div class="hint" id="phaseHint"></div>
+          <div class="winner-banner" id="winner" style="display:none;"></div>
+        </div>
+
+        <div class="card-box" id="cardBox">
+          <h3>Your Cards <span id="cardCount" style="color:var(--muted)"></span></h3>
+          <div class="cards" id="cardTray"></div>
+          <button class="btn ghost" id="tradeBtn" style="display:none;">Trade set ▸</button>
+        </div>
+
+        <div class="card-box">
+          <h3>Commanders</h3>
+          <div class="roster" id="roster"></div>
+        </div>
+
+        <div class="xeno-ai ai-only" id="aiPanel"></div>
+
+        <div class="card-box">
+          <h3>War Log</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../lib/byom.js"></script>
+  <script src="engine.js"></script>
+  <script src="maps.js"></script>
+  <script src="generals.js"></script>
+  <script src="bots.js"></script>
+  <script src="ai-parse.js"></script>
+  <script src="net/client.js"></script>
+  <script src="main.js"></script>
+  <script src="../../lib/home-button.js"></script>
+</body>
+</html>

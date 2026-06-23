@@ -1,0 +1,39 @@
+# Fly.io config for the Risk match-server.
+#
+# Deploy from the parent `risk/` directory (the Docker build context needs the
+# engine files that live there):
+#     cd public/game/risk
+#     flyctl launch --no-deploy --config net/fly.toml --name risk-xenoxanadu   # first time only
+#     flyctl secrets set ORIGINS="https://xenoxanadu.com" ROOM_PASSWORD="pick-a-secret" --config net/fly.toml
+#     flyctl deploy --config net/fly.toml
+#
+# Game state lives in memory in a single process, so DO NOT scale past one
+# machine and DO NOT let Fly stop it (rooms would vanish mid-game).
+
+app = "risk-xenoxanadu"          # change to your own app name from `flyctl launch`
+primary_region = "iad"           # pick a region near your players
+
+[build]
+  dockerfile = "net/Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8790"
+  # ORIGINS and ROOM_PASSWORD are set as secrets (see header), not here.
+  # ORIGINS only needs your public site — localhost/127.0.0.1/*.local are always
+  # allowed by the server, so local testing against this wss:// host just works.
+
+[http_service]
+  internal_port = 8790
+  force_https = true             # serves wss:// — required for an https:// page to connect
+  auto_stop_machines = false     # keep the socket warm; in-memory rooms can't be reloaded
+  auto_start_machines = true
+  min_machines_running = 1
+  max_machines_running = 1       # single source of truth — never run two
+
+  [[http_service.checks]]
+    method = "get"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
